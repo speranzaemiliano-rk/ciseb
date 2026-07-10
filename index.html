@@ -26,6 +26,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyCKadOev2-P1VE-TtS0w99yEjfZlOFaX_Y",
@@ -38,7 +39,7 @@
         };
         const ADMIN_EMAIL = "speranzaemiliano@gmail.com";
 
-        let auth, db, REF_DATOS, REF_TC, REF_ROLES, REF_USUARIOS, REF_PROV, REF_GRUPOS, REF_CAC, REF_DOCS, REF_EMPRESAS, REF_FACTURAS, REF_CAJA, REF_INGRESOS, REF_BANCO, REF_SOLICITUDES;
+        let auth, db, storage, REF_DATOS, REF_TC, REF_ROLES, REF_USUARIOS, REF_PROV, REF_GRUPOS, REF_CAC, REF_DOCS, REF_EMPRESAS, REF_FACTURAS, REF_CAJA, REF_INGRESOS, REF_BANCO, REF_SOLICITUDES;
         let FIREBASE_OK = false;
         let FIREBASE_ERROR = '';
 
@@ -48,6 +49,9 @@
             firebase.initializeApp(firebaseConfig);
             auth = firebase.auth();
             db = firebase.database();
+            // Firebase Storage (PDFs/estudios de pacientes). Va en su propio try por si el
+            // proyecto no tiene Storage habilitado: si falla, dejamos storage=null y seguimos.
+            try { storage = firebase.storage(); } catch (eStor) { storage = null; console.warn('Firebase Storage no disponible:', eStor); }
             REF_DATOS    = null;  // Se asigna en actualizarRefs() al elegir empresa/proyecto
             // Proveedores y grupos son GLOBALES (compartidos entre todas las empresas/proyectos)
             REF_PROV     = db.ref('global/proveedores');
@@ -2562,6 +2566,9 @@
                 <button class="nav-item nav-sub" id="tabBtnTurnos" data-navkey="turnos" onclick="mostrarTab('Turnos')" title="Agenda de turnos">
                     <span class="nav-drag-handle">⠿</span><span class="nav-icon">event</span> Turnos
                 </button>
+                <button class="nav-item nav-sub" id="tabBtnProfesionales" data-navkey="profesionales" onclick="mostrarTab('Profesionales')" title="Profesionales del consultorio">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">badge</span> Profesionales
+                </button>
             </div>
             </div>
 
@@ -3154,11 +3161,12 @@
                                     <th>Teléfono</th>
                                     <th>Obra Social</th>
                                     <th>Nº Afiliado</th>
+                                    <th>Profesional</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="pacientesBody">
-                                <tr><td colspan="7" class="empty-msg">No hay pacientes cargados.</td></tr>
+                                <tr><td colspan="8" class="empty-msg">No hay pacientes cargados.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -3219,6 +3227,43 @@
                     </div>
                 </div>
             </div><!-- /panelTurnos -->
+
+            <!-- TAB: PROFESIONALES -->
+            <div class="tab-panel" id="panelProfesionales">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Profesionales cargados</div>
+                        <div class="stat-value" id="profTotal">0</div>
+                    </div>
+                </div>
+                <div class="table-card">
+                    <div class="table-card-head">
+                        <h3>🩺 Profesionales</h3>
+                        <button class="btn btn-gold btn-sm" id="btnAgregarProfesional" onclick="abrirModalProfesional()">➕ Nuevo Profesional</button>
+                    </div>
+                    <div class="search-row">
+                        <input type="text" class="search-input" id="profBuscador" oninput="renderProfesionales()" placeholder="Buscar por nombre o especialidad…">
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Especialidad</th>
+                                    <th>Matrícula</th>
+                                    <th>Teléfono</th>
+                                    <th>% Consultorio</th>
+                                    <th>Nº Tratamientos</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="profesionalesBody">
+                                <tr><td colspan="7" class="empty-msg">No hay profesionales cargados.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div><!-- /panelProfesionales -->
 
             <!-- TAB: DASHBOARD -->
             <div class="tab-panel" id="panelDashboard" style="background:var(--surface-2,#F1F3F4);margin:-28px -32px 0;min-height:calc(100vh - 56px);padding:0;">
@@ -8077,12 +8122,12 @@
     function refreshTabActivo(){
         var btn=document.getElementById('btnRefresh');
         if(btn){btn.classList.add('spin');setTimeout(function(){btn.classList.remove('spin');},520);}
-        var map={'Presupuestos':renderizar,'Proveedores':renderProveedores,'Facturas':renderFacturas,'Documentos':renderDocumentos,'ResumenIngresos':renderResumenIngresos,'Servicios':renderServicios,'IngGeneral':renderIngGeneral,'Pacientes':renderPacientes,'Turnos':renderTurnos,'Egresos':renderEgresos,'Pagos':renderPagos,'CajaGeneral':renderCajaGeneral,'EfectivoPesos':renderEfectivoPesos,'EfectivoUSD':renderEfectivoUSD,'CuentasBancarias':renderCuentasBancarias,'PlanTrabajo':renderPlanTrabajo,'Tesoreria':renderTesoreria};
+        var map={'Presupuestos':renderizar,'Proveedores':renderProveedores,'Facturas':renderFacturas,'Documentos':renderDocumentos,'ResumenIngresos':renderResumenIngresos,'Servicios':renderServicios,'IngGeneral':renderIngGeneral,'Pacientes':renderPacientes,'Turnos':renderTurnos,'Profesionales':renderProfesionales,'Egresos':renderEgresos,'Pagos':renderPagos,'CajaGeneral':renderCajaGeneral,'EfectivoPesos':renderEfectivoPesos,'EfectivoUSD':renderEfectivoUSD,'CuentasBancarias':renderCuentasBancarias,'PlanTrabajo':renderPlanTrabajo,'Tesoreria':renderTesoreria};
         var fn=map[_tabActivo];if(fn)fn();
     }
     function mostrarTab(nombre) {
         const ALL_TABS = [
-            'Home','Pacientes','Turnos',
+            'Home','Pacientes','Turnos','Profesionales',
             'Presupuestos','Proveedores','Facturas','Documentos',
             'ResumenIngresos','Servicios','IngGeneral',
             'Egresos','CompRecibidos','Pagos','Caja','CajaGeneral','PlanTrabajo',
@@ -8101,7 +8146,7 @@
         if (btnHome) btnHome.classList.toggle('active', nombre === 'Home');
 
         // Submenú Consultorio (Pacientes / Turnos)
-        const SUB_CONSULTORIO = ['Pacientes','Turnos'];
+        const SUB_CONSULTORIO = ['Pacientes','Turnos','Profesionales'];
         SUB_CONSULTORIO.forEach(t => {
             const btn = document.getElementById('tabBtn' + t);
             if (btn) btn.classList.toggle('active', t === nombre);
@@ -8171,6 +8216,7 @@
         const titles = {
             'Pacientes':         'Pacientes',
             'Turnos':            'Turnos — Agenda',
+            'Profesionales':     'Profesionales — Consultorio',
             'Presupuestos':      'Presupuestos y Pagos',
             'Proveedores':       'Datos de Proveedores',
             'Facturas':          'Facturas de Proveedores',
@@ -8197,6 +8243,7 @@
         if (nombre === 'Home')             renderHome();
         if (nombre === 'Pacientes')         renderPacientes();
         if (nombre === 'Turnos')            renderTurnos();
+        if (nombre === 'Profesionales')     renderProfesionales();
         if (nombre === 'Dashboard')        renderDashboard();
         if (nombre === 'Egresos')          renderEgresos();
         if (nombre === 'CompRecibidos')    renderCompRecibidos();
@@ -9433,7 +9480,8 @@
                 inggeneral:  function() { eliminarIngGeneral(idx); },
                 prestamo:    function() { eliminarPrestamo(idx); },
                 paciente:    function() { eliminarPaciente(idx); },
-                turno:       function() { eliminarTurno(idx); }
+                turno:       function() { eliminarTurno(idx); },
+                profesional: function() { eliminarProfesional(idx); }
             };
             if (fns[tipo]) fns[tipo]();
             return;
@@ -9486,6 +9534,12 @@
                 var tu = turnos[idx]; if (!tu) { alert('Ítem no encontrado.'); return; }
                 descripcion = 'Turno: ' + (tu.paciente||'?') + ' — ' + (tu.fecha||'?') + ' ' + (tu.hora||'');
                 itemData = { paciente: tu.paciente, fecha: tu.fecha, hora: tu.hora };
+                break;
+            }
+            case 'profesional': {
+                var prof = profesionales[idx]; if (!prof) { alert('Ítem no encontrado.'); return; }
+                descripcion = 'Profesional: ' + (prof.nombre||'?') + (prof.matricula ? ' (Mat. ' + prof.matricula + ')' : '');
+                itemData = { id: prof.id, nombre: prof.nombre, matricula: prof.matricula };
                 break;
             }
             default: alert('Tipo no soportado: ' + tipo); return;
@@ -9551,6 +9605,11 @@
                 case 'turno': {
                     var i = turnos.findIndex(function(t){ return t.paciente===D.paciente && t.fecha===D.fecha && t.hora===D.hora; });
                     if (i !== -1) { turnos.splice(i, 1); persistirTurnos(); deleted = true; } break;
+                }
+                case 'profesional': {
+                    var i = D.id ? profesionales.findIndex(function(pr){ return pr.id===D.id; })
+                                 : profesionales.findIndex(function(pr){ return pr.nombre===D.nombre && pr.matricula===D.matricula; });
+                    if (i !== -1) { profesionales.splice(i, 1); persistirProfesionales(); deleted = true; } break;
                 }
                 case 'movcaja':
                 case 'inggeneral': {
@@ -13299,6 +13358,9 @@
     let REF_TURNOS = null;
     let turnos = [];
     let editandoTurnoIdx = -1;
+    let REF_PROFESIONALES = null;
+    let profesionales = [];
+    var editandoProfIdx = -1;
 
     // Se llama desde actualizarRefs()
     function actualizarRefsIngresos() {
@@ -13310,6 +13372,7 @@
         REF_REMUN       = db.ref(base + '/remuneraciones');
         REF_PACIENTES   = db.ref(base + '/pacientes');
         REF_TURNOS      = db.ref(base + '/turnos');
+        REF_PROFESIONALES = db.ref(base + '/profesionales');
     }
 
     // Helper: carga con listener .on() reactivo
@@ -13332,6 +13395,7 @@
         _cargarConListener(REF_REMUN,       function(v) { remuneraciones = v; if (typeof renderRemuneraciones==='function') renderRemuneraciones(); });
         _cargarConListener(REF_PACIENTES,   function(v) { pacientes = v; if (typeof renderPacientes==='function') renderPacientes(); });
         _cargarConListener(REF_TURNOS,      function(v) { turnos = v; if (typeof renderTurnos==='function') renderTurnos(); });
+        _cargarConListener(REF_PROFESIONALES, function(v) { profesionales = v; if (typeof renderProfesionales==='function') renderProfesionales(); });
         if (REF_PLAN) {
             REF_PLAN.on('value', function(snap) {
                 var val = snap.val();
@@ -13354,6 +13418,12 @@
             .catch(function(e) { console.error('Error guardando turnos:', e); alert('Error al guardar. Revisá la conexión.'); });
     }
 
+    function persistirProfesionales() {
+        if (!REF_PROFESIONALES) return;
+        REF_PROFESIONALES.set(profesionales)
+            .catch(function(e) { console.error('Error guardando profesionales:', e); alert('Error al guardar. Revisá la conexión.'); });
+    }
+
     // ══════════════════════════════════════════════════════════
     // PACIENTES
     // ══════════════════════════════════════════════════════════
@@ -13366,6 +13436,18 @@
         ['pacNombre','pacDni','pacFechaNacimiento','pacTelefono','pacEmail','pacObraSocial','pacNroAfiliado','pacDireccion','pacNotas'].forEach(function(id) {
             var el = document.getElementById(id); if (el) el.value = '';
         });
+        // Poblar el select de profesionales
+        var selProf = document.getElementById('pacProfesional');
+        if (selProf) {
+            selProf.innerHTML = '<option value="">— Sin asignar —</option>';
+            profesionales.forEach(function(prof) {
+                var o = document.createElement('option');
+                o.value = prof.id || '';
+                o.textContent = prof.nombre || '(sin nombre)';
+                selProf.appendChild(o);
+            });
+            selProf.value = p ? (p.profesionalId || '') : '';
+        }
         if (p) {
             document.getElementById('pacNombre').value          = p.nombre || '';
             document.getElementById('pacDni').value              = p.dni || '';
@@ -13377,7 +13459,111 @@
             document.getElementById('pacDireccion').value        = p.direccion || '';
             document.getElementById('pacNotas').value            = p.notas || '';
         }
+        // Sección de estudios/PDFs: solo visible al editar un paciente existente
+        var esEdicion = editandoPacIdx >= 0;
+        var nuevoMsg  = document.getElementById('pacEstudiosNuevoMsg');
+        var controles = document.getElementById('pacEstudiosControles');
+        if (nuevoMsg)  nuevoMsg.style.display  = esEdicion ? 'none' : '';
+        if (controles) controles.style.display = esEdicion ? '' : 'none';
+        var fileInput = document.getElementById('pacEstudioFile');
+        if (fileInput) fileInput.value = '';
+        renderEstudiosPaciente();
         document.getElementById('modalPaciente').classList.add('active');
+    }
+
+    // Renderiza la lista de estudios/PDFs del paciente que se está editando en el modal.
+    function renderEstudiosPaciente() {
+        var cont = document.getElementById('pacEstudiosLista');
+        if (!cont) return;
+        var p = editandoPacIdx >= 0 ? pacientes[editandoPacIdx] : null;
+        var estudios = (p && p.estudios) || [];
+        if (!estudios.length) {
+            cont.innerHTML = '<span style="color:var(--text-3); font-size:12px;">Sin estudios cargados.</span>';
+            return;
+        }
+        cont.innerHTML = '';
+        estudios.forEach(function(e, i) {
+            var fila = document.createElement('div');
+            fila.style.cssText = 'display:flex; align-items:center; gap:8px; padding:4px 0; border-bottom:1px solid var(--border,#eee);';
+            fila.innerHTML =
+                '<span style="flex:1;">📄 ' + escHtml(e.nombre || 'Estudio') + (e.fecha ? ' <span style="color:var(--text-3);font-size:11px;">(' + formatearFecha(e.fecha) + ')</span>' : '') + '</span>' +
+                '<a href="' + escHtml(e.url || '#') + '" target="_blank" rel="noopener" class="btn btn-outline btn-sm">Ver</a>' +
+                '<button type="button" class="btn btn-danger-sm" onclick="eliminarEstudioPaciente(' + i + ')" title="Borrar">✕</button>';
+            cont.appendChild(fila);
+        });
+    }
+
+    // Sube el archivo seleccionado en el input del modal al paciente en edición.
+    function pacSubirEstudioDesdeModal() {
+        if (editandoPacIdx < 0) { alert('Guardá el paciente primero para poder subirle estudios.'); return; }
+        var input = document.getElementById('pacEstudioFile');
+        var file = input && input.files && input.files[0];
+        if (!file) { alert('Elegí un archivo (PDF o imagen) para subir.'); return; }
+        subirEstudioPaciente(editandoPacIdx, file, '').then(function() {
+            if (input) input.value = '';
+            renderEstudiosPaciente();
+        }).catch(function(e) {
+            console.error('Error subiendo estudio:', e);
+            alert('No se pudo subir el estudio: ' + (e && e.message ? e.message : 'error desconocido'));
+        });
+    }
+
+    // Borra un estudio del paciente en edición (de Storage y del array).
+    function eliminarEstudioPaciente(i) {
+        var p = editandoPacIdx >= 0 ? pacientes[editandoPacIdx] : null;
+        if (!p || !p.estudios || !p.estudios[i]) return;
+        if (!confirm('¿Eliminar este estudio? Esta acción no se puede deshacer.')) return;
+        var e = p.estudios[i];
+        var quitarLocal = function() {
+            p.estudios.splice(i, 1);
+            persistirPacientes();
+            renderEstudiosPaciente();
+        };
+        if (storage && e.path) {
+            storage.ref(e.path).delete().then(quitarLocal).catch(function(err) {
+                console.error('Error borrando de Storage:', err);
+                // Igual lo quitamos de la ficha aunque falle el borrado físico
+                quitarLocal();
+            });
+        } else {
+            quitarLocal();
+        }
+    }
+
+    // Helper reutilizable: sube un archivo a Firebase Storage y lo asocia al paciente. Devuelve una Promise.
+    function subirEstudioPaciente(pacienteIdx, file, descripcion) {
+        return new Promise(function(resolve, reject) {
+            if (!storage) { alert('Firebase Storage no está habilitado. Activalo en la consola de Firebase.'); reject(new Error('Storage no habilitado')); return; }
+            var p = pacientes[pacienteIdx];
+            if (!p) { reject(new Error('Paciente no encontrado')); return; }
+            if (!p.id) { p.id = 'pac_' + Date.now(); persistirPacientes(); }
+            var nombreSan = (file.name || 'estudio').replace(/[^a-zA-Z0-9._-]/g, '_');
+            var path = getBasePath() + '/estudios/' + p.id + '/' + Date.now() + '_' + nombreSan;
+            var estadoEl = document.getElementById('ciseb-agente-estado');
+            var prevEstado = estadoEl ? estadoEl.textContent : '';
+            var lista = document.getElementById('pacEstudiosLista');
+            if (lista) { var av = document.createElement('div'); av.id = '_pacSubiendoAviso'; av.style.cssText = 'color:var(--text-3);font-size:12px;padding:4px 0;'; av.textContent = 'Subiendo…'; lista.appendChild(av); }
+            storage.ref(path).put(file).then(function(snap) {
+                return snap.ref.getDownloadURL();
+            }).then(function(url) {
+                if (!p.estudios) p.estudios = [];
+                p.estudios.push({
+                    nombre:    file.name || 'Estudio',
+                    url:       url,
+                    path:      path,
+                    fecha:     new Date().toISOString().slice(0, 10),
+                    subidoPor: (auth && auth.currentUser) ? auth.currentUser.email : ''
+                });
+                persistirPacientes();
+                var avEl = document.getElementById('_pacSubiendoAviso'); if (avEl) avEl.remove();
+                if (estadoEl) estadoEl.textContent = prevEstado;
+                resolve(p.estudios[p.estudios.length - 1]);
+            }).catch(function(err) {
+                var avEl = document.getElementById('_pacSubiendoAviso'); if (avEl) avEl.remove();
+                alert('Error al subir el estudio: ' + (err && err.message ? err.message : 'error desconocido'));
+                reject(err);
+            });
+        });
     }
 
     function cerrarModalPaciente() { document.getElementById('modalPaciente').classList.remove('active'); }
@@ -13385,7 +13571,10 @@
     function guardarPaciente() {
         var nombre = (document.getElementById('pacNombre').value || '').trim();
         if (!nombre) { alert('El nombre del paciente es obligatorio.'); return; }
+        var prev = editandoPacIdx >= 0 ? pacientes[editandoPacIdx] : null;
+        var selProf = document.getElementById('pacProfesional');
         var p = {
+            id:               (prev && prev.id) ? prev.id : ('pac_' + Date.now()),
             nombre:           nombre,
             dni:              (document.getElementById('pacDni').value || '').trim(),
             fechaNacimiento:  document.getElementById('pacFechaNacimiento').value || '',
@@ -13394,7 +13583,9 @@
             obraSocial:       (document.getElementById('pacObraSocial').value || '').trim(),
             nroAfiliado:      (document.getElementById('pacNroAfiliado').value || '').trim(),
             direccion:        (document.getElementById('pacDireccion').value || '').trim(),
-            notas:            (document.getElementById('pacNotas').value || '').trim()
+            profesionalId:    selProf ? (selProf.value || '') : ((prev && prev.profesionalId) || ''),
+            notas:            (document.getElementById('pacNotas').value || '').trim(),
+            estudios:         (prev && prev.estudios) || []
         };
         if (editandoPacIdx >= 0) pacientes[editandoPacIdx] = p; else pacientes.push(p);
         persistirPacientes();
@@ -13420,12 +13611,13 @@
         var totEl = document.getElementById('pacTotal');
         if (totEl) totEl.textContent = pacientes.length;
         if (!visibles.length) {
-            tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">' + (pacientes.length ? 'Sin resultados.' : 'No hay pacientes cargados.') + '</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="empty-msg">' + (pacientes.length ? 'Sin resultados.' : 'No hay pacientes cargados.') + '</td></tr>';
             return;
         }
         tbody.innerHTML = '';
         visibles.forEach(function(x) {
             var p = x.p, idx = x.i;
+            var profAsig = p.profesionalId ? profesionales.filter(function(pr){ return pr.id === p.profesionalId; })[0] : null;
             var tr = document.createElement('tr');
             tr.innerHTML =
                 '<td><strong>' + escHtml(p.nombre || '—') + '</strong></td>' +
@@ -13434,9 +13626,157 @@
                 '<td>' + escHtml(p.telefono || '—') + '</td>' +
                 '<td>' + escHtml(p.obraSocial || '—') + '</td>' +
                 '<td>' + escHtml(p.nroAfiliado || '—') + '</td>' +
+                '<td>' + escHtml(profAsig ? (profAsig.nombre || '—') : '—') + '</td>' +
                 '<td><div class="action-btns">' +
                     '<button class="btn btn-outline btn-sm" onclick="abrirModalPaciente(' + idx + ')" title="Editar">✏</button>' +
                     (typeof btnElim === 'function' ? btnElim('paciente', idx) : '<button class="btn btn-danger-sm" onclick="eliminarPaciente(' + idx + ')">✕</button>') +
+                '</div></td>';
+            tbody.appendChild(tr);
+        });
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // PROFESIONALES
+    // ══════════════════════════════════════════════════════════
+
+    // Pobla el <datalist> del modal de profesional con los tratamientos del catálogo (servicios).
+    function _profPoblarDatalistTratamientos() {
+        var dl = document.getElementById('profTratamientosList');
+        if (!dl) return;
+        dl.innerHTML = '';
+        var vistos = {};
+        servicios.forEach(function(s) {
+            var n = (s.descripcion || s.nombre || '').trim();
+            if (!n || vistos[n]) return;
+            vistos[n] = true;
+            var o = document.createElement('option');
+            o.value = n;
+            dl.appendChild(o);
+        });
+    }
+
+    // Agrega una fila de tratamiento a la mini-lista del modal de profesional.
+    function profAgregarTratamientoFila(nombre, porcentaje) {
+        var cont = document.getElementById('profTratamientosLista');
+        if (!cont) return;
+        var fila = document.createElement('div');
+        fila.className = 'prof-trat-fila';
+        fila.style.cssText = 'display:grid; grid-template-columns:1fr 120px 32px; gap:6px; margin-bottom:6px; align-items:center;';
+        fila.innerHTML =
+            '<input type="text" class="prof-trat-nombre" list="profTratamientosList" placeholder="Nombre del tratamiento" value="' + escHtml(nombre || '') + '">' +
+            '<input type="number" class="prof-trat-porcentaje" min="0" max="100" step="1" placeholder="usa el general" value="' + (porcentaje !== null && porcentaje !== undefined && porcentaje !== '' ? escHtml(String(porcentaje)) : '') + '">' +
+            '<button type="button" class="btn btn-outline btn-sm" onclick="this.parentNode.remove()" title="Quitar">✕</button>';
+        cont.appendChild(fila);
+    }
+
+    function abrirModalProfesional(idx) {
+        editandoProfIdx = (idx !== undefined) ? idx : -1;
+        var p = editandoProfIdx >= 0 ? profesionales[editandoProfIdx] : null;
+        document.getElementById('modalProfesionalTitle').textContent = p ? '🩺 Editar Profesional' : '🩺 Nuevo Profesional';
+        _profPoblarDatalistTratamientos();
+        ['profNombre','profEspecialidad','profMatricula','profTelefono','profEmail','profComisionGeneral','profNotas'].forEach(function(id) {
+            var el = document.getElementById(id); if (el) el.value = '';
+        });
+        var lista = document.getElementById('profTratamientosLista');
+        if (lista) lista.innerHTML = '';
+        if (p) {
+            document.getElementById('profNombre').value          = p.nombre || '';
+            document.getElementById('profEspecialidad').value    = p.especialidad || '';
+            document.getElementById('profMatricula').value       = p.matricula || '';
+            document.getElementById('profTelefono').value        = p.telefono || '';
+            document.getElementById('profEmail').value           = p.email || '';
+            document.getElementById('profComisionGeneral').value = (p.comisionGeneral !== null && p.comisionGeneral !== undefined) ? p.comisionGeneral : '';
+            document.getElementById('profNotas').value           = p.notas || '';
+            (p.tratamientos || []).forEach(function(t) {
+                profAgregarTratamientoFila(t.nombre || '', t.porcentaje);
+            });
+        }
+        // Pacientes asignados (solo lectura): se listan los pacientes cuyo profesionalId coincide.
+        var contPac = document.getElementById('profPacientesAsignados');
+        if (contPac) {
+            if (!p || !p.id) {
+                contPac.innerHTML = '<span style="color:var(--text-3); font-size:12px;">Guardá primero para asignar pacientes.</span>';
+            } else {
+                var asignados = pacientes.filter(function(pac) { return pac.profesionalId === p.id; });
+                if (!asignados.length) {
+                    contPac.innerHTML = '<span style="color:var(--text-3); font-size:12px;">Sin pacientes asignados todavía.</span>';
+                } else {
+                    contPac.innerHTML = asignados.map(function(pac) {
+                        return '<div style="padding:3px 0;">🦷 ' + escHtml(pac.nombre || '—') + (pac.dni ? ' <span style="color:var(--text-3);font-size:11px;">(' + escHtml(pac.dni) + ')</span>' : '') + '</div>';
+                    }).join('');
+                }
+            }
+        }
+        document.getElementById('modalProfesional').classList.add('active');
+    }
+
+    function cerrarModalProfesional() { document.getElementById('modalProfesional').classList.remove('active'); }
+
+    function guardarProfesional() {
+        var nombre = (document.getElementById('profNombre').value || '').trim();
+        if (!nombre) { alert('El nombre del profesional es obligatorio.'); return; }
+        var comisionStr = (document.getElementById('profComisionGeneral').value || '').trim();
+        var tratamientos = [];
+        document.querySelectorAll('#profTratamientosLista .prof-trat-fila').forEach(function(fila) {
+            var n = ((fila.querySelector('.prof-trat-nombre') || {}).value || '').trim();
+            if (!n) return;
+            var pStr = ((fila.querySelector('.prof-trat-porcentaje') || {}).value || '').trim();
+            tratamientos.push({ nombre: n, porcentaje: pStr === '' ? null : (parseFloat(pStr) || 0) });
+        });
+        var prev = editandoProfIdx >= 0 ? profesionales[editandoProfIdx] : null;
+        var p = {
+            id:              (prev && prev.id) ? prev.id : ('prof_' + Date.now()),
+            nombre:          nombre,
+            especialidad:    (document.getElementById('profEspecialidad').value || '').trim(),
+            matricula:       (document.getElementById('profMatricula').value || '').trim(),
+            telefono:        (document.getElementById('profTelefono').value || '').trim(),
+            email:           (document.getElementById('profEmail').value || '').trim(),
+            comisionGeneral: comisionStr === '' ? 0 : (parseFloat(comisionStr) || 0),
+            notas:           (document.getElementById('profNotas').value || '').trim(),
+            tratamientos:    tratamientos
+        };
+        if (editandoProfIdx >= 0) profesionales[editandoProfIdx] = p; else profesionales.push(p);
+        persistirProfesionales();
+        cerrarModalProfesional();
+        renderProfesionales();
+    }
+
+    function eliminarProfesional(idx) {
+        if (!confirm('¿Eliminar este profesional? Esta acción no se puede deshacer.')) return;
+        profesionales.splice(idx, 1);
+        persistirProfesionales();
+        renderProfesionales();
+    }
+
+    function renderProfesionales() {
+        var tbody = document.getElementById('profesionalesBody');
+        if (!tbody) return;
+        var q = ((document.getElementById('profBuscador') || {}).value || '').toLowerCase().trim();
+        var visibles = profesionales.map(function(p, i) { return { p: p, i: i }; }).filter(function(x) {
+            if (!q) return true;
+            return ((x.p.nombre || '') + ' ' + (x.p.especialidad || '')).toLowerCase().indexOf(q) !== -1;
+        });
+        var totEl = document.getElementById('profTotal');
+        if (totEl) totEl.textContent = profesionales.length;
+        if (!visibles.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">' + (profesionales.length ? 'Sin resultados.' : 'No hay profesionales cargados.') + '</td></tr>';
+            return;
+        }
+        tbody.innerHTML = '';
+        visibles.forEach(function(x) {
+            var p = x.p, idx = x.i;
+            var nTrat = (p.tratamientos || []).length;
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+                '<td><strong>' + escHtml(p.nombre || '—') + '</strong></td>' +
+                '<td>' + escHtml(p.especialidad || '—') + '</td>' +
+                '<td>' + escHtml(p.matricula || '—') + '</td>' +
+                '<td>' + escHtml(p.telefono || '—') + '</td>' +
+                '<td>' + ((p.comisionGeneral !== null && p.comisionGeneral !== undefined && p.comisionGeneral !== '') ? (p.comisionGeneral + '%') : '—') + '</td>' +
+                '<td>' + nTrat + '</td>' +
+                '<td><div class="action-btns">' +
+                    '<button class="btn btn-outline btn-sm" onclick="abrirModalProfesional(' + idx + ')" title="Editar">✏</button>' +
+                    (typeof btnElim === 'function' ? btnElim('profesional', idx) : '<button class="btn btn-danger-sm" onclick="eliminarProfesional(' + idx + ')">✕</button>') +
                 '</div></td>';
             tbody.appendChild(tr);
         });
@@ -18839,17 +19179,98 @@
           <input type="text" id="pacNroAfiliado" placeholder="Opcional">
         </div>
       </div>
-      <div class="form-group">
-        <label>Dirección</label>
-        <input type="text" id="pacDireccion" placeholder="Calle 123, Localidad">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label>Dirección</label>
+          <input type="text" id="pacDireccion" placeholder="Calle 123, Localidad">
+        </div>
+        <div class="form-group">
+          <label>Profesional a cargo</label>
+          <select id="pacProfesional">
+            <option value="">— Sin asignar —</option>
+          </select>
+        </div>
       </div>
       <div class="form-group">
         <label>Notas / Antecedentes</label>
         <textarea id="pacNotas" rows="3" placeholder="Alergias, antecedentes médicos, observaciones…"></textarea>
       </div>
+      <!-- Estudios / PDFs (solo al editar un paciente ya guardado) -->
+      <div class="form-group" id="pacEstudiosSection">
+        <label>📎 Estudios / PDFs</label>
+        <div id="pacEstudiosNuevoMsg" style="color:var(--text-3); font-size:12px; display:none;">Guardá el paciente primero para poder subirle estudios.</div>
+        <div id="pacEstudiosControles">
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+            <input type="file" id="pacEstudioFile" accept="application/pdf,image/*" style="flex:1; min-width:180px;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="pacSubirEstudioDesdeModal()">⬆ Subir</button>
+          </div>
+          <div id="pacEstudiosLista"></div>
+        </div>
+      </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" onclick="cerrarModalPaciente()">Cancelar</button>
         <button type="button" class="btn btn-gold" onclick="guardarPaciente()">💾 Guardar Paciente</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL: PROFESIONAL ═══════════════ -->
+<div class="modal" id="modalProfesional">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 id="modalProfesionalTitle">🩺 Nuevo Profesional</h2>
+      <button class="modal-close" onclick="cerrarModalProfesional()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nombre completo *</label>
+        <input type="text" id="profNombre" placeholder="Nombre y apellido">
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label>Especialidad</label>
+          <input type="text" id="profEspecialidad" placeholder="Ej: Ortodoncia, Endodoncia…">
+        </div>
+        <div class="form-group">
+          <label>Matrícula</label>
+          <input type="text" id="profMatricula" placeholder="Nº de matrícula">
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label>Teléfono</label>
+          <input type="text" id="profTelefono" placeholder="11 1234-5678">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="profEmail" placeholder="profesional@correo.com">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>% que deja al consultorio (general)</label>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <input type="number" id="profComisionGeneral" min="0" max="100" step="1" placeholder="Ej: 40" style="max-width:120px;">
+          <span style="color:var(--text-3);">%</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Tratamientos que realiza</label>
+        <div id="profTratamientosLista"></div>
+        <datalist id="profTratamientosList"></datalist>
+        <button type="button" class="btn btn-outline btn-sm" onclick="profAgregarTratamientoFila()">+ Agregar tratamiento</button>
+      </div>
+      <div class="form-group">
+        <label>Notas</label>
+        <textarea id="profNotas" rows="2" placeholder="Observaciones…"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Pacientes asignados</label>
+        <div id="profPacientesAsignados" style="border:1px solid var(--border,#ddd); border-radius:6px; padding:8px; max-height:150px; overflow-y:auto;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="cerrarModalProfesional()">Cancelar</button>
+        <button type="button" class="btn btn-gold" onclick="guardarProfesional()">💾 Guardar Profesional</button>
       </div>
     </div>
   </div>
@@ -21079,7 +21500,10 @@
       + 'Home (inicio), Dashboard (panel/tablero), CajaGeneral (caja general), EfectivoPesos (caja/efectivo en pesos), EfectivoUSD (caja/efectivo en dólares), '
       + 'CuentasBancarias (banco/cuentas bancarias), Pacientes, Turnos (agenda), Servicios (tratamientos), IngGeneral (ingresos generales), '
       + 'ResumenIngresos (resumen de ingresos), Facturas, Proveedores, Presupuestos, Pagos, Egresos, Tesoreria (tesorería), Documentos, Reportes (reportes contables/impositivos), PlanTrabajo (plan de trabajo/tareas), CompRecibidos (comprobantes recibidos), Remuneraciones (remuneraciones/sueldos/empleados/legajos), Config (configuración). '
-      + 'Por ejemplo, si te dicen "llevame a la caja en pesos" respondé algo corto como "Te llevo a Efectivo en Pesos 👍" y agregá al final: ###IR_A:EfectivoPesos### . Usá el marcador solo cuando pidan ir/abrir/mostrar una sección.'
+      + 'Por ejemplo, si te dicen "llevame a la caja en pesos" respondé algo corto como "Te llevo a Efectivo en Pesos 👍" y agregá al final: ###IR_A:EfectivoPesos### . Usá el marcador solo cuando pidan ir/abrir/mostrar una sección. '
+      + 'Si el usuario ADJUNTA un PDF/estudio (radiografía, estudio, informe, etc.) y te pide guardarlo, asociarlo o adjuntarlo a la ficha de un paciente, agregá al FINAL de tu respuesta (en una línea aparte, sin explicarla ni mencionarla) '
+      + 'exactamente este marcador con el nombre o DNI del paciente que el usuario mencione: ###ESTUDIO_PACIENTE:{"paciente":"NOMBRE O DNI"}### . '
+      + 'NO inventes el paciente: si el usuario no dijo de qué paciente es, preguntáselo y NO emitas el marcador todavía. Y NUNCA digas que ya lo guardaste o adjuntaste: vos solo lo preparás, el sistema lo adjunta y confirma solo.'
       + empresasTxt
       + (datosApp
           ? ('\n\nEstos son los datos reales cargados en el proyecto activo. Usalos para responder preguntas concretas sobre montos, pacientes, turnos, etc. (por ejemplo "¿qué turnos tiene hoy Juan Pérez?"). Si preguntan por algo que no está en esta lista, decilo con claridad en vez de inventar:\n' + datosApp)
@@ -21214,6 +21638,40 @@
               document.getElementById('ciseb-agente-panel').classList.remove('abierto');
               mostrarTab(destino);
             }, 400);
+          }
+        }
+
+        // Estudio para paciente: si el asistente pidió adjuntar el PDF de este turno a una ficha.
+        // Usamos pdfBase64/pdfNombre capturados arriba (antes de cisebAgentePdfLimpiar).
+        var mEst = respuestaVisible.match(/###ESTUDIO_PACIENTE:(\{[\s\S]*?\})###/);
+        if (mEst) {
+          respuestaVisible = respuestaVisible.replace(mEst[0], '').trim();
+          var estQuery = '';
+          try { var _ed = JSON.parse(mEst[1]); estQuery = (_ed && _ed.paciente ? String(_ed.paciente) : '').trim(); } catch(e) {}
+          var _estBase64 = pdfBase64, _estNombre = pdfNombre;
+          if (!_estBase64) {
+            cisebMensajeBot('No tengo ningún PDF adjunto en este mensaje para guardar. Adjuntá el estudio y volvé a pedírmelo.', null);
+          } else if (!estQuery) {
+            cisebMensajeBot('¿A qué paciente querés que le adjunte este estudio? Decime el nombre o el DNI.', null);
+          } else {
+            var qEst = estQuery.toLowerCase();
+            var idxPac = pacientes.findIndex(function(pac) {
+              return (pac.nombre || '').toLowerCase().indexOf(qEst) !== -1 || (pac.dni || '').toLowerCase() === qEst;
+            });
+            if (idxPac === -1) {
+              cisebMensajeBot('No encontré ningún paciente que coincida con "' + escHtml(estQuery) + '". Verificá el nombre o el DNI y volvé a intentar.', null);
+            } else {
+              fetch('data:application/pdf;base64,' + _estBase64).then(function(r){ return r.blob(); }).then(function(blob) {
+                var archivo = new File([blob], _estNombre || 'estudio.pdf', { type: 'application/pdf' });
+                return subirEstudioPaciente(idxPac, archivo, '');
+              }).then(function() {
+                cisebMensajeBot('📎 Estudio adjuntado a la ficha de ' + escHtml(pacientes[idxPac].nombre || 'paciente') + '.', null);
+                if (typeof renderPacientes === 'function') renderPacientes();
+              }).catch(function(err) {
+                console.error('Error adjuntando estudio desde asistente:', err);
+                cisebMensajeBot('No pude adjuntar el estudio: ' + escHtml((err && err.message) ? err.message : 'error desconocido'), null);
+              });
+            }
           }
         }
 
