@@ -127,8 +127,12 @@
 
         
         /* ── TOOLTIPS ── */
-        [title] { position: relative; }
-        [title]:not(input):not(select):not(textarea)::after {
+        /* OJO: tr/td/th quedan EXCLUIDOS del tooltip custom. Un ::before/::after
+           sobre una fila de tabla genera una celda anónima en Chrome y corre
+           todas las columnas respecto de los títulos. Las tablas usan el
+           tooltip nativo del navegador. */
+        [title]:not(tr):not(td):not(th) { position: relative; }
+        [title]:not(input):not(select):not(textarea):not(tr):not(td):not(th)::after {
             content: attr(title);
             position: absolute;
             bottom: calc(100% + 7px);
@@ -153,7 +157,7 @@
             letter-spacing: 0;
             line-height: 1.4;
         }
-        [title]:not(input):not(select):not(textarea)::before {
+        [title]:not(input):not(select):not(textarea):not(tr):not(td):not(th)::before {
             content: '';
             position: absolute;
             bottom: calc(100% + 2px);
@@ -166,8 +170,8 @@
             transition: opacity .15s;
             z-index: 9999;
         }
-        [title]:not(input):not(select):not(textarea):hover::after,
-        [title]:not(input):not(select):not(textarea):hover::before {
+        [title]:not(input):not(select):not(textarea):not(tr):not(td):not(th):hover::after,
+        [title]:not(input):not(select):not(textarea):not(tr):not(td):not(th):hover::before {
             opacity: 1;
         }
         /* Ajuste para items de la sidebar: tooltip a la derecha */
@@ -316,6 +320,35 @@
         .nav-sub { font-size: 12.5px; padding: 8px 12px 8px 22px; color: rgba(255,255,255,.58); font-family:-apple-system,BlinkMacSystemFont,SF Pro Display,Segoe UI,Roboto,Helvetica,Arial,sans-serif; font-weight: 400; }
         .nav-sub:hover { color: rgba(255,255,255,.88); }
         .nav-sub.active { color: var(--gold-light); background: rgba(74,138,194,.15); }
+
+        /* ── Orden del sidebar: SOLO el Super Administrador puede arrastrar
+           (handle ⠿), directo, sin activar ningún modo. El orden que define
+           se guarda en Firebase y lo ven TODOS los usuarios; el resto no ve
+           los handles ni puede arrastrar. Aplica a los conceptos principales
+           (.nav-block) Y a los ítems dentro de cada submenú (.nav-sub / .sub-block). ── */
+        .nav-block, .sub-block { display: flex; flex-direction: column; gap: 2px; border-radius: 10px; }
+        .nav-drag-handle {
+            display: none; align-items: center; justify-content: center;
+            flex-shrink: 0; width: 14px; text-align: center;
+            color: rgba(255,255,255,.22); cursor: grab; touch-action: none;
+            transition: color .15s;
+        }
+        .sidebar-nav.superadmin-drag .nav-drag-handle { display: inline-flex; }
+        .nav-block:hover .nav-drag-handle,
+        .sub-block:hover > .nav-item .nav-drag-handle,
+        .nav-sub:hover .nav-drag-handle { color: rgba(255,255,255,.55); }
+        .nav-drag-handle:active { cursor: grabbing; }
+        /* Se mantuvo un concepto principal arrastrado encima de otro (que ya
+           tiene submenú) por más de ~1s: al soltar se anida como ítem de ese
+           concepto. */
+        .nav-block.nav-nest-target > .nav-item {
+            background: rgba(74,138,194,.28) !important;
+            outline: 2px dashed rgba(74,138,194,.65);
+            outline-offset: -2px;
+            border-radius: 8px;
+        }
+        .nav-block.sortable-ghost, .sub-block.sortable-ghost, .nav-sub.sortable-ghost { opacity: .3; }
+        .nav-block.sortable-chosen, .sub-block.sortable-chosen, .nav-sub.sortable-chosen { box-shadow: 0 6px 18px rgba(0,0,0,.45); }
 
         .sidebar-footer {
             padding: 14px 12px;
@@ -1859,35 +1892,35 @@
         .hp-hamburger.open span:nth-child(2){opacity:0;}
         .hp-hamburger.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg);}
         @media(max-width:768px){.hp-hamburger{display:flex;}}
-        /* ══ HOME — DISEÑO EJECUTIVO OSCURO ══ */
-        #panelHome{background:#0A0A0A;margin:-28px -32px 0;min-height:calc(100vh - 56px);font-family:var(--font-sans,'Raleway',sans-serif);color:#E8E8ED}
+        /* ══ HOME — DISEÑO EJECUTIVO ══ */
+        #panelHome{background:var(--surface);margin:-28px -32px 0;min-height:calc(100vh - 56px);font-family:var(--font-sans,'Raleway',sans-serif);color:var(--text-1)}
         #panelHome *{box-sizing:border-box}
         .hp-wrap{padding:20px;display:flex;flex-direction:column;gap:14px;max-width:1440px;margin:0 auto}
         /* topbar */
-        .hp-top{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:relative;z-index:50;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
-        .hp-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:24px;padding:6px 14px;display:flex;align-items:center;gap:6px;position:relative}
-        .hp-pill-lbl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.4);white-space:nowrap}
-        .hp-pill select{background:transparent;border:none;outline:none;font-family:var(--font-sans,'Raleway',sans-serif);font-size:13px;font-weight:400;color:#fff;cursor:pointer;max-width:175px}
-        .hp-pill select option{background:#1A1A1A;color:#fff}
-        .hp-divider{width:1px;height:18px;background:rgba(255,255,255,.1);flex-shrink:0}
-        .hp-btn-ok{background:#fff;color:#0A0A0A;border:none;border-radius:24px;padding:7px 18px;font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;white-space:nowrap;transition:all .2s;font-weight:600}
-        .hp-btn-ok:hover{background:rgba(255,255,255,.85);transform:translateY(-1px)}
+        .hp-top{background:#fff;border:1px solid var(--border-soft);border-radius:16px;padding:12px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:relative;z-index:50;box-shadow:var(--shadow)}
+        .hp-pill{background:var(--surface);border:1px solid var(--border-soft);border-radius:24px;padding:6px 14px;display:flex;align-items:center;gap:6px;position:relative}
+        .hp-pill-lbl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-3);white-space:nowrap}
+        .hp-pill select{background:transparent;border:none;outline:none;font-family:var(--font-sans,'Raleway',sans-serif);font-size:13px;font-weight:400;color:var(--text-1);cursor:pointer;max-width:175px}
+        .hp-pill select option{background:#fff;color:var(--text-1)}
+        .hp-divider{width:1px;height:18px;background:var(--border);flex-shrink:0}
+        .hp-btn-ok{background:var(--gold);color:#fff;border:none;border-radius:24px;padding:7px 18px;font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;white-space:nowrap;transition:all .2s;font-weight:600}
+        .hp-btn-ok:hover{background:var(--gold-light);transform:translateY(-1px)}
         /* dropdown botón empresa/proyecto */
         .hp-mgr-wrap{position:relative;margin-left:auto;display:flex;gap:8px}
-        .hp-btn-mgr{background:transparent;border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:7px 14px;font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.5);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .2s;white-space:nowrap}
-        .hp-btn-mgr:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.25);color:#fff}
-        .hp-btn-mgr svg{flex-shrink:0;color:rgba(255,255,255,.5)}
-        .hp-btn-mgr:hover svg{color:#fff}
+        .hp-btn-mgr{background:transparent;border:1px solid var(--border);border-radius:24px;padding:7px 14px;font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-2);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .2s;white-space:nowrap}
+        .hp-btn-mgr:hover{background:var(--surface-2);border-color:var(--text-3);color:var(--text-1)}
+        .hp-btn-mgr svg{flex-shrink:0;color:var(--text-2)}
+        .hp-btn-mgr:hover svg{color:var(--text-1)}
         .hp-btn-mgr .arr{font-size:9px;margin-left:2px;transition:transform .15s}
         .hp-btn-mgr.open .arr{transform:rotate(180deg)}
         /* dropdown menu */
-        .hp-ddmenu{display:none;position:absolute;top:calc(100% + 6px);right:0;background:#1A1A1E;border:1px solid rgba(255,255,255,.1);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.5);min-width:170px;z-index:200;overflow:hidden;backdrop-filter:blur(20px)}
+        .hp-ddmenu{display:none;position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid var(--border-soft);border-radius:14px;box-shadow:var(--shadow-lg);min-width:170px;z-index:200;overflow:hidden}
         .hp-ddmenu.open{display:block}
-        .hp-dditem{display:flex;align-items:center;gap:9px;padding:11px 16px;font-family:var(--font-sans,'Raleway',sans-serif);font-size:13px;color:#E8E8ED;cursor:pointer;transition:background .15s;white-space:nowrap}
-        .hp-dditem:hover{background:rgba(255,255,255,.06)}
-        .hp-dditem-div{height:1px;background:rgba(255,255,255,.06);margin:2px 0}
-        .hp-dditem svg{color:rgba(255,255,255,.4);flex-shrink:0}
-        .hp-ctx-ok{font-size:12px;color:#34D399;font-family:var(--font-sans,'Raleway',sans-serif);opacity:0;transition:opacity .3s;white-space:nowrap}
+        .hp-dditem{display:flex;align-items:center;gap:9px;padding:11px 16px;font-family:var(--font-sans,'Raleway',sans-serif);font-size:13px;color:var(--text-1);cursor:pointer;transition:background .15s;white-space:nowrap}
+        .hp-dditem:hover{background:var(--surface-2)}
+        .hp-dditem-div{height:1px;background:var(--border-soft);margin:2px 0}
+        .hp-dditem svg{color:var(--text-3);flex-shrink:0}
+        .hp-ctx-ok{font-size:12px;color:var(--success);font-family:var(--font-sans,'Raleway',sans-serif);opacity:0;transition:opacity .3s;white-space:nowrap}
         .hp-ctx-ok.show{opacity:1}
         /* rows */
         .hp-row-mini{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -1898,89 +1931,89 @@
         .hp-row-mini .hp-c-t{font-size:18px}
         .hp-row1{display:grid;grid-template-columns:1fr;gap:14px}
         .hp-row2{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
-        /* card base — glass oscuro */
-        .hpw{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:20px;transition:all .25s ease;position:relative;overflow:auto;resize:both;min-width:120px;min-height:80px;cursor:grab;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+        /* card base */
+        .hpw{background:#fff;border:1px solid var(--border-soft);border-radius:20px;padding:20px;transition:all .25s ease;position:relative;overflow:auto;resize:both;min-width:120px;min-height:80px;cursor:grab;box-shadow:0 1px 3px rgba(0,0,0,.04)}
         .hpw:active{cursor:grabbing}
-        .hpw.sortable-chosen{box-shadow:0 12px 40px rgba(0,0,0,.4);transform:scale(1.02);z-index:10;border-color:rgba(255,255,255,.15)}
+        .hpw.sortable-chosen{box-shadow:0 12px 40px rgba(0,0,0,.15);transform:scale(1.02);z-index:10;border-color:var(--border)}
         .hpw.sortable-ghost{opacity:0.3}
-        .hpw:hover{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.12);box-shadow:0 4px 20px rgba(0,0,0,.3)}
+        .hpw:hover{border-color:var(--border);box-shadow:0 4px 20px rgba(0,0,0,.08)}
         /* fecha / calendario */
         .hpw-fecha{display:flex;flex-direction:column;justify-content:space-between;min-height:175px;resize:both;overflow:auto;min-width:120px}
-        .hp-f-sem{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:4px}
-        .hp-f-num{font-family:var(--font-sans,'Raleway',sans-serif);font-size:62px;font-weight:600;line-height:.92;color:#fff;letter-spacing:-.03em}
-        .hp-f-mes{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:4px}
-        .hp-f-hora{font-family:var(--font-mono,'DM Mono',monospace);font-size:15px;color:rgba(255,255,255,.5);margin-top:12px;letter-spacing:.04em}
-        /* calendario mini — colores oscuros */
-        #panelHome #hfCalTit{color:rgba(255,255,255,.6)}
-        #panelHome #hfCalGrid{color:rgba(255,255,255,.5)}
-        #panelHome .hpw-fecha button{color:rgba(255,255,255,.4)}
-        #panelHome .hpw-fecha button:hover{color:#fff}
+        .hp-f-sem{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-3);margin-bottom:4px}
+        .hp-f-num{font-family:var(--font-sans,'Raleway',sans-serif);font-size:62px;font-weight:600;line-height:.92;color:var(--text-1);letter-spacing:-.03em}
+        .hp-f-mes{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-3);margin-top:4px}
+        .hp-f-hora{font-family:var(--font-mono,'DM Mono',monospace);font-size:15px;color:var(--text-2);margin-top:12px;letter-spacing:.04em}
+        /* calendario mini */
+        #panelHome #hfCalTit{color:var(--text-2)}
+        #panelHome #hfCalGrid{color:var(--text-2)}
+        #panelHome .hpw-fecha button{color:var(--text-3)}
+        #panelHome .hpw-fecha button:hover{color:var(--text-1)}
         /* clima */
         .hpw-clima{display:flex;flex-direction:column;justify-content:space-between;min-height:110px;resize:both;overflow:auto;min-width:120px}
         .hp-c-top{display:flex;align-items:center;gap:12px}
         .hp-c-ico{font-size:28px;line-height:1;flex-shrink:0}
-        .hp-c-t{font-family:var(--font-sans,'Raleway',sans-serif);font-size:28px;font-weight:600;line-height:1;color:#fff}
-        .hp-c-d{font-size:12px;color:rgba(255,255,255,.45);margin-top:3px;font-weight:300;font-family:var(--font-sans,'Raleway',sans-serif)}
+        .hp-c-t{font-family:var(--font-sans,'Raleway',sans-serif);font-size:28px;font-weight:600;line-height:1;color:var(--text-1)}
+        .hp-c-d{font-size:12px;color:var(--text-3);margin-top:3px;font-weight:300;font-family:var(--font-sans,'Raleway',sans-serif)}
         .hp-c-s{margin-left:auto;text-align:right;flex-shrink:0}
-        .hp-c-s-lbl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:3px}
-        .hp-c-s-val{font-family:var(--font-mono,'DM Mono',monospace);font-size:12px;color:rgba(255,255,255,.7)}
-        .hp-c-row{display:flex;gap:20px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06);margin-top:auto}
-        .hp-c-m-lbl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:3px}
-        .hp-c-m-val{font-family:var(--font-mono,'DM Mono',monospace);font-size:11px;color:rgba(255,255,255,.65);font-weight:400}
+        .hp-c-s-lbl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-3);margin-bottom:3px}
+        .hp-c-s-val{font-family:var(--font-mono,'DM Mono',monospace);font-size:12px;color:var(--text-2)}
+        .hp-c-row{display:flex;gap:20px;padding-top:10px;border-top:1px solid var(--border-soft);margin-top:auto}
+        .hp-c-m-lbl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);margin-bottom:3px}
+        .hp-c-m-val{font-family:var(--font-mono,'DM Mono',monospace);font-size:11px;color:var(--text-2);font-weight:400}
         /* mercado (riesgo país) */
         .hpw-merc{display:flex;flex-direction:column;min-height:175px;resize:both;overflow:auto;min-width:120px}
-        .hp-m-lbl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:4px}
-        .hp-m-riesgo{font-family:var(--font-sans,'Raleway',sans-serif);font-size:36px;font-weight:600;line-height:1;color:#FF6B6B}
-        .hp-m-sub{font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;color:rgba(255,255,255,.35);margin-top:3px}
-        .hp-m-sub .up{color:#34D399}.hp-m-sub .dn{color:#FF6B6B}
-        .hp-m-div{height:1px;background:rgba(255,255,255,.06);margin:10px 0}
-        .hp-m-val{font-family:var(--font-sans,'Raleway',sans-serif);font-size:18px;font-weight:600;color:#fff;line-height:1}
+        .hp-m-lbl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-3);margin-bottom:4px}
+        .hp-m-riesgo{font-family:var(--font-sans,'Raleway',sans-serif);font-size:36px;font-weight:600;line-height:1;color:var(--danger)}
+        .hp-m-sub{font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;color:var(--text-3);margin-top:3px}
+        .hp-m-sub .up{color:var(--success)}.hp-m-sub .dn{color:var(--danger)}
+        .hp-m-div{height:1px;background:var(--border-soft);margin:10px 0}
+        .hp-m-val{font-family:var(--font-sans,'Raleway',sans-serif);font-size:18px;font-weight:600;color:var(--text-1);line-height:1}
         .hp-m-pct{font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;margin-top:3px}
-        .hp-m-pct.up{color:#34D399}.hp-m-pct.dn{color:#FF6B6B}
+        .hp-m-pct.up{color:var(--success)}.hp-m-pct.dn{color:var(--danger)}
         /* dólares — acento lateral */
-        .hpw-dol{padding:16px 18px;border-top:none;border-left:3px solid rgba(255,255,255,.1)}
-        .hpw-dol.gr{border-left-color:#34D399}
-        .hpw-dol.bl{border-left-color:#60A5FA}
-        .hpw-dol.am{border-left-color:#FBBF24}
-        .hpw-dol.rd{border-left-color:#FF6B6B}
-        .hp-d-lbl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:8px}
-        .hp-d-v{font-family:var(--font-sans,'Raleway',sans-serif);font-size:24px;font-weight:600;color:#fff;line-height:1}
-        .hpw-dol.gr .hp-d-v{color:#34D399}
-        .hpw-dol.bl .hp-d-v{color:#60A5FA}
-        .hpw-dol.am .hp-d-v{color:#FBBF24}
-        .hpw-dol.rd .hp-d-v{color:#FF6B6B}
-        .hp-d-c{font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;color:rgba(255,255,255,.3);margin-top:6px}
+        .hpw-dol{padding:16px 18px;border-top:none;border-left:3px solid var(--border)}
+        .hpw-dol.gr{border-left-color:#1A9B63}
+        .hpw-dol.bl{border-left-color:#2563EB}
+        .hpw-dol.am{border-left-color:#B7791F}
+        .hpw-dol.rd{border-left-color:#D70015}
+        .hp-d-lbl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px}
+        .hp-d-v{font-family:var(--font-sans,'Raleway',sans-serif);font-size:24px;font-weight:600;color:var(--text-1);line-height:1}
+        .hpw-dol.gr .hp-d-v{color:#1A9B63}
+        .hpw-dol.bl .hp-d-v{color:#2563EB}
+        .hpw-dol.am .hp-d-v{color:#B7791F}
+        .hpw-dol.rd .hp-d-v{color:#D70015}
+        .hp-d-c{font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;color:var(--text-3);margin-top:6px}
         /* row 3: noticias + economía */
         .hp-row3{display:grid;grid-template-columns:1fr 1fr;gap:14px}
         /* noticias */
         .hpw-news{padding:0;overflow:auto;resize:both;min-height:120px;min-width:120px;max-height:none;height:280px}
-        .hp-n-hdr{padding:13px 18px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between}
-        .hp-n-ttl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:rgba(255,255,255,.4)}
-        .hp-n-src{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.1em;color:#FF6B6B;text-transform:uppercase}
+        .hp-n-hdr{padding:13px 18px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between}
+        .hp-n-ttl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:var(--text-3)}
+        .hp-n-src{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.1em;color:var(--danger);text-transform:uppercase}
         .hp-n-list{padding:4px 0;overflow-y:auto;max-height:300px;scrollbar-width:thin}
-        .hp-ntab{background:none;border:1px solid transparent;cursor:pointer;font-family:var(--font-sans,'Raleway',sans-serif);font-size:9px;letter-spacing:.06em;padding:5px 12px;border-radius:20px;color:rgba(255,255,255,.4);transition:all .2s;white-space:nowrap}
-        .hp-ntab.on{background:#fff;color:#0A0A0A;font-weight:600}
-        .hp-ntab:hover:not(.on){background:rgba(255,255,255,.06);color:rgba(255,255,255,.7)}
-        .hp-n-item{padding:10px 18px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .15s}
+        .hp-ntab{background:none;border:1px solid transparent;cursor:pointer;font-family:var(--font-sans,'Raleway',sans-serif);font-size:9px;letter-spacing:.06em;padding:5px 12px;border-radius:20px;color:var(--text-3);transition:all .2s;white-space:nowrap}
+        .hp-ntab.on{background:var(--gold);color:#fff;font-weight:600}
+        .hp-ntab:hover:not(.on){background:var(--surface-2);color:var(--text-1)}
+        .hp-n-item{padding:10px 18px;border-bottom:1px solid var(--border-soft);cursor:pointer;transition:background .15s}
         .hp-n-item:last-child{border-bottom:none}
-        .hp-n-item:hover{background:rgba(255,255,255,.04)}
-        .hp-n-cat{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:#60A5FA;margin-bottom:3px}
-        .hp-n-title{font-family:var(--font-sans,'Raleway',sans-serif);font-size:12px;color:rgba(255,255,255,.8);font-weight:400;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-        .hp-n-time{font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;color:rgba(255,255,255,.25);margin-top:3px}
-        .hp-n-loading{padding:24px;text-align:center;color:rgba(255,255,255,.25);font-family:var(--font-sans,'Raleway',sans-serif);font-size:9px;letter-spacing:.22em}
+        .hp-n-item:hover{background:var(--surface-2)}
+        .hp-n-cat{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:3px}
+        .hp-n-title{font-family:var(--font-sans,'Raleway',sans-serif);font-size:12px;color:var(--text-1);font-weight:400;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+        .hp-n-time{font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;color:var(--text-3);margin-top:3px}
+        .hp-n-loading{padding:24px;text-align:center;color:var(--text-3);font-family:var(--font-sans,'Raleway',sans-serif);font-size:9px;letter-spacing:.22em}
         /* acciones/tabla */
         .hpw-acc{padding:0;overflow:auto;resize:both;min-height:120px;min-width:120px;height:300px}
-        .hp-a-hdr{padding:13px 18px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between}
-        .hp-a-ttl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:rgba(255,255,255,.4)}
-        .hp-a-upd{font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;color:rgba(255,255,255,.2)}
+        .hp-a-hdr{padding:13px 18px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between}
+        .hp-a-ttl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:var(--text-3)}
+        .hp-a-upd{font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;color:var(--text-3)}
         .hp-tbl{width:100%;border-collapse:collapse;font-size:12px}
-        .hp-tbl th{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.35);padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left;font-weight:400;background:rgba(255,255,255,.02)}
-        .hp-tbl td{padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.04);color:rgba(255,255,255,.75);font-weight:300}
+        .hp-tbl th{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-3);padding:9px 14px;border-bottom:1px solid var(--border-soft);text-align:left;font-weight:400;background:var(--surface)}
+        .hp-tbl td{padding:9px 14px;border-bottom:1px solid var(--border-soft);color:var(--text-2);font-weight:300}
         .hp-tbl tbody tr:last-child td{border-bottom:none}
-        .hp-tbl tbody tr:hover{background:rgba(255,255,255,.04)}
-        .hp-tbl .tk{font-family:var(--font-mono,'DM Mono',monospace);font-size:11px;font-weight:500;color:#fff}
-        .hp-bup{display:inline-block;padding:3px 10px;border-radius:12px;font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;background:rgba(52,211,153,.12);color:#34D399;font-weight:500}
-        .hp-bdn{display:inline-block;padding:3px 10px;border-radius:12px;font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;background:rgba(255,107,107,.12);color:#FF6B6B;font-weight:500}
+        .hp-tbl tbody tr:hover{background:var(--surface-2)}
+        .hp-tbl .tk{font-family:var(--font-mono,'DM Mono',monospace);font-size:11px;font-weight:500;color:var(--text-1)}
+        .hp-bup{display:inline-block;padding:3px 10px;border-radius:12px;font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;background:var(--success-bg);color:var(--success);font-weight:500}
+        .hp-bdn{display:inline-block;padding:3px 10px;border-radius:12px;font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;background:var(--danger-bg);color:var(--danger);font-weight:500}
         /* bolsas mundiales row4 */
         .hp-row4{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:0}
         /* pizarrón de tareas */
@@ -1988,74 +2021,72 @@
         .hpw-tasks{min-height:480px;resize:both;overflow:hidden;min-width:200px;display:flex;flex-direction:column}
         .ta-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-shrink:0}
         .ta-lista-scroll{overflow-y:auto;flex:1;padding-right:4px;scrollbar-width:thin}
-        .ta-ttl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:rgba(255,255,255,.5);font-weight:600}
-        .ta-item{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+        .ta-ttl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:var(--text-3);font-weight:600}
+        .ta-item{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid var(--border-soft)}
         .ta-item:last-child{border-bottom:none}
         .ta-item.done{opacity:.4}
         .ta-item.done .ta-titulo{text-decoration:line-through}
-        .ta-titulo{font-size:17px;font-weight:700;color:#fff;flex:1;line-height:1.4}
-        .ta-meta{font-size:14px;color:rgba(255,255,255,.4);margin-top:4px}
+        .ta-titulo{font-size:17px;font-weight:700;color:var(--text-1);flex:1;line-height:1.4}
+        .ta-meta{font-size:14px;color:var(--text-3);margin-top:4px}
         .ta-vence{font-size:13px;font-weight:700;margin-top:4px}
-        .ta-vence.ok{color:#34D399}
-        .ta-vence.warn{color:#FBBF24}
-        .ta-vence.late{color:#FF6B6B}
+        .ta-vence.ok{color:var(--success)}
+        .ta-vence.warn{color:var(--warn)}
+        .ta-vence.late{color:var(--danger)}
         .ta-actions{display:flex;gap:4px;flex-shrink:0}
-        #panelHome .ta-actions .btn-sm{color:rgba(255,255,255,.5)}
-        #panelHome .ta-actions .btn-sm:hover{color:#fff}
+        #panelHome .ta-actions .btn-sm{color:var(--text-3)}
+        #panelHome .ta-actions .btn-sm:hover{color:var(--text-1)}
         .hpw-bolsas{padding:0;overflow:auto;resize:both;min-height:120px;min-width:120px;height:440px}
         .hpw-noticias-int{padding:0;overflow:auto;resize:both;min-height:120px;min-width:120px;max-height:none;height:320px}
-        .hp-b-hdr{padding:13px 18px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between}
-        .hp-b-ttl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:rgba(255,255,255,.4)}
+        .hp-b-hdr{padding:13px 18px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between}
+        .hp-b-ttl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:var(--text-3)}
         .hp-b-tabs{display:flex;gap:4px}
-        .hp-b-tab{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:transparent;color:rgba(255,255,255,.4);cursor:pointer;transition:all .2s}
-        .hp-b-tab.active{background:#fff;color:#0A0A0A;border-color:#fff;font-weight:600}
-        .hp-b-tab:hover:not(.active){background:rgba(255,255,255,.06);color:rgba(255,255,255,.7)}
-        .hp-b-upd{font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;color:rgba(255,255,255,.2)}
+        .hp-b-tab{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text-3);cursor:pointer;transition:all .2s}
+        .hp-b-tab.active{background:var(--gold);color:#fff;border-color:var(--gold);font-weight:600}
+        .hp-b-tab:hover:not(.active){background:var(--surface-2);color:var(--text-1)}
+        .hp-b-upd{font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;color:var(--text-3)}
         .hp-b-region{display:none}.hp-b-region.active{display:block}
         /* noticias internacionales */
-        .hp-ni-hdr{padding:13px 18px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between}
-        .hp-ni-ttl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:rgba(255,255,255,.4)}
-        .hp-ni-src{font-family:var(--font-mono,'DM Mono',monospace);font-size:9px;color:#60A5FA}
+        .hp-ni-hdr{padding:13px 18px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between}
+        .hp-ni-ttl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:var(--text-3)}
+        .hp-ni-src{font-family:var(--font-mono,'DM Mono',monospace);font-size:9px;color:var(--gold)}
         .hp-ni-list{max-height:280px;overflow-y:auto}
-        .hp-ni-item{padding:10px 18px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .15s;display:flex;gap:10px;align-items:flex-start}
-        .hp-ni-item:hover{background:rgba(255,255,255,.04)}
+        .hp-ni-item{padding:10px 18px;border-bottom:1px solid var(--border-soft);cursor:pointer;transition:background .15s;display:flex;gap:10px;align-items:flex-start}
+        .hp-ni-item:hover{background:var(--surface-2)}
         .hp-ni-flag{font-size:15px;flex-shrink:0;margin-top:1px}
         .hp-ni-body{flex:1;min-width:0}
-        .hp-ni-cat{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:#A78BFA;margin-bottom:2px}
-        .hp-ni-title{font-family:var(--font-sans,'Raleway',sans-serif);font-size:12px;color:rgba(255,255,255,.8);font-weight:400;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-        .hp-ni-time{font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;color:rgba(255,255,255,.2);margin-top:2px}
+        .hp-ni-cat{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:#7C3AED;margin-bottom:2px}
+        .hp-ni-title{font-family:var(--font-sans,'Raleway',sans-serif);font-size:12px;color:var(--text-1);font-weight:400;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+        .hp-ni-time{font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;color:var(--text-3);margin-top:2px}
         /* ══ PANEL ECONOMÍA ARGENTINA ══ */
         .hpw-eco{padding:0;overflow:auto;resize:both;min-height:120px;min-width:120px;height:300px;display:flex;flex-direction:column}
-        .hp-eco-hdr{padding:12px 18px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px;flex-shrink:0;background:rgba(255,255,255,.02);position:sticky;top:0;z-index:1;backdrop-filter:blur(10px)}
-        .hp-eco-ttl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:rgba(255,255,255,.4)}
+        .hp-eco-hdr{padding:12px 18px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px;flex-shrink:0;background:var(--surface);position:sticky;top:0;z-index:1}
+        .hp-eco-ttl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:var(--text-3)}
         .hp-eco-tabs{display:flex;gap:3px}
-        .hp-eco-tab{font-family:var(--font-sans,'Raleway',sans-serif);font-size:9px;padding:5px 12px;border-radius:20px;border:none;background:none;color:rgba(255,255,255,.4);cursor:pointer;transition:all .2s;white-space:nowrap}
-        .hp-eco-tab.on{background:#fff;color:#0A0A0A;font-weight:600}
-        .hp-eco-tab:hover:not(.on){background:rgba(255,255,255,.06);color:rgba(255,255,255,.7)}
-        .hp-eco-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(255,255,255,.04)}
-        .hp-eco-kpi{background:rgba(10,10,10,.9);padding:14px 16px;display:flex;flex-direction:column;gap:3px}
-        .hp-eco-klbl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.3)}
-        .hp-eco-kval{font-family:var(--font-mono,'DM Mono',monospace);font-size:18px;font-weight:600;color:#fff;line-height:1.1}
+        .hp-eco-tab{font-family:var(--font-sans,'Raleway',sans-serif);font-size:9px;padding:5px 12px;border-radius:20px;border:none;background:none;color:var(--text-3);cursor:pointer;transition:all .2s;white-space:nowrap}
+        .hp-eco-tab.on{background:var(--gold);color:#fff;font-weight:600}
+        .hp-eco-tab:hover:not(.on){background:var(--surface-2);color:var(--text-1)}
+        .hp-eco-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border-soft)}
+        .hp-eco-kpi{background:#fff;padding:14px 16px;display:flex;flex-direction:column;gap:3px}
+        .hp-eco-klbl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-3)}
+        .hp-eco-kval{font-family:var(--font-mono,'DM Mono',monospace);font-size:18px;font-weight:600;color:var(--text-1);line-height:1.1}
         .hp-eco-ksub{font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;margin-top:2px}
-        .hp-eco-ksub.up{color:#34D399}.hp-eco-ksub.dn{color:#FF6B6B}.hp-eco-ksub.neu{color:rgba(255,255,255,.3)}
+        .hp-eco-ksub.up{color:var(--success)}.hp-eco-ksub.dn{color:var(--danger)}.hp-eco-ksub.neu{color:var(--text-3)}
         .hp-eco-news{padding:0;overflow-y:auto;scrollbar-width:thin}
-        .hp-eco-nitem{padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .15s}
+        .hp-eco-nitem{padding:10px 16px;border-bottom:1px solid var(--border-soft);cursor:pointer;transition:background .15s}
         .hp-eco-nitem:last-child{border-bottom:none}
-        .hp-eco-nitem:hover{background:rgba(255,255,255,.04)}
-        .hp-eco-ncat{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:#FBBF24;margin-bottom:2px}
-        .hp-eco-ntit{font-family:var(--font-sans,'Raleway',sans-serif);font-size:12px;color:rgba(255,255,255,.8);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-        .hp-eco-ntime{font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;color:rgba(255,255,255,.2);margin-top:2px}
+        .hp-eco-nitem:hover{background:var(--surface-2)}
+        .hp-eco-ncat{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:var(--warn);margin-bottom:2px}
+        .hp-eco-ntit{font-family:var(--font-sans,'Raleway',sans-serif);font-size:12px;color:var(--text-1);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+        .hp-eco-ntime{font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;color:var(--text-3);margin-top:2px}
         /* botones dentro del home — override global */
-        #panelHome .btn-gold{background:#fff;color:#0A0A0A;font-weight:600}
-        #panelHome .btn-gold:hover{background:rgba(255,255,255,.85)}
-        #panelHome .btn-danger-sm,#panelHome .btn.btn-danger-sm{background:rgba(255,107,107,.12);color:#FF6B6B;border:1px solid rgba(255,107,107,.2)}
+        #panelHome .btn-danger-sm,#panelHome .btn.btn-danger-sm{background:var(--danger-bg);color:var(--danger);border:1px solid rgba(215,0,21,.15)}
         /* turnos de hoy — override */
-        #panelHome .hp-row6 .hpw{border-left:3px solid #FBBF24}
-        #panelHome .hp-row6 .btn-gold{background:rgba(251,191,36,.15);color:#FBBF24;border:1px solid rgba(251,191,36,.3)}
-        #panelHome .hp-row6 .btn-gold:hover{background:rgba(251,191,36,.25)}
+        #panelHome .hp-row6 .hpw{border-left:3px solid var(--warn)}
+        #panelHome .hp-row6 .btn-gold{background:var(--warn-bg);color:var(--warn);border:1px solid rgba(150,84,10,.25);font-weight:600}
+        #panelHome .hp-row6 .btn-gold:hover{background:#FFE8C2}
         /* pesos vs dólar — override */
-        #panelHome .hp-row5 .btn-outline{background:transparent;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.5)}
-        #panelHome .hp-row5 .btn-outline:hover{background:rgba(255,255,255,.06);color:#fff}
+        #panelHome .hp-row5 .btn-outline{background:transparent;border:1px solid var(--border);color:var(--text-2)}
+        #panelHome .hp-row5 .btn-outline:hover{background:var(--surface-2);color:var(--text-1)}
         /* ── HOME TABLET (≤1050px) ── */
         @media(max-width:1050px){
             .hpw-merc{display:none}
@@ -2513,80 +2544,91 @@
             <select id="selProyecto" onchange="cambiarProyecto()" style="display:none;"></select>
 
             <!-- ── INICIO ── -->
-
-            <!-- ── INICIO ── -->
+            <div class="nav-block" data-navkey="home">
             <button class="nav-item nav-group-header active" id="tabBtnHome" onclick="mostrarTab('Home')" title="Inicio">
-                <span class="nav-icon">home</span> Inicio
+                <span class="nav-drag-handle">⠿</span><span class="nav-icon">home</span> Inicio
             </button>
+            </div>
 
+            <div class="nav-block" data-navkey="consultorio">
             <!-- ── GRUPO: CONSULTORIO (Pacientes y Turnos) ── -->
             <button class="nav-item nav-group-header" id="tabBtnConsultorioMenu" onclick="toggleConsultorioMenu()" title="Pacientes y Turnos">
-                <span class="nav-icon">medical_services</span> Consultorio <span id="consultorioMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▾</span>
+                <span class="nav-drag-handle">⠿</span><span class="nav-icon">medical_services</span> Consultorio <span id="consultorioMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▾</span>
             </button>
-            <div id="consultorioSubmenu" class="nav-submenu">
-                <button class="nav-item nav-sub" id="tabBtnPacientes" onclick="mostrarTab('Pacientes')" title="Ficha de pacientes">
-                    <span class="nav-icon">groups</span> Pacientes
+            <div id="consultorioSubmenu" class="nav-submenu" data-subkey="consultorio">
+                <button class="nav-item nav-sub" id="tabBtnPacientes" data-navkey="pacientes" onclick="mostrarTab('Pacientes')" title="Ficha de pacientes">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">groups</span> Pacientes
                 </button>
-                <button class="nav-item nav-sub" id="tabBtnTurnos" onclick="mostrarTab('Turnos')" title="Agenda de turnos">
-                    <span class="nav-icon">event</span> Turnos
+                <button class="nav-item nav-sub" id="tabBtnTurnos" data-navkey="turnos" onclick="mostrarTab('Turnos')" title="Agenda de turnos">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">event</span> Turnos
                 </button>
             </div>
+            </div>
 
+            <div class="nav-block" data-navkey="caja">
             <!-- ── GRUPO: PRINCIPAL (Caja y Bancos) ── -->
             <button class="nav-item nav-group-header" id="tabBtnPrincipalMenu" onclick="togglePrincipalMenu()" title="Caja y Bancos">
-                <span class="nav-icon">account_balance</span> Caja y Bancos <span id="principalMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▾</span>
+                <span class="nav-drag-handle">⠿</span><span class="nav-icon">account_balance</span> Caja y Bancos <span id="principalMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▾</span>
             </button>
-            <div id="principalSubmenu" class="nav-submenu">
-                <button class="nav-item nav-sub" id="tabBtnCajaGeneral" onclick="mostrarTab('CajaGeneral')" title="Libro de caja completo: ingresos y egresos">
-                    <span class="nav-icon">book_2</span> Caja General
+            <div id="principalSubmenu" class="nav-submenu" data-subkey="principal">
+                <button class="nav-item nav-sub" id="tabBtnCajaGeneral" data-navkey="cajageneral" onclick="mostrarTab('CajaGeneral')" title="Libro de caja completo: ingresos y egresos">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">book_2</span> Caja General
                 </button>
-                <button class="nav-item nav-sub" id="tabBtnEfectivoPesos" onclick="mostrarTab('EfectivoPesos')" title="Movimientos en efectivo en pesos">
-                    <span class="nav-icon">payments</span> Efectivo en Pesos
+                <button class="nav-item nav-sub" id="tabBtnEfectivoPesos" data-navkey="efectivopesos" onclick="mostrarTab('EfectivoPesos')" title="Movimientos en efectivo en pesos">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">payments</span> Efectivo en Pesos
                 </button>
-                <button class="nav-item nav-sub" id="tabBtnEfectivoUSD" onclick="mostrarTab('EfectivoUSD')" title="Movimientos en efectivo en dólares">
-                    <span class="nav-icon">attach_money</span> Efectivo en Dólares
+                <button class="nav-item nav-sub" id="tabBtnEfectivoUSD" data-navkey="efectivousd" onclick="mostrarTab('EfectivoUSD')" title="Movimientos en efectivo en dólares">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">attach_money</span> Efectivo en Dólares
                 </button>
-                <button class="nav-item nav-sub" id="tabBtnCuentasBancarias" onclick="mostrarTab('CuentasBancarias')" title="Cuentas corrientes y bancarias">
-                    <span class="nav-icon">account_balance_wallet</span> Banco
+                <button class="nav-item nav-sub" id="tabBtnCuentasBancarias" data-navkey="banco" onclick="mostrarTab('CuentasBancarias')" title="Cuentas corrientes y bancarias">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">account_balance_wallet</span> Banco
                 </button>
             </div>
+            </div>
 
+            <div class="nav-block" data-navkey="ingresos">
             <!-- INGRESOS -->
             <button class="nav-item nav-group-header" id="tabBtnIngresosMenu" onclick="toggleIngresosMenu()" title="Ingresos del proyecto">
-                <span class="nav-icon">trending_up</span> Ingresos
+                <span class="nav-drag-handle">⠿</span><span class="nav-icon">trending_up</span> Ingresos
                 <span class="chevron" id="ingresosMenuChevron" style="margin-left:auto;">▾</span>
             </button>
-            <div class="nav-submenu" id="ingresosSubmenu">
+            <div class="nav-submenu" id="ingresosSubmenu" data-subkey="ingresos">
                 <!-- Facturas ARCA subtree -->
+                <div class="sub-block" data-navkey="comprobantes">
                 <button class="nav-item nav-sub nav-group-header" id="tabBtnFacturasMenu" onclick="toggleFacturasMenu()" title="Emisión de Comprobantes ARCA">
-                    <span class="nav-icon">receipt_long</span> Comprobantes <span id="facturasMenuChevron" style="margin-left:auto;font-size:11px;transition:transform .2s;">▸</span>
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">receipt_long</span> Comprobantes <span id="facturasMenuChevron" style="margin-left:auto;font-size:11px;transition:transform .2s;">▸</span>
                 </button>
                 <div id="facturasSubmenu" class="nav-submenu collapsed">
                     <button class="nav-item nav-sub" onclick="abrirEmitirFacturaAFIP()" title="Emitir comprobante electrónico ARCA"><span class="nav-icon">add_circle</span> Emitir Comprobante</button>
                     <button class="nav-item nav-sub" onclick="abrirFacturasARCA()" title="Ver comprobantes emitidos"><span class="nav-icon">list_alt</span> Comprobantes Emitidos</button>
                 </div>
-                <button class="nav-item nav-sub" id="tabBtnServicios" onclick="mostrarTab('Servicios')"><span class="nav-icon">design_services</span> Tratamientos</button>
-                <button class="nav-item nav-sub" id="tabBtnIngGeneral" onclick="mostrarTab('IngGeneral')"><span class="nav-icon">account_balance_wallet</span> Ingresos Generales</button>
-                <button class="nav-item nav-sub" id="tabBtnResumenIngresos" onclick="mostrarTab('ResumenIngresos')" title="Resumen de todos los ingresos"><span class="nav-icon">bar_chart</span> Resumen Ingresos</button>
+                </div>
+                <button class="nav-item nav-sub" id="tabBtnServicios" data-navkey="tratamientos" onclick="mostrarTab('Servicios')"><span class="nav-drag-handle">⠿</span><span class="nav-icon">design_services</span> Tratamientos</button>
+                <button class="nav-item nav-sub" id="tabBtnIngGeneral" data-navkey="inggeneral" onclick="mostrarTab('IngGeneral')"><span class="nav-drag-handle">⠿</span><span class="nav-icon">account_balance_wallet</span> Ingresos Generales</button>
+                <button class="nav-item nav-sub" id="tabBtnResumenIngresos" data-navkey="resumeningresos" onclick="mostrarTab('ResumenIngresos')" title="Resumen de todos los ingresos"><span class="nav-drag-handle">⠿</span><span class="nav-icon">bar_chart</span> Resumen Ingresos</button>
+            </div>
             </div>
 
+            <div class="nav-block" data-navkey="egresos">
             <!-- ── GRUPO: EGRESOS (contiene Resumen + Proveedores anidado) ── -->
             <button class="nav-item nav-group-header active" id="tabBtnEgresosMenu" onclick="toggleEgresosMenu()" title="Egresos del proyecto">
-                <span class="nav-icon">trending_down</span> Egresos <span id="egresosMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▾</span>
+                <span class="nav-drag-handle">⠿</span><span class="nav-icon">trending_down</span> Egresos <span id="egresosMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▾</span>
             </button>
-            <div id="egresosSubmenu" class="nav-submenu">
+            <div id="egresosSubmenu" class="nav-submenu" data-subkey="egresos">
                 <!-- ── GRUPO: PROVEEDORES (anidado dentro de Egresos) ── -->
+                <div class="sub-block" data-navkey="proveedores">
                 <button class="nav-item nav-sub nav-group-header" id="tabBtnProvMenu" onclick="toggleProvMenu()" title="Proveedores">
-                    <span class="nav-icon">storefront</span> Proveedores <span id="provMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▾</span>
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">storefront</span> Proveedores <span id="provMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▾</span>
                 </button>
-                <div id="provSubmenu" class="nav-submenu">
-                    <button class="nav-item nav-sub" id="tabBtnProveedores" onclick="mostrarTab('Proveedores')" title="Datos de proveedores">
-                        <span class="nav-icon">contacts</span> Datos de Proveedores
+                <div id="provSubmenu" class="nav-submenu" data-subkey="prov">
+                    <button class="nav-item nav-sub" id="tabBtnProveedores" data-navkey="datosprov" onclick="mostrarTab('Proveedores')" title="Datos de proveedores">
+                        <span class="nav-drag-handle">⠿</span><span class="nav-icon">contacts</span> Datos de Proveedores
                     </button>
 
                     <!-- Presupuestos: mini-menú Nuevo / Editar existente -->
+                    <div class="sub-block" data-navkey="presupuestos">
                     <button class="nav-item nav-sub nav-group-header" id="tabBtnPresupuestos" onclick="togglePresupuestosMenu()" title="Presupuestos">
-                        <span class="nav-icon">request_quote</span> Presupuestos <span id="presupuestosMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▸</span>
+                        <span class="nav-drag-handle">⠿</span><span class="nav-icon">request_quote</span> Presupuestos <span id="presupuestosMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▸</span>
                     </button>
                     <div id="presupuestosSubmenu" class="nav-submenu collapsed">
                         <button class="nav-item nav-sub" id="btnAgregar" onclick="agregarFila()" title="Crear un presupuesto nuevo" style="color:rgba(217,169,50,.85);">
@@ -2596,88 +2638,106 @@
                             <span class="nav-icon">edit</span> Editar existente
                         </button>
                     </div>
+                    </div>
 
-                    <button class="nav-item nav-sub" id="tabBtnFacturas" onclick="mostrarTab('Facturas')" title="Facturas de proveedores">
-                        <span class="nav-icon">receipt_long</span> Facturas
+                    <button class="nav-item nav-sub" id="tabBtnFacturas" data-navkey="facturasprov" onclick="mostrarTab('Facturas')" title="Facturas de proveedores">
+                        <span class="nav-drag-handle">⠿</span><span class="nav-icon">receipt_long</span> Facturas
                     </button>
-                    <button class="nav-item nav-sub" id="tabBtnDocumentos" onclick="mostrarTab('Documentos')" title="Comprobantes sin factura (pagos B)">
-                        <span class="nav-icon">folder_open</span> Documentos
+                    <button class="nav-item nav-sub" id="tabBtnDocumentos" data-navkey="documentos" onclick="mostrarTab('Documentos')" title="Comprobantes sin factura (pagos B)">
+                        <span class="nav-drag-handle">⠿</span><span class="nav-icon">folder_open</span> Documentos
                     </button>
                     <div style="height:1px;background:rgba(255,255,255,.08);margin:4px 12px;"></div>
-                    <button class="nav-item nav-sub" id="tabBtnPagos" onclick="mostrarTab('Pagos')" title="Todos los pagos a proveedores">
-                        <span class="nav-icon">credit_card</span> Pagos a Proveedores
+                    <button class="nav-item nav-sub" id="tabBtnPagos" data-navkey="pagosprov" onclick="mostrarTab('Pagos')" title="Todos los pagos a proveedores">
+                        <span class="nav-drag-handle">⠿</span><span class="nav-icon">credit_card</span> Pagos a Proveedores
                     </button>
-                    <button class="nav-item nav-sub" id="btnPagar" onclick="abrirPagoFD()" title="Registrar pago de factura o comprobante">
-                        <span class="nav-icon">add_card</span> Registrar Pago
+                    <button class="nav-item nav-sub" id="btnPagar" data-navkey="registrarpago" onclick="abrirPagoFD()" title="Registrar pago de factura o comprobante">
+                        <span class="nav-drag-handle">⠿</span><span class="nav-icon">add_card</span> Registrar Pago
                     </button>
                 </div>
-                <button class="nav-item nav-sub" id="tabBtnEgresos" onclick="mostrarTab('Egresos')" title="Resumen de egresos del proyecto">
-                    <span class="nav-icon">bar_chart</span> Resumen Egresos
+                </div>
+                <button class="nav-item nav-sub" id="tabBtnEgresos" data-navkey="resumenegresos" onclick="mostrarTab('Egresos')" title="Resumen de egresos del proyecto">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">bar_chart</span> Resumen Egresos
                 </button>
-                <button class="nav-item nav-sub" id="tabBtnCompRecibidos" onclick="mostrarTab('CompRecibidos')" title="Comprobantes recibidos de proveedores (ARCA)">
-                    <span class="nav-icon">inbox</span> Comprobantes Recibidos
+                <button class="nav-item nav-sub" id="tabBtnCompRecibidos" data-navkey="comprecibidos" onclick="mostrarTab('CompRecibidos')" title="Comprobantes recibidos de proveedores (ARCA)">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">inbox</span> Comprobantes Recibidos
                 </button>
+            </div>
             </div>
 
             <!-- TESORERÍA — Saldos y Préstamos Interempresa -->
+            <div class="nav-block" data-navkey="tesoreria">
             <button class="nav-item" id="tabBtnTesoreria" onclick="mostrarTab('Tesoreria')" title="Saldos de cajas por proyecto y préstamos entre empresas" style="margin-top:8px;">
-                <span class="nav-icon">swap_horiz</span> Tesorería Interempresa
+                <span class="nav-drag-handle">⠿</span><span class="nav-icon">swap_horiz</span> Tesorería Interempresa
             </button>
+            </div>
 
             <!-- REPORTES -->
+            <div class="nav-block" data-navkey="reportes">
             <button class="nav-item" id="tabBtnReportes" onclick="mostrarTab('Reportes')" title="Reportes contables e impositivos" style="margin-top:8px;">
-                <span class="nav-icon">assessment</span> Reportes
+                <span class="nav-drag-handle">⠿</span><span class="nav-icon">assessment</span> Reportes
             </button>
+            </div>
 
             <!-- REMUNERACIONES (solo Super Administrador) -->
+            <div class="nav-block" data-navkey="remuneraciones">
             <button class="nav-item" id="tabBtnRemuneraciones" onclick="mostrarTab('Remuneraciones')" title="Legajos de empleados, vacaciones, aguinaldo y liquidación (solo Super Administrador)" style="margin-top:8px; display:none;">
-                <span class="nav-icon">badge</span> Remuneraciones
+                <span class="nav-drag-handle">⠿</span><span class="nav-icon">badge</span> Remuneraciones
             </button>
+            </div>
 
             <!-- PLAN DE TRABAJO -->
+            <div class="nav-block" data-navkey="plantrabajo">
             <button class="nav-item" id="tabBtnPlanTrabajo" onclick="mostrarTab('PlanTrabajo')" title="Plan de trabajo por etapas" style="margin-top:8px;">
-                <span class="nav-icon">construction</span> Plan de Trabajo
+                <span class="nav-drag-handle">⠿</span><span class="nav-icon">construction</span> Plan de Trabajo
             </button>
+            </div>
 
+            <div class="nav-block" data-navkey="config">
             <button class="nav-item" id="tabBtnConfig" onclick="mostrarTab('Config')" title="Configuración del sistema" style="margin-top:8px;">
-                <span class="nav-icon">settings</span> Configuración
+                <span class="nav-drag-handle">⠿</span><span class="nav-icon">settings</span> Configuración
             </button>
+            </div>
 
+            <div class="nav-block" data-navkey="herramientas">
             <button class="nav-item nav-group-header" onclick="toggleHerramientasMenu()" title="Herramientas" style="margin-top:8px;">
-                <span class="nav-icon">build</span> Herramientas <span id="herramientasChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▸</span>
+                <span class="nav-drag-handle">⠿</span><span class="nav-icon">build</span> Herramientas <span id="herramientasChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▸</span>
             </button>
-            <div id="herramientasSubmenu" class="nav-submenu collapsed">
-                <button class="nav-item nav-sub" onclick="exportarExcel()" title="Exportar presupuestos a Excel">
-                    <span class="nav-icon">download</span> Exportar Excel (presup.)
+            <div id="herramientasSubmenu" class="nav-submenu collapsed" data-subkey="herramientas">
+                <button class="nav-item nav-sub" data-navkey="exportarexcel" onclick="exportarExcel()" title="Exportar presupuestos a Excel">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">download</span> Exportar Excel (presup.)
                 </button>
-                <button class="nav-item nav-sub" id="btnImportar" onclick="document.getElementById('uploadFile').click()" title="Cargar datos desde Excel o JSON">
-                    <span class="nav-icon">upload</span> Cargar Archivo
+                <button class="nav-item nav-sub" id="btnImportar" data-navkey="cargararchivo" onclick="document.getElementById('uploadFile').click()" title="Cargar datos desde Excel o JSON">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">upload</span> Cargar Archivo
                 </button>
-                <button class="nav-item nav-sub" id="btnGuardar" onclick="guardarLocalmente()" title="Guardar en la nube (Firebase)">
-                    <span class="nav-icon">save</span> Guardar
+                <button class="nav-item nav-sub" id="btnGuardar" data-navkey="guardar" onclick="guardarLocalmente()" title="Guardar en la nube (Firebase)">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">save</span> Guardar
                 </button>
                 <div style="height:1px;background:rgba(255,255,255,.08);margin:4px 12px;"></div>
                 <div style="font-size:9px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.1em;padding:4px 16px 2px;">Respaldo / Migración</div>
-                <button class="nav-item nav-sub" onclick="exportarBD('json')" title="Exportar toda la BD en JSON">
-                    <span class="nav-icon">data_object</span> Exportar BD → JSON
+                <button class="nav-item nav-sub" data-navkey="exportjson" onclick="exportarBD('json')" title="Exportar toda la BD en JSON">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">data_object</span> Exportar BD → JSON
                 </button>
-                <button class="nav-item nav-sub" onclick="exportarBD('excel')" title="Exportar toda la BD en Excel multipestaña">
-                    <span class="nav-icon">table_chart</span> Exportar BD → Excel
+                <button class="nav-item nav-sub" data-navkey="exportexcelbd" onclick="exportarBD('excel')" title="Exportar toda la BD en Excel multipestaña">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">table_chart</span> Exportar BD → Excel
                 </button>
-                <button class="nav-item nav-sub" onclick="exportarBD('csv')" title="Exportar todas las tablas en CSV">
-                    <span class="nav-icon">csv</span> Exportar BD → CSV
+                <button class="nav-item nav-sub" data-navkey="exportcsv" onclick="exportarBD('csv')" title="Exportar todas las tablas en CSV">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">csv</span> Exportar BD → CSV
                 </button>
-                <button class="nav-item nav-sub" onclick="exportarBD('sql')" title="Exportar BD como SQL">
-                    <span class="nav-icon">storage</span> Exportar BD → SQL
+                <button class="nav-item nav-sub" data-navkey="exportsql" onclick="exportarBD('sql')" title="Exportar BD como SQL">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">storage</span> Exportar BD → SQL
                 </button>
                 <div style="height:1px;background:rgba(255,255,255,.08);margin:4px 12px;"></div>
-                <button class="nav-item nav-sub" id="btnUsuarios" onclick="abrirUsuarios()" style="display:none;" title="Administrar permisos de usuarios">
-                    <span class="nav-icon">group</span> Usuarios
+                <button class="nav-item nav-sub" id="btnUsuarios" data-navkey="usuarios" onclick="abrirUsuarios()" style="display:none;" title="Administrar permisos de usuarios">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">group</span> Usuarios
                 </button>
-                <button class="nav-item nav-sub" id="btnSolicitudes" onclick="abrirSolicitudes()" style="display:none;" title="Solicitudes de borrado">
-                    <span class="nav-icon">download</span> Solicitudes
+                <button class="nav-item nav-sub" id="btnSolicitudes" data-navkey="solicitudes" onclick="abrirSolicitudes()" style="display:none;" title="Solicitudes de borrado">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">download</span> Solicitudes
                     <span id="badgeSolicitudes" style="display:none;margin-left:auto;background:#E53935;color:#fff;border-radius:10px;font-size:10px;padding:1px 7px;font-weight:700;line-height:1.6;">0</span>
                 </button>
+            </div>
+            </div>
+            <div style="text-align:center;padding:10px 4px 2px;">
+                <span id="navReorderReset" onclick="restaurarOrdenSidebar()" title="Volver el menú al orden original (para todos los usuarios)" style="display:none;font-size:10px;color:rgba(255,255,255,.25);cursor:pointer;">↺ restaurar orden del menú</span>
             </div>
         </div>
 
@@ -2805,12 +2865,12 @@
                 <div class="hp-row-mini" id="hpRowMini">
                   <div class="hpw hpw-fecha" style="padding:14px;min-width:0">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-    <button onclick="_hCalPrev()" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);font-size:18px;padding:0 4px;line-height:1">&#8249;</button>
-    <div id="hfCalTit" style="font-family:var(--font-sans,sans-serif);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.5);"></div>
-    <button onclick="_hCalNext()" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);font-size:18px;padding:0 4px;line-height:1">&#8250;</button>
+    <button onclick="_hCalPrev()" style="background:none;border:none;cursor:pointer;color:var(--text-3);font-size:18px;padding:0 4px;line-height:1">&#8249;</button>
+    <div id="hfCalTit" style="font-family:var(--font-sans,sans-serif);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-2);"></div>
+    <button onclick="_hCalNext()" style="background:none;border:none;cursor:pointer;color:var(--text-3);font-size:18px;padding:0 4px;line-height:1">&#8250;</button>
   </div>
   <div id="hfCalGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;text-align:center;"></div>
-  <div id="hfHora" class="hp-f-hora" style="margin-top:8px;text-align:center;font-size:13px;color:rgba(255,255,255,.45);"></div>
+  <div id="hfHora" class="hp-f-hora" style="margin-top:8px;text-align:center;font-size:13px;color:var(--text-2);"></div>
 </div>
                   <div class="hpw hpw-clima">
                     <div class="hp-c-top">
@@ -2840,8 +2900,8 @@
                   <div class="hpw" style="padding:16px 20px;">
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
                       <div>
-                        <div style="font-size:14px;font-weight:700;color:#fff;">🦷 Turnos de Hoy</div>
-                        <div id="hpTurnosResumenHome" style="font-size:12px;color:rgba(255,255,255,.4);margin-top:2px;">Sin turnos cargados</div>
+                        <div style="font-size:14px;font-weight:700;color:var(--text-1);">🦷 Turnos de Hoy</div>
+                        <div id="hpTurnosResumenHome" style="font-size:12px;color:var(--text-3);margin-top:2px;">Sin turnos cargados</div>
                       </div>
                       <button class="btn btn-gold btn-sm" onclick="mostrarTab('Turnos')">🦷 Ver Turnos</button>
                     </div>
@@ -2910,15 +2970,15 @@
                 <!-- Fila 4: Mercados Bursátiles + Noticias -->
                 <div class="hp-row4" id="hpRow4">
                   <div class="hpw hpw-bolsas" style="padding:0;">
-                    <div style="padding:11px 18px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;z-index:2;backdrop-filter:blur(10px);">
-                      <span style="font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:rgba(255,255,255,.5);font-weight:500;">🌐 Mercados Bursátiles</span>
-                      <span style="font-family:var(--font-mono,'DM Mono',monospace);font-size:9px;color:rgba(255,255,255,.2);float:right;">⤡ arrastrá esquina inf-der</span>
+                    <div style="padding:11px 18px;background:var(--surface);border-bottom:1px solid var(--border-soft);position:sticky;top:0;z-index:2;">
+                      <span style="font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:var(--text-3);font-weight:500;">🌐 Mercados Bursátiles</span>
+                      <span style="font-family:var(--font-mono,'DM Mono',monospace);font-size:9px;color:var(--text-3);float:right;">⤡ arrastrá esquina inf-der</span>
                     </div>
                     <div class="tradingview-widget-container" style="height:400px;width:100%;">
                       <div class="tradingview-widget-container__widget" style="height:100%;width:100%;"></div>
                       <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
                       {
-                        "colorTheme": "dark",
+                        "colorTheme": "light",
                         "dateRange": "1D",
                         "showChart": false,
                         "locale": "es",
@@ -2959,7 +3019,7 @@
                   <div class="hpw hpw-noticias-int" style="padding:0;">
                     <div class="hp-ni-hdr"><span class="hp-ni-ttl">MERCADOS</span><span class="hp-ni-src">TradingView</span></div>
                     <div class="tradingview-widget-container" style="height:280px;"><div class="tradingview-widget-container__widget" style="height:100%;width:100%;"></div>
-                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js" async>{"feedMode":"all_symbols","isTransparent":true,"displayMode":"compact","width":"100%","height":280,"colorTheme":"dark","locale":"es"}</script></div>
+                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js" async>{"feedMode":"all_symbols","isTransparent":true,"displayMode":"compact","width":"100%","height":280,"colorTheme":"light","locale":"es"}</script></div>
                   </div>
                 </div><!-- /hpRow4 -->
 
@@ -2972,11 +3032,11 @@
                     </div>
                     <div style="padding:16px 18px;">
                       <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-                        <div id="pvdVeredicto" style="font-size:22px;font-weight:700;line-height:1.1;color:#fff;">Calculando…</div>
-                        <div id="pvdRazon" style="font-size:13px;color:rgba(255,255,255,.45);flex:1;min-width:220px;"></div>
+                        <div id="pvdVeredicto" style="font-size:22px;font-weight:700;line-height:1.1;color:var(--text-1);">Calculando…</div>
+                        <div id="pvdRazon" style="font-size:13px;color:var(--text-3);flex:1;min-width:220px;"></div>
                       </div>
                       <div id="pvdChips" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;"></div>
-                      <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:10px;line-height:1.5;">⚠️ Indicador orientativo automático — no es asesoramiento financiero. Fuentes: argentinadatos.com y dolarapi.com.</div>
+                      <div style="font-size:10px;color:var(--text-3);margin-top:10px;line-height:1.5;">⚠️ Indicador orientativo automático — no es asesoramiento financiero. Fuentes: argentinadatos.com y dolarapi.com.</div>
                     </div>
                   </div>
                 </div>
@@ -8552,6 +8612,238 @@
         chev.textContent = sub.classList.contains('collapsed') ? '▸' : '▾';
     }
 
+    // ══════════════════════════════════════════════════════════
+    // ORDEN DEL SIDEBAR — compartido y global (Firebase, no por dispositivo).
+    // Solo el Super Administrador puede arrastrar (handle ⠿) los conceptos
+    // principales y los ítems dentro de cada submenú; los submenús comparten
+    // grupo de arrastre, así que un ítem (o sub-menú anidado) se puede soltar
+    // en una categoría distinta a la original. El orden y la ubicación que
+    // define se guardan en global/config y lo ve TODO el mundo. El resto de
+    // los usuarios solo lo ve aplicado, sin poder tocarlo.
+    // ══════════════════════════════════════════════════════════
+    var _sidebarSortable = null;
+    var SUBMENU_IDS = ['principalSubmenu','ingresosSubmenu','egresosSubmenu','provSubmenu','herramientasSubmenu','consultorioSubmenu'];
+    var _submenuSortables = {};
+
+    function _sidebarBloques() {
+        var nav = document.querySelector('.sidebar-nav');
+        if (!nav) return [];
+        return Array.prototype.filter.call(nav.children, function(c) {
+            return c.classList && c.classList.contains('nav-block');
+        });
+    }
+    function _submenuBloques(containerId) {
+        var cont = document.getElementById(containerId);
+        if (!cont) return [];
+        return Array.prototype.filter.call(cont.children, function(c) {
+            return c.dataset && c.dataset.navkey;
+        });
+    }
+
+    // Mueve navBlockEl (un concepto principal) adentro del submenú de
+    // targetBlockEl, como un ítem más de ese concepto. Solo funciona si
+    // targetBlockEl ya tiene su propio submenú (Consultorio, Caja y Bancos,
+    // Ingresos, Egresos, Herramientas); si es un botón simple, no hay dónde anidar.
+    function anidarConcepto(navBlockEl, targetBlockEl, sinGuardar) {
+        if (!navBlockEl || !targetBlockEl || navBlockEl === targetBlockEl) return;
+        var targetSub = targetBlockEl.querySelector(':scope > .nav-submenu');
+        if (!targetSub) return;
+        var navkey = navBlockEl.dataset.navkey;
+        var targetKey = targetBlockEl.dataset.navkey;
+        if (!navkey || !targetKey) return;
+
+        var hijos = Array.prototype.slice.call(navBlockEl.children);
+        if (!hijos.length) return;
+        var esGrupo = hijos.length > 1; // tenía botón + su propio submenú
+        var nodo;
+        if (esGrupo) {
+            nodo = document.createElement('div');
+            nodo.className = 'sub-block';
+            nodo.dataset.navkey = navkey;
+            hijos.forEach(function(h){ nodo.appendChild(h); });
+        } else {
+            nodo = hijos[0];
+        }
+        var cabecera = esGrupo ? nodo.querySelector('.nav-item') : nodo;
+        if (cabecera) cabecera.classList.add('nav-sub');
+        nodo.dataset.navkey = navkey; // el botón simple no traía data-navkey propio (estaba en el .nav-block)
+        targetSub.appendChild(nodo);
+        navBlockEl.remove();
+
+        if (!sinGuardar) guardarNestSidebar(navkey, targetKey);
+    }
+
+    // Guarda en Firebase qué concepto quedó anidado dentro de cuál.
+    function guardarNestSidebar(navkey, targetKey) {
+        if (!esSuperAdmin || !db) return;
+        db.ref('global/config/sidebarNest/' + navkey).set(targetKey).catch(function(){});
+        guardarOrdenSidebar();
+        guardarOrdenSubmenus();
+    }
+
+    // Re-aplica los anidados guardados — corre para TODOS los usuarios,
+    // ANTES de restaurar el orden (para que los contenedores ya existan).
+    function aplicarNestSidebar() {
+        if (!db) return Promise.resolve();
+        return db.ref('global/config/sidebarNest').once('value').then(function(snap) {
+            var tree = snap.val();
+            if (!tree) return;
+            var nav = document.querySelector('.sidebar-nav');
+            if (!nav) return;
+            Object.keys(tree).forEach(function(navkey) {
+                var targetKey = tree[navkey];
+                var navBlock = nav.querySelector(':scope > .nav-block[data-navkey="' + navkey + '"]');
+                var targetBlock = nav.querySelector(':scope > .nav-block[data-navkey="' + targetKey + '"]');
+                if (!navBlock || !targetBlock) return;
+                anidarConcepto(navBlock, targetBlock, true);
+            });
+        }).catch(function(){});
+    }
+
+    // Aplica el orden guardado en Firebase — corre para TODOS los usuarios.
+    function aplicarOrdenSidebarGlobal() {
+        if (!db) return;
+        aplicarNestSidebar().then(function() {
+        db.ref('global/config/sidebarOrder').once('value').then(function(snap) {
+            var orden = snap.val();
+            if (!orden || !orden.length) return;
+            var nav = document.querySelector('.sidebar-nav');
+            if (!nav) return;
+            var porKey = {};
+            _sidebarBloques().forEach(function(b){ porKey[b.dataset.navkey] = b; });
+            orden.forEach(function(key){ if (porKey[key]) nav.appendChild(porKey[key]); });
+        }).catch(function(){});
+        db.ref('global/config/sidebarSubOrder').once('value').then(function(snap) {
+            var todos = snap.val();
+            if (!todos) return;
+            // Mapa único navkey → elemento buscando en TODOS los submenús, porque
+            // un ítem puede haberse guardado en un contenedor distinto al original
+            // (el superadmin lo movió de categoría).
+            var porKey = {};
+            SUBMENU_IDS.forEach(function(id) {
+                _submenuBloques(id).forEach(function(b){ porKey[b.dataset.navkey] = b; });
+            });
+            SUBMENU_IDS.forEach(function(id) {
+                var orden = todos[id];
+                var cont = document.getElementById(id);
+                if (!orden || !cont) return;
+                orden.forEach(function(k){ if (porKey[k]) cont.appendChild(porKey[k]); });
+            });
+        }).catch(function(){});
+        });
+    }
+    document.addEventListener('DOMContentLoaded', aplicarOrdenSidebarGlobal);
+
+    // Guarda el orden en Firebase (para todos) — solo si sos superadmin.
+    function guardarOrdenSidebar() {
+        if (!esSuperAdmin || !db) return;
+        var orden = _sidebarBloques().map(function(b){ return b.dataset.navkey; });
+        db.ref('global/config/sidebarOrder').set(orden).catch(function(){});
+    }
+    // Los submenús comparten grupo de arrastre (un ítem puede pasar de una
+    // categoría a otra), así que guardamos TODOS los contenedores juntos:
+    // el ítem movido desaparece de uno y aparece en el otro.
+    function guardarOrdenSubmenus() {
+        if (!esSuperAdmin || !db) return;
+        var payload = {};
+        SUBMENU_IDS.forEach(function(id) {
+            payload[id] = _submenuBloques(id).map(function(b){ return b.dataset.navkey; });
+        });
+        db.ref('global/config/sidebarSubOrder').set(payload).catch(function(){});
+    }
+
+    // Anidar un concepto principal en otro sosteniéndolo encima: se arma un
+    // temporizador mientras el mouse queda sobre el MISMO destino válido
+    // (que ya tenga submenú propio); si se suelta ahí después de ~900ms,
+    // se anida. Si se mueve a otro lado antes, se cancela.
+    var _navHoverTarget = null, _navHoverTimer = null, _navPendienteAnidar = null;
+    function _limpiarHoverAnidado() {
+        clearTimeout(_navHoverTimer);
+        _navHoverTimer = null;
+        _navHoverTarget = null;
+        if (_navPendienteAnidar) {
+            _navPendienteAnidar.classList.remove('nav-nest-target');
+            _navPendienteAnidar = null;
+        }
+    }
+
+    // Habilita el arrastre (handles visibles + Sortable) SOLO si sos Super
+    // Administrador. Se llama desde aplicarPermisos(), una vez que ya se
+    // sabe el rol real del usuario logueado.
+    var _sidebarDragTries = 0;
+    function actualizarDragSidebarSegunRol() {
+        var nav = document.querySelector('.sidebar-nav');
+        if (nav) nav.classList.toggle('superadmin-drag', !!esSuperAdmin);
+        var reset = document.getElementById('navReorderReset');
+        if (reset) reset.style.display = esSuperAdmin ? '' : 'none';
+        if (!esSuperAdmin) return;
+        if (!window.Sortable) {
+            // El script de SortableJS (CDN) puede tardar en llegar; reintentamos un rato.
+            if (_sidebarDragTries++ < 20) setTimeout(actualizarDragSidebarSegunRol, 300);
+            return;
+        }
+        if (nav && !_sidebarSortable) {
+            _sidebarSortable = new Sortable(nav, {
+                animation: 180,
+                handle: '.nav-drag-handle',
+                draggable: '.nav-block',
+                delay: 60,
+                delayOnTouchOnly: true,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                onMove: function(evt) {
+                    var related = evt.related;
+                    var esDestinoValido = related && related.classList && related.classList.contains('nav-block') &&
+                        related !== evt.dragged && related.querySelector(':scope > .nav-submenu');
+                    if (!esDestinoValido) { _limpiarHoverAnidado(); return true; }
+                    if (related === _navHoverTarget) return true;
+                    _limpiarHoverAnidado();
+                    _navHoverTarget = related;
+                    _navHoverTimer = setTimeout(function() {
+                        related.classList.add('nav-nest-target');
+                        _navPendienteAnidar = related;
+                    }, 900);
+                    return true;
+                },
+                onEnd: function(evt) {
+                    var target = _navPendienteAnidar;
+                    _limpiarHoverAnidado();
+                    if (target && target !== evt.item) {
+                        anidarConcepto(evt.item, target);
+                    } else {
+                        guardarOrdenSidebar();
+                    }
+                }
+            });
+        }
+        SUBMENU_IDS.forEach(function(id) {
+            if (_submenuSortables[id]) return;
+            var cont = document.getElementById(id);
+            if (!cont) return;
+            _submenuSortables[id] = new Sortable(cont, {
+                animation: 180,
+                handle: '.nav-drag-handle',
+                draggable: '.nav-item, .sub-block',
+                group: 'ciseb-sidebar-sub', // mismo grupo en los submenús: un ítem puede pasar de categoría
+                delay: 60,
+                delayOnTouchOnly: true,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                onEnd: guardarOrdenSubmenus
+            });
+        });
+    }
+
+    function restaurarOrdenSidebar() {
+        if (!esSuperAdmin) return;
+        if (!confirm('¿Volver el menú al orden original para TODOS los usuarios?')) return;
+        Promise.all([
+            db.ref('global/config/sidebarOrder').remove(),
+            db.ref('global/config/sidebarSubOrder').remove(),
+            db.ref('global/config/sidebarNest').remove()
+        ]).then(function(){ location.reload(); }).catch(function(){ location.reload(); });
+    }
+
     function toggleHerramientasMenu() {
         const sub  = document.getElementById('herramientasSubmenu');
         const chev = document.getElementById('herramientasChevron');
@@ -8944,6 +9236,8 @@
             secGU.style.display = esSuperAdmin ? '' : 'none';
             if (esSuperAdmin) cargarUsuariosBackend();
         }
+        // Reordenar el menú lateral (drag): solo Super Administrador
+        if (typeof actualizarDragSidebarSegunRol === 'function') actualizarDragSidebarSegunRol();
         renderizar(); renderProveedores(); renderFacturas();
     }
 
@@ -9754,9 +10048,24 @@
         var email = document.getElementById('eutEmail').value;
         if (!email) return;
         var msg = document.getElementById('eutMsg');
-        msg.textContent = 'Enviando…';
-        auth.sendPasswordResetEmail(email).then(function() {
-            msg.innerHTML = '<span style="color:var(--success);">✅ Mail para definir contraseña enviado a ' + escHtml(email) + '.</span>';
+        msg.textContent = 'Verificando cuenta…';
+        // Firebase "resuelve OK" el envío de mail de recuperación aunque el email no
+        // tenga una cuenta de Auth real (protección anti-enumeración) — por eso no
+        // alcanza con mirar si la promesa se cumplió. Chequeamos antes si existe la
+        // cuenta para poder avisar la causa más probable si nunca llega el mail.
+        // (fetchSignInMethodsForEmail puede devolver vacío igual en proyectos con
+        // "protección de enumeración de email" activada, así que igual mandamos el
+        // mail aunque dé vacío — solo cambia el tono del aviso.)
+        auth.fetchSignInMethodsForEmail(email).catch(function(){ return null; }).then(function(metodos) {
+            var existeConfirmado = !!(metodos && metodos.length);
+            msg.textContent = 'Enviando…';
+            return auth.sendPasswordResetEmail(email).then(function() {
+                if (existeConfirmado) {
+                    msg.innerHTML = '<span style="color:var(--success);">✅ Mail para definir contraseña enviado a ' + escHtml(email) + '. Si no aparece en unos minutos, revisá la carpeta de spam/promociones.</span>';
+                } else {
+                    msg.innerHTML = '<span style="color:var(--warn);">⚠️ Se pidió el envío, pero no pude confirmar que ' + escHtml(email) + ' tenga una cuenta de acceso real creada. Si no llega nada en unos minutos (revisando spam), es probable que este usuario haya quedado cargado solo en la base de datos por un alta vieja — quitalo y volvé a crearlo con "➕ Crear usuario".</span>';
+                }
+            });
         }).catch(function(e) {
             msg.innerHTML = '<span style="color:var(--danger);">⚠️ ' + escHtml(e.message) + '</span>';
         });
@@ -17163,7 +17472,7 @@
             var riesgo  = (Array.isArray(rp) && rp.length) ? rp[rp.length-1].valor : null;
 
             if (tna == null || inflMes == null) {
-                elVer.textContent = 'Datos insuficientes'; elVer.style.color = 'rgba(255,255,255,.35)';
+                elVer.textContent = 'Datos insuficientes'; elVer.style.color = 'var(--text-3)';
                 if (elRaz) elRaz.textContent = 'No pude obtener la tasa de plazo fijo o la inflación. Probá 🔄 en un rato.';
                 if (elChips) elChips.innerHTML = '';
                 return;
@@ -17178,9 +17487,9 @@
             if (riesgo != null) { if (riesgo < 700) score += 1; else if (riesgo >= 1200) score -= 1; }
 
             var ver, color;
-            if (score >= 2) { ver = '🟢 Conviene quedarse en PESOS'; color = '#34D399'; }
-            else if (score <= -2) { ver = '🔴 Conviene comprar DÓLARES'; color = '#FF6B6B'; }
-            else { ver = '🟡 Equilibrado / Neutro'; color = '#FBBF24'; }
+            if (score >= 2) { ver = '🟢 Conviene quedarse en PESOS'; color = 'var(--success)'; }
+            else if (score <= -2) { ver = '🔴 Conviene comprar DÓLARES'; color = 'var(--danger)'; }
+            else { ver = '🟡 Equilibrado / Neutro'; color = 'var(--warn)'; }
 
             var motivo = (spread >= 0)
                 ? 'El plazo fijo (' + tem.toFixed(1) + '%/mes) le gana a la inflación (' + inflMes.toFixed(1) + '%/mes)'
@@ -17193,9 +17502,9 @@
             if (elRaz) elRaz.textContent = motivo;
 
             var chip = function(lbl, val, fav) {
-                var c = fav > 0 ? '#34D399' : (fav < 0 ? '#FF6B6B' : 'rgba(255,255,255,.3)');
-                return '<span style="border:1px solid rgba(255,255,255,.1);border-left:3px solid ' + c + ';padding:6px 10px;font-size:11px;border-radius:4px;line-height:1.4;background:rgba(255,255,255,.03);">' +
-                    '<span style="color:rgba(255,255,255,.4)">' + lbl + '</span><br><strong style="color:#fff">' + val + '</strong></span>';
+                var c = fav > 0 ? 'var(--success)' : (fav < 0 ? 'var(--danger)' : 'var(--text-3)');
+                return '<span style="border:1px solid var(--border);border-left:3px solid ' + c + ';padding:6px 10px;font-size:11px;border-radius:4px;line-height:1.4;background:var(--surface);">' +
+                    '<span style="color:var(--text-3)">' + lbl + '</span><br><strong style="color:var(--text-1)">' + val + '</strong></span>';
             };
             var chips = '';
             chips += chip('Plazo fijo (mensual)', tem.toFixed(1) + '%', spread >= 0 ? 1 : -1);
@@ -17726,15 +18035,15 @@
         if(!grid) return;
         var today=new Date();
         var html='';
-        dc.forEach(function(d){html+='<div style="font-size:8px;letter-spacing:.08em;color:rgba(255,255,255,.3);padding:2px 0;font-family:var(--font-sans,sans-serif);">'+d+'</div>';});
+        dc.forEach(function(d){html+='<div style="font-size:8px;letter-spacing:.08em;color:var(--text-3);padding:2px 0;font-family:var(--font-sans,sans-serif);">'+d+'</div>';});
         var first=new Date(y,m,1).getDay();
         for(var i=0;i<first;i++) html+='<div></div>';
         var days=new Date(y,m+1,0).getDate();
         for(var d2=1;d2<=days;d2++){
             var isToday=d2===today.getDate()&&m===today.getMonth()&&y===today.getFullYear();
             var isSel=_hCalSel&&_hCalSel.d===d2&&_hCalSel.m===m&&_hCalSel.y===y;
-            var bg=isToday?'#fff':isSel?'rgba(255,255,255,.1)':'';
-            var col=isToday?'#0A0A0A':isSel?'#fff':'rgba(255,255,255,.55)';
+            var bg=isToday?'var(--gold)':isSel?'var(--gold-pale)':'';
+            var col=isToday?'#fff':isSel?'var(--gold)':'var(--text-2)';
             html+='<div onclick="_hCalDayClick('+d2+','+m+','+y+')" style="font-size:11px;padding:3px 1px;font-family:var(--font-sans,sans-serif);border-radius:50%;cursor:pointer;background:'+bg+';color:'+col+';transition:background .12s;">'+d2+'</div>';
         }
         grid.innerHTML=html;
