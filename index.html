@@ -6,7 +6,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <title>CISEB · Sistema de Gestión Odontológica</title>
+    <title>CISEB · Centro Integral de Salud y Estética Bucal</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -87,29 +87,29 @@
         html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
 
         :root {
-            /* ── Paleta estilo Apple · negro suave, grises fríos, acento azul ── */
-            --ink:        #1D1D1F;          /* negro Apple */
-            --ink-soft:   #2C2C2E;          /* negro suave */
+            /* ── Paleta CISEB · basada en el isotipo (violeta/carmín/celeste/verde/oro) ── */
+            --ink:        #1D1D1F;          /* negro suave */
+            --ink-soft:   #2C2C2E;
             --ink-mid:    #424245;          /* gris grafito */
-            --surface:    #F5F5F7;          /* gris de fondo Apple */
+            --surface:    #F5F5F7;          /* gris de fondo */
             --surface-2:  #ECECEE;          /* gris claro para hover/paneles */
-            --border:     #D2D2D7;          /* borde gris Apple */
+            --border:     #D2D2D7;          /* borde gris */
             --border-soft:#E8E8ED;          /* borde suave */
-            /* Acento: azul Apple */
-            --gold:       #0071E3;          /* azul acento */
-            --gold-light: #2997FF;          /* azul claro (hover) */
-            --gold-pale:  #EAF3FD;          /* fondo azul pálido */
+            /* Acento: celeste/azul del isotipo */
+            --gold:       #2D6CA6;          /* azul acento (pétalo celeste + punto navy del logo) */
+            --gold-light: #4A8AC2;          /* azul claro (hover) */
+            --gold-pale:  #EAF2F8;          /* fondo azul pálido */
             --text-1:     #1D1D1F;
             --text-2:     #424245;
-            --text-3:     #86868B;          /* gris terciario Apple */
-            --success:    #1A7A3D;
-            --success-bg: #E9F8EE;
-            --danger:     #D70015;          /* rojo Apple */
-            --danger-bg:  #FDEAEC;
-            --warn:       #96540A;
-            --warn-bg:    #FFF4E5;
-            --blue:       #1A3A6B;          /* azul info (distinto del acento) */
-            --blue-bg:    #EBF0F8;
+            --text-3:     #86868B;          /* gris terciario */
+            --success:    #4C8C33;          /* verde del isotipo */
+            --success-bg: #EEF7E6;
+            --danger:     #D01745;          /* carmín del isotipo */
+            --danger-bg:  #FDEAEF;
+            --warn:       #A9720A;          /* dorado del isotipo */
+            --warn-bg:    #FFF6E0;
+            --blue:       #6B3D74;          /* violeta del isotipo (info, distinto del acento) */
+            --blue-bg:    #F3EAF5;
             --sidebar-w:  252px;
             --radius:     14px;             /* esquinas redondeadas — estilo Apple */
             --radius-sm:  8px;
@@ -315,7 +315,7 @@
         .nav-submenu.collapsed { max-height: 0; overflow: hidden; }
         .nav-sub { font-size: 12.5px; padding: 8px 12px 8px 22px; color: rgba(255,255,255,.58); font-family:-apple-system,BlinkMacSystemFont,SF Pro Display,Segoe UI,Roboto,Helvetica,Arial,sans-serif; font-weight: 400; }
         .nav-sub:hover { color: rgba(255,255,255,.88); }
-        .nav-sub.active { color: var(--gold-light); background: rgba(41,151,255,.15); }
+        .nav-sub.active { color: var(--gold-light); background: rgba(74,138,194,.15); }
 
         .sidebar-footer {
             padding: 14px 12px;
@@ -421,9 +421,9 @@
         .emp-proy-add {
             padding: 6px 9px;
             border-radius: var(--radius-sm);
-            background: rgba(0,113,227,.12);
+            background: rgba(45,108,166,.12);
             color: var(--gold-light);
-            border: 1px solid rgba(0,113,227,.22);
+            border: 1px solid rgba(45,108,166,.22);
             font-size: 13px;
             font-weight: 400;
             cursor: pointer;
@@ -431,7 +431,7 @@
             flex-shrink: 0;
         }
         .emp-proy-add:hover {
-            background: rgba(0,113,227,.25);
+            background: rgba(45,108,166,.25);
             border-color: var(--gold);
         }
         .emp-proy-context {
@@ -727,7 +727,7 @@
         input:focus, select:focus {
             outline: none;
             border-color: var(--gold);
-            box-shadow: 0 0 0 2px rgba(0,113,227,.10);
+            box-shadow: 0 0 0 2px rgba(45,108,166,.10);
         }
 
         /* ── FORM ── */
@@ -991,7 +991,7 @@
             letter-spacing: 0.22em;
             color: var(--gold);
             background: var(--gold-pale);
-            border: 1px solid rgba(0,113,227,.2);
+            border: 1px solid rgba(45,108,166,.2);
             padding: 5px 12px;
             border-radius: var(--radius-sm);
             margin: 16px 0 8px;
@@ -1169,7 +1169,7 @@
             font-family:SF Mono,SFMono-Regular,Menlo,Consolas,monospace;
             font-size: 9px; font-weight: 400;
             letter-spacing: .32em; text-transform: uppercase;
-            color: rgba(200,150,100,.5);
+            color: rgba(217,169,50,.5);
             margin-bottom: 14px;
         }
         .onboarding-header h1 {
@@ -1201,7 +1201,7 @@
         }
         .ob-step:last-child { border-right: none; }
         .ob-step.active { background: rgba(255,255,255,.025); }
-        .ob-step.done   { background: rgba(0,113,227,.04); }
+        .ob-step.done   { background: rgba(45,108,166,.04); }
         .ob-step.locked { opacity: .30; pointer-events: none; }
 
         .ob-step-num {
@@ -1211,7 +1211,7 @@
             line-height: 1; position: absolute;
             top: 18px; right: 22px;
         }
-        .ob-step.done .ob-step-num { color: rgba(0,113,227,.15); }
+        .ob-step.done .ob-step-num { color: rgba(45,108,166,.15); }
 
         .ob-step-label {
             font-size: 9px; font-weight: 400;
@@ -1219,8 +1219,8 @@
             color: rgba(255,255,255,.22);
             font-family:SF Mono,SFMono-Regular,Menlo,Consolas,monospace;
         }
-        .ob-step.active .ob-step-label { color: rgba(200,150,100,.6); }
-        .ob-step.done   .ob-step-label { color: rgba(200,150,100,.4); }
+        .ob-step.active .ob-step-label { color: rgba(217,169,50,.6); }
+        .ob-step.done   .ob-step-label { color: rgba(217,169,50,.4); }
 
         .ob-step h3 {
             font-family:-apple-system,BlinkMacSystemFont,SF Pro Display,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
@@ -1248,7 +1248,7 @@
         }
         .ob-select:focus {
             outline: none;
-            border-color: rgba(0,113,227,.5);
+            border-color: rgba(45,108,166,.5);
             background-color: rgba(255,255,255,.06);
         }
         .ob-select option { background: #1A1816; color: #E8E3DB; }
@@ -1278,8 +1278,8 @@
         .ob-list-item:last-child { border-bottom: none; }
         .ob-list-item:hover { background: rgba(255,255,255,.06); }
         .ob-list-item.selected {
-            background: rgba(0,113,227,.14); color: #fff; font-weight: 600;
-            border-left: 2px solid rgba(0,113,227,.75); padding-left: 12px;
+            background: rgba(45,108,166,.14); color: #fff; font-weight: 600;
+            border-left: 2px solid rgba(45,108,166,.75); padding-left: 12px;
         }
 
         .ob-or {
@@ -1303,9 +1303,9 @@
             display: flex; align-items: center; gap: 8px;
         }
         .ob-btn-new:hover {
-            border-color: rgba(0,113,227,.35);
-            color: rgba(200,150,100,.8);
-            background: rgba(0,113,227,.04);
+            border-color: rgba(45,108,166,.35);
+            color: rgba(217,169,50,.8);
+            background: rgba(45,108,166,.04);
         }
 
         .ob-action-row {
@@ -1322,10 +1322,10 @@
         .ob-enter-btn {
             display: inline-flex; align-items: center; gap: 10px;
             padding: 14px 32px;
-            background: rgba(0,113,227,.10);
-            border: 1px solid rgba(0,113,227,.25);
+            background: rgba(45,108,166,.10);
+            border: 1px solid rgba(45,108,166,.25);
             border-radius: var(--radius-sm);
-            color: rgba(200,150,100,.8);
+            color: rgba(217,169,50,.8);
             font-family:SF Mono,SFMono-Regular,Menlo,Consolas,monospace;
             font-size: 11px; font-weight: 400;
             letter-spacing: .14em; text-transform: uppercase;
@@ -1337,8 +1337,8 @@
             opacity: 1; pointer-events: auto;
         }
         .ob-enter-btn.ready:hover {
-            background: rgba(0,113,227,.18);
-            border-color: rgba(0,113,227,.5);
+            background: rgba(45,108,166,.18);
+            border-color: rgba(45,108,166,.5);
         }
         .ob-enter-btn .ob-arrow { font-size: 16px; transition: transform .2s; }
         .ob-enter-btn.ready:hover .ob-arrow { transform: translateX(4px); }
@@ -1527,7 +1527,7 @@
         .badge-compartido {
             display: inline-flex; align-items: center; gap: 4px;
             padding: 2px 8px; border-radius: var(--radius-sm); font-size: 9px; font-weight: 500;
-            background: var(--gold-pale); color: var(--warn); border: 1px solid rgba(0,113,227,.2);
+            background: var(--gold-pale); color: var(--warn); border: 1px solid rgba(45,108,166,.2);
             white-space: nowrap;
             font-family:SF Mono,SFMono-Regular,Menlo,Consolas,monospace;
         }
@@ -2214,20 +2214,20 @@
 }
 #ciseb-splash .sp-rule{
     width:0;height:1px;
-    background:linear-gradient(90deg,transparent,rgba(201,168,76,.75),transparent);
+    background:linear-gradient(90deg,transparent,rgba(217,169,50,.75),transparent);
     margin:16px 0 14px;transition:width 1.2s cubic-bezier(.4,0,.2,1);
 }
 #ciseb-splash .sp-sub{
     font-family:SF Mono,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;font-weight:400;
     letter-spacing:.42em;text-transform:uppercase;
-    color:rgba(201,168,76,.55);text-indent:.42em;
+    color:rgba(217,169,50,.55);text-indent:.42em;
 }
 #sp-enter{
     margin-top:32px;
     padding:8px 28px;
-    border:1px solid rgba(201,168,76,.4);
+    border:1px solid rgba(217,169,50,.4);
     background:transparent;
-    color:rgba(201,168,76,.7);
+    color:rgba(217,169,50,.7);
     font-family:SF Mono,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;font-weight:400;
     letter-spacing:.32em;text-transform:uppercase;
     cursor:pointer;
@@ -2235,8 +2235,8 @@
     pointer-events:none;
 }
 #sp-enter:hover{
-    border-color:rgba(201,168,76,.9);
-    color:rgba(201,168,76,1);
+    border-color:rgba(217,169,50,.9);
+    color:rgba(217,169,50,1);
 }
 </style>
 
@@ -2355,9 +2355,20 @@
     <div class="auth-side">
         <div class="auth-visual">
             <div class="auth-visual-brand">
-                <div style="display:flex; flex-direction:column; align-items:center; gap:20px;">
-                    <div class="brand-name" style="font-size:44px;">CISEB</div>
-                    <div style="font-family:-apple-system,BlinkMacSystemFont,SF Pro Display,Segoe UI,Roboto,Helvetica,Arial,sans-serif; font-size:9px; color:rgba(255,255,255,.45); text-transform:uppercase; letter-spacing:.36em; font-weight:300;">Odontología · Gestión</div>
+                <div style="display:flex; flex-direction:column; align-items:center; gap:14px;">
+                    <svg viewBox="0 0 512 512" width="72" height="72" xmlns="http://www.w3.org/2000/svg">
+                        <defs><path id="petal-lg" d="M -0.15,0 C -0.12,-0.55 0.35,-0.95 0.65,-0.98 C 0.85,-1.0 1,-0.3 1,0 C 1,0.3 0.85,1.0 0.65,0.98 C 0.35,0.95 -0.12,0.55 -0.15,0 Z"/></defs>
+                        <g transform="translate(85,71) scale(1.85)">
+                            <use href="#petal-lg" fill="#8E3B8E" transform="translate(94,98) rotate(-100) scale(55,17)"/>
+                            <use href="#petal-lg" fill="#F7C948" transform="translate(94,98) rotate(105) scale(78,19)"/>
+                            <use href="#petal-lg" fill="#E31C4D" fill-opacity="0.92" transform="translate(94,98) rotate(180) scale(95,26)"/>
+                            <use href="#petal-lg" fill="#93BEDB" transform="translate(112,100) rotate(-35) scale(58,15)"/>
+                            <use href="#petal-lg" fill="#7AB648" transform="translate(112,100) rotate(35) scale(76,18)"/>
+                            <circle cx="112" cy="100" r="6" fill="#1E4C8C"/>
+                        </g>
+                    </svg>
+                    <div class="brand-name" style="font-size:40px;">CISEB</div>
+                    <div style="font-family:-apple-system,BlinkMacSystemFont,SF Pro Display,Segoe UI,Roboto,Helvetica,Arial,sans-serif; font-size:9px; color:rgba(255,255,255,.45); text-transform:uppercase; letter-spacing:.28em; font-weight:300; text-align:center;">Centro Integral de Salud y Estética Bucal</div>
                 </div>
             </div>
             <div class="auth-tagline">
@@ -2408,7 +2419,7 @@
                 <div class="ob-list" id="obListEmpresa"><div class="ob-list-empty">Cargando…</div></div>
                 <!-- Botones editar / eliminar empresa, aparecen al seleccionar una -->
                 <div id="obEmpresaAcciones" style="display:none; gap:6px; margin-top:8px;">
-                    <button onclick="obEditarEmpresa()" style="flex:1; padding:7px 10px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:5px; color:rgba(255,255,255,.5); font-size:11px; font-family:inherit; cursor:pointer; transition:all .18s;" onmouseover="this.style.borderColor='rgba(0,113,227,.4)';this.style.color='rgba(0,113,227,.8)'" onmouseout="this.style.borderColor='rgba(255,255,255,.12)';this.style.color='rgba(255,255,255,.5)'">✏ Editar</button>
+                    <button onclick="obEditarEmpresa()" style="flex:1; padding:7px 10px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:5px; color:rgba(255,255,255,.5); font-size:11px; font-family:inherit; cursor:pointer; transition:all .18s;" onmouseover="this.style.borderColor='rgba(45,108,166,.4)';this.style.color='rgba(45,108,166,.8)'" onmouseout="this.style.borderColor='rgba(255,255,255,.12)';this.style.color='rgba(255,255,255,.5)'">✏ Editar</button>
                     <button id="obBtnElimEmpresa" onclick="obEliminarEmpresa()" style="flex:1; display:none; padding:7px 10px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:5px; color:rgba(255,255,255,.5); font-size:11px; font-family:inherit; cursor:pointer; transition:all .18s;" onmouseover="this.style.borderColor='rgba(192,57,43,.4)';this.style.color='rgba(192,57,43,.8)'" onmouseout="this.style.borderColor='rgba(255,255,255,.12)';this.style.color='rgba(255,255,255,.5)'">✕ Eliminar</button>
                 </div>
                 <div class="ob-or">o</div>
@@ -2427,7 +2438,7 @@
                 <div class="ob-list" id="obListProyecto"><div class="ob-list-empty">Primero elegí una empresa.</div></div>
                 <!-- Botones editar / eliminar proyecto -->
                 <div id="obProyectoAcciones" style="display:none; gap:6px; margin-top:8px;">
-                    <button onclick="obEditarProyecto()" style="flex:1; padding:7px 10px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:5px; color:rgba(255,255,255,.5); font-size:11px; font-family:inherit; cursor:pointer; transition:all .18s;" onmouseover="this.style.borderColor='rgba(0,113,227,.4)';this.style.color='rgba(0,113,227,.8)'" onmouseout="this.style.borderColor='rgba(255,255,255,.12)';this.style.color='rgba(255,255,255,.5)'">✏ Editar</button>
+                    <button onclick="obEditarProyecto()" style="flex:1; padding:7px 10px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:5px; color:rgba(255,255,255,.5); font-size:11px; font-family:inherit; cursor:pointer; transition:all .18s;" onmouseover="this.style.borderColor='rgba(45,108,166,.4)';this.style.color='rgba(45,108,166,.8)'" onmouseout="this.style.borderColor='rgba(255,255,255,.12)';this.style.color='rgba(255,255,255,.5)'">✏ Editar</button>
                     <button id="obBtnElimProyecto" onclick="obEliminarProyecto()" style="flex:1; display:none; padding:7px 10px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:5px; color:rgba(255,255,255,.5); font-size:11px; font-family:inherit; cursor:pointer; transition:all .18s;" onmouseover="this.style.borderColor='rgba(192,57,43,.4)';this.style.color='rgba(192,57,43,.8)'" onmouseout="this.style.borderColor='rgba(255,255,255,.12)';this.style.color='rgba(255,255,255,.5)'">✕ Eliminar</button>
                 </div>
                 <div class="ob-or">o</div>
@@ -2453,10 +2464,22 @@
 
     <nav class="sidebar">
         <div class="sidebar-brand" onclick="mostrarTab('Dashboard')" style="cursor:pointer;">
-            <div class="logo-mark" style="display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);border-radius:var(--radius-sm);font-family:-apple-system,BlinkMacSystemFont,SF Pro Display,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;letter-spacing:.02em;color:#F0EEEB;">CISEB</div>
+            <div class="logo-mark" style="display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);border-radius:var(--radius-sm);padding:5px;">
+                <svg viewBox="0 0 512 512" width="26" height="26" xmlns="http://www.w3.org/2000/svg">
+                    <defs><path id="petal-sb" d="M -0.15,0 C -0.12,-0.55 0.35,-0.95 0.65,-0.98 C 0.85,-1.0 1,-0.3 1,0 C 1,0.3 0.85,1.0 0.65,0.98 C 0.35,0.95 -0.12,0.55 -0.15,0 Z"/></defs>
+                    <g transform="translate(85,71) scale(1.85)">
+                        <use href="#petal-sb" fill="#8E3B8E" transform="translate(94,98) rotate(-100) scale(55,17)"/>
+                        <use href="#petal-sb" fill="#F7C948" transform="translate(94,98) rotate(105) scale(78,19)"/>
+                        <use href="#petal-sb" fill="#E31C4D" fill-opacity="0.92" transform="translate(94,98) rotate(180) scale(95,26)"/>
+                        <use href="#petal-sb" fill="#93BEDB" transform="translate(112,100) rotate(-35) scale(58,15)"/>
+                        <use href="#petal-sb" fill="#7AB648" transform="translate(112,100) rotate(35) scale(76,18)"/>
+                        <circle cx="112" cy="100" r="6" fill="#1E4C8C"/>
+                    </g>
+                </svg>
+            </div>
             <div class="brand-text">
                 <div class="brand-sub" style="margin-top:2px;">Gestión</div>
-                <div id="sidebarEmpresaNombre" style="font-size:10px;color:rgba(201,168,76,.75);margin-top:3px;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;"></div>
+                <div id="sidebarEmpresaNombre" style="font-size:10px;color:rgba(217,169,50,.75);margin-top:3px;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;"></div>
             </div>
         </div>
 
@@ -2542,7 +2565,7 @@
                         <span class="nav-icon">request_quote</span> Presupuestos <span id="presupuestosMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▸</span>
                     </button>
                     <div id="presupuestosSubmenu" class="nav-submenu collapsed">
-                        <button class="nav-item nav-sub" id="btnAgregar" onclick="agregarFila()" title="Crear un presupuesto nuevo" style="color:rgba(201,168,76,.85);">
+                        <button class="nav-item nav-sub" id="btnAgregar" onclick="agregarFila()" title="Crear un presupuesto nuevo" style="color:rgba(217,169,50,.85);">
                             <span class="nav-icon">add_circle</span> Nuevo presupuesto
                         </button>
                         <button class="nav-item nav-sub" id="btnEditarPresupuesto" onclick="mostrarTab('Presupuestos')" title="Ver listado y editar un presupuesto existente">
@@ -2651,7 +2674,7 @@
                 <span></span><span></span><span></span>
             </button>
             <div class="topbar-title" id="topbarTitle">Presupuestos y Pagos</div>
-            <span id="topbarEmpresaChip" onclick="mostrarTab('Home')" title="Ir al inicio" style="display:none;cursor:pointer;align-items:center;gap:5px;background:rgba(201,168,76,.13);border:1px solid rgba(201,168,76,.35);color:rgba(201,168,76,.95);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;letter-spacing:.03em;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;"></span>
+            <span id="topbarEmpresaChip" onclick="mostrarTab('Home')" title="Ir al inicio" style="display:none;cursor:pointer;align-items:center;gap:5px;background:rgba(217,169,50,.13);border:1px solid rgba(217,169,50,.35);color:rgba(217,169,50,.95);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;letter-spacing:.03em;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;"></span>
             <button class="btn-refresh" id="btnRefresh" onclick="refreshTabActivo()" title="Actualizar">↻</button>
             <div class="topbar-actions">
                 <div class="tc-chip">
@@ -5851,7 +5874,7 @@
             type: 'doughnut',
             data: {
                 labels: ['Pagado', 'Pendiente'],
-                datasets: [{ data: [totalPag, totalPres - totalPag], backgroundColor: ['#C9A84C','#EEF0F4'], borderColor: ['#B7941A','#DDE1E8'], borderWidth: 2 }]
+                datasets: [{ data: [totalPag, totalPres - totalPag], backgroundColor: ['#D9A932','#EEF0F4'], borderColor: ['#B7941A','#DDE1E8'], borderWidth: 2 }]
             },
             options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 12, weight: '600' }, padding: 16, color: '#4A5568' } } } }
         });
@@ -7821,7 +7844,7 @@
     }
 
     function _rCSS(){return'<style>'
-      + ':root{--gold:#C9A84C;--ink:#1a1a1a;--muted:#6b6b6b;--line:#e6e6e6;}'
+      + ':root{--gold:#D9A932;--ink:#1a1a1a;--muted:#6b6b6b;--line:#e6e6e6;}'
       + '*{box-sizing:border-box;margin:0;padding:0;}'
       + 'body{font-family:"Segoe UI",Arial,Helvetica,sans-serif;color:var(--ink);background:#ececed;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
       + '.pg{max-width:740px;margin:22px auto;padding:36px 46px 30px;background:#fff;box-shadow:0 2px 18px rgba(0,0,0,.10);border-top:6px solid var(--gold);}'
@@ -8827,7 +8850,7 @@
                         <span style="font-weight:600; color:${pctPagado>=100?'var(--success)':pctPagado>=50?'var(--warn)':'var(--danger)'};">${pctPagado}% pagado</span>
                     </div>
                     <div style="height:8px; background:var(--surface-2); border-radius:4px; overflow:hidden; position:relative;">
-                        <div style="position:absolute; left:0; top:0; height:100%; width:${pctAjust}%; background:rgba(0,113,227,0.15); border-radius:4px;"></div>
+                        <div style="position:absolute; left:0; top:0; height:100%; width:${pctAjust}%; background:rgba(45,108,166,0.15); border-radius:4px;"></div>
                         <div style="position:absolute; left:0; top:0; height:100%; width:${pctPagado}%; background:${pctPagado>=100?'var(--success)':pctPagado>=50?'var(--warn)':'var(--gold)'}; border-radius:4px; transition:width .4s;"></div>
                     </div>
                     <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-3); margin-top:3px;">
@@ -9649,15 +9672,15 @@
         var cfg = getEmailJsConfig();
         if (!cfg.serviceId || !cfg.templateId || !cfg.publicKey) return;
         var mensaje = esNuevo
-            ? 'Se creó tu usuario para ingresar a CISEB · Sistema de Gestión Odontológica. Tu email de acceso es: ' + email + '. Revisá tu casilla (también la carpeta de spam) por un mail de Firebase para definir tu contraseña.'
-            : 'Se actualizaron los datos de tu cuenta en CISEB · Sistema de Gestión Odontológica.';
+            ? 'Se creó tu usuario para ingresar a CISEB · Centro Integral de Salud y Estética Bucal. Tu email de acceso es: ' + email + '. Revisá tu casilla (también la carpeta de spam) por un mail de Firebase para definir tu contraseña.'
+            : 'Se actualizaron los datos de tu cuenta en CISEB · Centro Integral de Salud y Estética Bucal.';
         var params = {
             to_email:    email,
             proveedor:   nombre || email,
             numero:      esNuevo ? 'Alta de usuario' : 'Actualización de usuario',
             fecha:       new Date().toLocaleDateString('es-AR'),
             importe:     '—',
-            descripcion: 'CISEB · Sistema de Gestión Odontológica',
+            descripcion: 'CISEB · Centro Integral de Salud y Estética Bucal',
             estado:      mensaje,
             pdf_url:     ''
         };
@@ -13176,7 +13199,7 @@
                 tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">' + (turnos.length ? 'Sin resultados.' : 'No hay turnos cargados.') + '</td></tr>';
             } else {
                 tbody.innerHTML = '';
-                var estColor = { Pendiente:'var(--warn,#c9a84c)', Confirmado:'var(--blue,#1a73e8)', Atendido:'var(--success)', Cancelado:'var(--danger)', Ausente:'var(--text-3)' };
+                var estColor = { Pendiente:'var(--warn,#d9a932)', Confirmado:'var(--blue,#1a73e8)', Atendido:'var(--success)', Cancelado:'var(--danger)', Ausente:'var(--text-3)' };
                 visibles.forEach(function(x) {
                     var t = x.t, idx = x.i;
                     var tr = document.createElement('tr');
@@ -16690,7 +16713,7 @@
             '</table>' +
             '<div class="monto-grande">' + montoFmt + '</div></div>' +
             '<div class="firmas"><div class="fi">Firma — ' + (pr.de||'Origen') + '<br>' + (pr.proyDe||'') + '</div><div class="fi">Firma — ' + (pr.a||'Destino') + '<br>' + (pr.proyA||'') + '</div></div>' +
-            '<div class="pie">' + empActNombre + ' · Sistema de Gestión CISEB · Emitido el ' + new Date().toLocaleDateString('es-AR') + '</div>' +
+            '<div class="pie">' + empActNombre + ' · CISEB · Emitido el ' + new Date().toLocaleDateString('es-AR') + '</div>' +
             '</div><scr' + 'ipt>window.onload=function(){window.print();}</scr' + 'ipt></body></html>';
         var win = window.open('', '_blank', 'width=780,height=900');
         if (!win) { alert('Bloqueaste las ventanas emergentes. Permitilas para imprimir.'); return; }
@@ -17305,15 +17328,15 @@
             var proyHTML = (emp.proyectos || []).slice(0, 4).map(function(p) {
                 return '<span style="display:inline-block;background:rgba(255,255,255,.07);border-radius:10px;padding:2px 8px;font-size:10px;margin:2px 2px 0 0;color:var(--text-2,#aaa);">'+p.nombre+'</span>';
             }).join('') + (proyCount > 4 ? '<span style="font-size:10px;color:var(--text-2,#aaa);margin-left:4px;">+' + (proyCount-4) + ' más</span>' : '');
-            return '<div onclick="hpSeleccionarEmpresa(\''+emp.id+'\')" style="cursor:pointer;background:var(--surface-2,#f8f8f8);border:2px solid '+(esActual?'#C9A84C':'var(--border-soft,#e0e0e0)')+';border-radius:14px;padding:16px 18px;transition:box-shadow .15s,border-color .15s;position:relative;" '
+            return '<div onclick="hpSeleccionarEmpresa(\''+emp.id+'\')" style="cursor:pointer;background:var(--surface-2,#f8f8f8);border:2px solid '+(esActual?'#D9A932':'var(--border-soft,#e0e0e0)')+';border-radius:14px;padding:16px 18px;transition:box-shadow .15s,border-color .15s;position:relative;" '
                 + 'onmouseenter="this.style.boxShadow=\'0 4px 18px rgba(0,0,0,.1)\'" onmouseleave="this.style.boxShadow=\'\'">'+
-                (esActual ? '<span style="position:absolute;top:12px;right:12px;background:#C9A84C;color:#fff;border-radius:10px;padding:1px 8px;font-size:10px;font-weight:700;">Activa</span>' : '')+
+                (esActual ? '<span style="position:absolute;top:12px;right:12px;background:#D9A932;color:#fff;border-radius:10px;padding:1px 8px;font-size:10px;font-weight:700;">Activa</span>' : '')+
                 '<div style="font-weight:700;font-size:14px;margin-bottom:4px;padding-right:60px;">'+emp.nombre+'</div>'+
                 (d.cuit ? '<div style="font-size:11px;color:var(--text-2,#888);margin-bottom:2px;">CUIT: '+d.cuit+'</div>' : '')+
                 (d.condIva ? '<div style="font-size:11px;color:var(--text-2,#888);margin-bottom:6px;">'+d.condIva+'</div>' : '<div style="margin-bottom:6px;"></div>')+
                 '<div style="margin-bottom:10px;">'+proyHTML+'</div>'+
                 '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
-                    '<button onclick="event.stopPropagation();hpFiscalModal(\''+emp.id+'\')" style="font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid #C9A84C;background:rgba(201,168,76,.1);color:#9a7a2a;cursor:pointer;font-weight:600;">📋 Estado fiscal</button>'+
+                    '<button onclick="event.stopPropagation();hpFiscalModal(\''+emp.id+'\')" style="font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid #D9A932;background:rgba(217,169,50,.1);color:#9a7a2a;cursor:pointer;font-weight:600;">📋 Estado fiscal</button>'+
                     (esActual ? '' : '<button onclick="event.stopPropagation();hpSeleccionarEmpresa(\''+emp.id+'\')" style="font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid #4a9af5;background:rgba(74,154,245,.08);color:#1a6dd4;cursor:pointer;font-weight:600;">↩ Activar</button>')+
                 '</div>'+
             '</div>';
@@ -17419,11 +17442,11 @@
                     return '<span style="display:inline-block;background:rgba(57,73,171,.1);border-radius:10px;padding:2px 8px;font-size:10px;margin:2px 2px 0 0;color:#3949AB;">' + p.nombre + '</span>';
                 }).join('') + (proyCount > 4 ? '<span style="font-size:10px;color:var(--text-2,#aaa);margin-left:4px;">+' + (proyCount - 4) + ' más</span>' : '');
 
-                return '<div style="background:var(--surface,#fff);border:2px solid ' + (esActual ? '#C9A84C' : 'var(--border-soft,#e0e0e0)') + ';border-radius:16px;overflow:hidden;transition:box-shadow .15s,border-color .15s;position:relative;box-shadow:0 1px 4px rgba(0,0,0,.06);" '
-                    + 'onmouseenter="this.style.boxShadow=\'0 6px 24px rgba(0,0,0,.12)\';this.style.borderColor=\'' + (esActual ? '#C9A84C' : '#3949AB') + '\'" '
-                    + 'onmouseleave="this.style.boxShadow=\'0 1px 4px rgba(0,0,0,.06)\';this.style.borderColor=\'' + (esActual ? '#C9A84C' : 'var(--border-soft,#e0e0e0)') + '\'">'
+                return '<div style="background:var(--surface,#fff);border:2px solid ' + (esActual ? '#D9A932' : 'var(--border-soft,#e0e0e0)') + ';border-radius:16px;overflow:hidden;transition:box-shadow .15s,border-color .15s;position:relative;box-shadow:0 1px 4px rgba(0,0,0,.06);" '
+                    + 'onmouseenter="this.style.boxShadow=\'0 6px 24px rgba(0,0,0,.12)\';this.style.borderColor=\'' + (esActual ? '#D9A932' : '#3949AB') + '\'" '
+                    + 'onmouseleave="this.style.boxShadow=\'0 1px 4px rgba(0,0,0,.06)\';this.style.borderColor=\'' + (esActual ? '#D9A932' : 'var(--border-soft,#e0e0e0)') + '\'">'
                     // Header de la tarjeta
-                    + '<div style="background:' + (esActual ? 'linear-gradient(135deg,#C9A84C,#a07830)' : 'linear-gradient(135deg,#3949AB,#1a237e)') + ';padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="dbSelEmpresa(\'' + emp.id + '\')">'
+                    + '<div style="background:' + (esActual ? 'linear-gradient(135deg,#D9A932,#a07830)' : 'linear-gradient(135deg,#3949AB,#1a237e)') + ';padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="dbSelEmpresa(\'' + emp.id + '\')">'
                     + '<div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
                     + '<span style="color:#fff;font-weight:900;font-size:20px;font-family:Raleway,sans-serif;">' + (emp.nombre || '?').charAt(0).toUpperCase() + '</span>'
                     + '</div>'
@@ -20681,7 +20704,7 @@
       }).join(' | ') + '. La empresa/proyecto activo ahora es "' + (typeof empresaActual !== 'undefined' && empresaActual ? empresaActual.nombre : '—')
         + (typeof proyectoActual !== 'undefined' && proyectoActual ? ' / ' + proyectoActual.nombre : '') + '".';
     }
-    var sistemaPrompt = 'Sos el asistente inteligente de CISEB · Sistema de Gestión Odontológica, una PWA de administración contable argentina. '
+    var sistemaPrompt = 'Sos el asistente inteligente de CISEB · Centro Integral de Salud y Estética Bucal, una PWA de administración contable argentina. '
       + 'Sos un asistente general capaz y con criterio propio: además de ayudar con la app, respondés con solvencia cualquier '
       + 'pregunta que te hagan (conocimientos generales, cálculos, redacción, consejos, dudas legales/impositivas/de negocio, '
       + 'o cualquier otro tema), igual que lo haría un asistente de IA de uso general. No te limites a temas de la app: si la '

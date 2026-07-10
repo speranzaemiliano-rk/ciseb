@@ -1,13 +1,13 @@
 {
-  "name": "CISEB · Sistema de Gestión Odontológica",
+  "name": "CISEB · Centro Integral de Salud y Estética Bucal",
   "short_name": "CISEB",
   "description": "Sistema de gestión para consultorio odontológico con facturación ARCA",
   "start_url": "/ciseb/",
   "scope": "/ciseb/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#0f1117",
-  "theme_color": "#000000",
+  "background_color": "#0E0D0C",
+  "theme_color": "#2D6CA6",
   "lang": "es",
   "icons": [
     {

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800">
   <defs>
     <path id="petal" d="M -0.15,0
       C -0.12,-0.55 0.35,-0.95 0.65,-0.98
@@ -6,8 +6,8 @@
       C 1,0.3 0.85,1.0 0.65,0.98
       C 0.35,0.95 -0.12,0.55 -0.15,0 Z"/>
   </defs>
-  <rect x="0" y="0" width="512" height="512" fill="#ffffff"/>
-  <g transform="translate(85,71) scale(1.85)">
+
+  <g transform="translate(157,15) scale(1.55)">
     <use href="#petal" fill="#8E3B8E" transform="translate(94,98) rotate(-100) scale(55,17)"/>
     <use href="#petal" fill="#F7C948" transform="translate(94,98) rotate(105) scale(78,19)"/>
     <use href="#petal" fill="#E31C4D" fill-opacity="0.92" transform="translate(94,98) rotate(180) scale(95,26)"/>
@@ -15,4 +15,7 @@
     <use href="#petal" fill="#7AB648" transform="translate(112,100) rotate(35) scale(76,18)"/>
     <circle cx="112" cy="100" r="6" fill="#1E4C8C"/>
   </g>
+
+  <text x="300" y="510" text-anchor="middle" font-family="'Raleway', sans-serif" font-weight="300" font-size="70" letter-spacing="18" fill="#9FBBD1">CISEB</text>
+  <text x="300" y="558" text-anchor="middle" font-family="'Raleway', sans-serif" font-weight="700" font-size="15" letter-spacing="1.2" fill="#58595B">CENTRO INTEGRAL DE SALUD Y ESTÉTICA BUCAL</text>
 </svg>
