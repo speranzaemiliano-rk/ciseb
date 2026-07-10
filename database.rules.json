@@ -6,7 +6,7 @@
     "roles": {
       ".read": "auth != null",
       "$uid": {
-        ".write": "root.child('roles').child(auth.uid).val() === 'superadmin'"
+        ".write": "root.child('roles').child(auth.uid).val() === 'superadmin' || (auth.uid === $uid && !root.child('roles').exists())"
       }
     },
 
