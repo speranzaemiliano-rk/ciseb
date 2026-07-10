@@ -1864,7 +1864,7 @@
         #panelHome *{box-sizing:border-box}
         .hp-wrap{padding:20px;display:flex;flex-direction:column;gap:14px;max-width:1440px;margin:0 auto}
         /* topbar */
-        .hp-top{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:relative;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+        .hp-top{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:relative;z-index:50;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
         .hp-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:24px;padding:6px 14px;display:flex;align-items:center;gap:6px;position:relative}
         .hp-pill-lbl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.4);white-space:nowrap}
         .hp-pill select{background:transparent;border:none;outline:none;font-family:var(--font-sans,'Raleway',sans-serif);font-size:13px;font-weight:400;color:#fff;cursor:pointer;max-width:175px}
@@ -2203,7 +2203,7 @@
     transition:opacity 1.2s ease,transform 1.2s ease;
 }
 #ciseb-splash .sp-brand{
-    display:flex;align-items:center;justify-content:center;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
 }
 #ciseb-splash .sp-brand span{
     font-family:-apple-system,BlinkMacSystemFont,SF Pro Display,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
@@ -2242,7 +2242,20 @@
 
 <div id="ciseb-splash">
     <div class="sp-content" id="sp-ct">
-        <div class="sp-brand"><span>CISEB</span></div>
+        <div class="sp-brand">
+            <svg viewBox="0 0 512 512" width="88" height="88" xmlns="http://www.w3.org/2000/svg">
+                <defs><path id="petal-sp" d="M -0.15,0 C -0.12,-0.55 0.35,-0.95 0.65,-0.98 C 0.85,-1.0 1,-0.3 1,0 C 1,0.3 0.85,1.0 0.65,0.98 C 0.35,0.95 -0.12,0.55 -0.15,0 Z"/></defs>
+                <g transform="translate(85,71) scale(1.85)">
+                    <use href="#petal-sp" fill="#8E3B8E" transform="translate(94,98) rotate(-100) scale(55,17)"/>
+                    <use href="#petal-sp" fill="#F7C948" transform="translate(94,98) rotate(105) scale(78,19)"/>
+                    <use href="#petal-sp" fill="#E31C4D" fill-opacity="0.92" transform="translate(94,98) rotate(180) scale(95,26)"/>
+                    <use href="#petal-sp" fill="#93BEDB" transform="translate(112,100) rotate(-35) scale(58,15)"/>
+                    <use href="#petal-sp" fill="#7AB648" transform="translate(112,100) rotate(35) scale(76,18)"/>
+                    <circle cx="112" cy="100" r="6" fill="#1E4C8C"/>
+                </g>
+            </svg>
+            <span>CISEB</span>
+        </div>
         <div class="sp-rule" id="sp-rule"></div>
         <div class="sp-sub">Sistema de Gesti&oacute;n</div>
         <button id="sp-enter">Entrar</button>
