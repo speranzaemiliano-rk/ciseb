@@ -2604,6 +2604,12 @@
                 <button class="nav-item nav-sub" id="tabBtnCobros" data-navkey="cobros" onclick="mostrarTab('Cobros')" title="Cobros generados desde Evoluciones">
                     <span class="nav-drag-handle">⠿</span><span class="nav-icon">payments</span> Cobros
                 </button>
+                <button class="nav-item nav-sub" id="tabBtnBeneficiarios" data-navkey="beneficiarios" onclick="mostrarTab('Beneficiarios')" title="Beneficiarios del reparto (socios y fondo común)">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">account_balance</span> Beneficiarios
+                </button>
+                <button class="nav-item nav-sub" id="tabBtnLiquidacion" data-navkey="liquidacion" onclick="mostrarTab('Liquidacion')" title="Liquidación por período">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">receipt_long</span> Liquidación
+                </button>
             </div>
             </div>
 
@@ -3369,6 +3375,84 @@
                     </div>
                 </div>
             </div><!-- /panelCobros -->
+
+            <!-- TAB: BENEFICIARIOS (motor de liquidación — Feature 1) -->
+            <div class="tab-panel" id="panelBeneficiarios">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Beneficiarios cargados</div>
+                        <div class="stat-value" id="benefTotal">0</div>
+                    </div>
+                </div>
+                <div class="table-card">
+                    <div class="table-card-head">
+                        <h3>🤝 Beneficiarios — Reparto</h3>
+                        <button class="btn btn-gold btn-sm" id="btnAgregarBeneficiario" onclick="abrirModalBeneficiario()">➕ Nuevo Beneficiario</button>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Tipo</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="beneficiariosBody">
+                                <tr><td colspan="3" class="empty-msg">No hay beneficiarios cargados.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div><!-- /panelBeneficiarios -->
+
+            <!-- TAB: LIQUIDACIÓN (reporte de solo lectura por período — Feature 4) -->
+            <div class="tab-panel" id="panelLiquidacion">
+                <div class="table-card">
+                    <div class="table-card-head">
+                        <h3>🧾 Liquidación — Reparto por período</h3>
+                    </div>
+                    <div class="search-row" style="gap:12px; align-items:center; flex-wrap:wrap;">
+                        <label style="font-size:13px; color:var(--text-3); display:flex; align-items:center; gap:6px;">Desde
+                            <input type="date" id="liqDesde" onchange="renderLiquidacion()">
+                        </label>
+                        <label style="font-size:13px; color:var(--text-3); display:flex; align-items:center; gap:6px;">Hasta
+                            <input type="date" id="liqHasta" onchange="renderLiquidacion()">
+                        </label>
+                        <button class="btn btn-gold btn-sm" onclick="renderLiquidacion()">Calcular</button>
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                    <div class="table-card">
+                        <div class="table-card-head"><h3>Por beneficiario</h3></div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Beneficiario</th><th>Total</th></tr></thead>
+                                <tbody id="liqBeneficiariosBody">
+                                    <tr><td colspan="2" class="empty-msg">Sin cobros en el período seleccionado.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="table-card">
+                        <div class="table-card-head"><h3>Por profesional</h3></div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Profesional</th><th>Total</th></tr></thead>
+                                <tbody id="liqProfesionalesBody">
+                                    <tr><td colspan="2" class="empty-msg">Sin cobros en el período seleccionado.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-card">
+                    <div class="table-card-head">
+                        <h3>Total general del período</h3>
+                        <div class="stat-value" id="liqTotalGeneral">$0</div>
+                    </div>
+                </div>
+            </div><!-- /panelLiquidacion -->
 
             <!-- TAB: DASHBOARD -->
             <div class="tab-panel" id="panelDashboard" style="background:var(--surface-2,#F1F3F4);margin:-28px -32px 0;min-height:calc(100vh - 56px);padding:0;">
@@ -8227,12 +8311,13 @@
     function refreshTabActivo(){
         var btn=document.getElementById('btnRefresh');
         if(btn){btn.classList.add('spin');setTimeout(function(){btn.classList.remove('spin');},520);}
-        var map={'Presupuestos':renderizar,'Proveedores':renderProveedores,'Facturas':renderFacturas,'Documentos':renderDocumentos,'ResumenIngresos':renderResumenIngresos,'Servicios':renderServicios,'IngGeneral':renderIngGeneral,'Pacientes':renderPacientes,'Turnos':renderTurnos,'Profesionales':renderProfesionales,'Prestaciones':renderPrestaciones,'Cobros':renderCobros,'Egresos':renderEgresos,'Pagos':renderPagos,'CajaGeneral':renderCajaGeneral,'EfectivoPesos':renderEfectivoPesos,'EfectivoUSD':renderEfectivoUSD,'CuentasBancarias':renderCuentasBancarias,'PlanTrabajo':renderPlanTrabajo,'Tesoreria':renderTesoreria};
+        var map={'Presupuestos':renderizar,'Proveedores':renderProveedores,'Facturas':renderFacturas,'Documentos':renderDocumentos,'ResumenIngresos':renderResumenIngresos,'Servicios':renderServicios,'IngGeneral':renderIngGeneral,'Pacientes':renderPacientes,'Turnos':renderTurnos,'Profesionales':renderProfesionales,'Prestaciones':renderPrestaciones,'Cobros':renderCobros,'Beneficiarios':renderBeneficiarios,'Liquidacion':renderLiquidacion,'Egresos':renderEgresos,'Pagos':renderPagos,'CajaGeneral':renderCajaGeneral,'EfectivoPesos':renderEfectivoPesos,'EfectivoUSD':renderEfectivoUSD,'CuentasBancarias':renderCuentasBancarias,'PlanTrabajo':renderPlanTrabajo,'Tesoreria':renderTesoreria};
         var fn=map[_tabActivo];if(fn)fn();
     }
     function mostrarTab(nombre) {
         const ALL_TABS = [
             'Home','Pacientes','Turnos','Profesionales','Prestaciones','Cobros',
+            'Beneficiarios','Liquidacion',
             'Presupuestos','Proveedores','Facturas','Documentos',
             'ResumenIngresos','Servicios','IngGeneral',
             'Egresos','CompRecibidos','Pagos','Caja','CajaGeneral','PlanTrabajo',
@@ -8251,7 +8336,7 @@
         if (btnHome) btnHome.classList.toggle('active', nombre === 'Home');
 
         // Submenú Consultorio (Pacientes / Turnos)
-        const SUB_CONSULTORIO = ['Pacientes','Turnos','Profesionales','Prestaciones','Cobros'];
+        const SUB_CONSULTORIO = ['Pacientes','Turnos','Profesionales','Prestaciones','Cobros','Beneficiarios','Liquidacion'];
         SUB_CONSULTORIO.forEach(t => {
             const btn = document.getElementById('tabBtn' + t);
             if (btn) btn.classList.toggle('active', t === nombre);
@@ -8324,6 +8409,8 @@
             'Profesionales':     'Profesionales — Consultorio',
             'Prestaciones':      'Prestaciones — Catálogo clínico',
             'Cobros':            'Cobros — Generados desde Evoluciones',
+            'Beneficiarios':     'Beneficiarios — Reparto',
+            'Liquidacion':       'Liquidación — Reparto por período',
             'Presupuestos':      'Presupuestos y Pagos',
             'Proveedores':       'Datos de Proveedores',
             'Facturas':          'Facturas de Proveedores',
@@ -8353,6 +8440,8 @@
         if (nombre === 'Profesionales')     renderProfesionales();
         if (nombre === 'Prestaciones')      renderPrestaciones();
         if (nombre === 'Cobros')            renderCobros();
+        if (nombre === 'Beneficiarios')     renderBeneficiarios();
+        if (nombre === 'Liquidacion')       renderLiquidacion();
         if (nombre === 'Dashboard')        renderDashboard();
         if (nombre === 'Egresos')          renderEgresos();
         if (nombre === 'CompRecibidos')    renderCompRecibidos();
@@ -9591,7 +9680,8 @@
                 paciente:    function() { eliminarPaciente(idx); },
                 turno:       function() { eliminarTurno(idx); },
                 profesional: function() { eliminarProfesional(idx); },
-                prestacion:  function() { eliminarPrestacion(idx); }
+                prestacion:  function() { eliminarPrestacion(idx); },
+                beneficiario: function() { eliminarBeneficiario(idx); }
             };
             if (fns[tipo]) fns[tipo]();
             return;
@@ -9656,6 +9746,12 @@
                 var pres = prestaciones[idx]; if (!pres) { alert('Ítem no encontrado.'); return; }
                 descripcion = 'Prestación: ' + (pres.nombre||'?') + (pres.especialidad ? ' (' + pres.especialidad + ')' : '');
                 itemData = { id: pres.id, nombre: pres.nombre };
+                break;
+            }
+            case 'beneficiario': {
+                var ben = beneficiarios[idx]; if (!ben) { alert('Ítem no encontrado.'); return; }
+                descripcion = 'Beneficiario: ' + (ben.nombre||'?');
+                itemData = { id: ben.id, nombre: ben.nombre };
                 break;
             }
             default: alert('Tipo no soportado: ' + tipo); return;
@@ -9731,6 +9827,11 @@
                     var i = D.id ? prestaciones.findIndex(function(pr){ return pr.id===D.id; })
                                  : prestaciones.findIndex(function(pr){ return pr.nombre===D.nombre; });
                     if (i !== -1) { prestaciones.splice(i, 1); persistirPrestaciones(); deleted = true; } break;
+                }
+                case 'beneficiario': {
+                    var i = D.id ? beneficiarios.findIndex(function(b){ return b.id===D.id; })
+                                 : beneficiarios.findIndex(function(b){ return b.nombre===D.nombre; });
+                    if (i !== -1) { beneficiarios.splice(i, 1); persistirBeneficiarios(); deleted = true; } break;
                 }
                 case 'movcaja':
                 case 'inggeneral': {
@@ -13490,6 +13591,10 @@
     let evoluciones = [];
     let REF_COBROS = null;
     let cobros = [];
+    // Feature 1 (motor de liquidación): beneficiarios del reparto (socios + fondo común).
+    let REF_BENEFICIARIOS = null;
+    let beneficiarios = [];
+    var editandoBenefIdx = -1;
 
     // Se llama desde actualizarRefs()
     function actualizarRefsIngresos() {
@@ -13505,6 +13610,7 @@
         REF_PRESTACIONES  = db.ref(base + '/prestaciones');
         REF_EVOLUCIONES   = db.ref(base + '/evoluciones');
         REF_COBROS        = db.ref(base + '/cobros');
+        REF_BENEFICIARIOS = db.ref(base + '/beneficiarios');
     }
 
     // Helper: carga con listener .on() reactivo
@@ -13531,6 +13637,7 @@
         _cargarConListener(REF_PRESTACIONES, function(v) { prestaciones = v; if (typeof renderPrestaciones==='function') renderPrestaciones(); });
         _cargarConListener(REF_EVOLUCIONES, function(v) { evoluciones = v; if (typeof _fichaClinicaPacIdx !== 'undefined' && _fichaClinicaPacIdx >= 0 && typeof _renderEvolucionesFicha==='function') _renderEvolucionesFicha(_fichaClinicaPacIdx); });
         _cargarConListener(REF_COBROS, function(v) { cobros = v; if (typeof renderCobros==='function') renderCobros(); });
+        _cargarConListener(REF_BENEFICIARIOS, function(v) { beneficiarios = v; if (typeof renderBeneficiarios==='function') renderBeneficiarios(); });
         if (REF_PLAN) {
             REF_PLAN.on('value', function(snap) {
                 var val = snap.val();
@@ -13575,6 +13682,12 @@
         if (!REF_COBROS) return;
         REF_COBROS.set(cobros)
             .catch(function(e) { console.error('Error guardando cobros:', e); alert('Error al guardar. Revisá la conexión.'); });
+    }
+
+    function persistirBeneficiarios() {
+        if (!REF_BENEFICIARIOS) return;
+        REF_BENEFICIARIOS.set(beneficiarios)
+            .catch(function(e) { console.error('Error guardando beneficiarios:', e); alert('Error al guardar. Revisá la conexión.'); });
     }
 
     // ══════════════════════════════════════════════════════════
@@ -13827,6 +13940,26 @@
         cont.appendChild(fila);
     }
 
+    // Feature 2 (motor de liquidación): fila de reparto de la parte "consultorio" del
+    // profesional hacia un beneficiario. El <select> se arma acá mismo con las opciones de
+    // `beneficiarios` en el momento de crear la fila (no hay población global aparte), así
+    // que cada fila queda con su propio listado actualizado.
+    function profAgregarBeneficiarioFila(beneficiarioId, porcentaje) {
+        var cont = document.getElementById('profBeneficiariosLista');
+        if (!cont) return;
+        var fila = document.createElement('div');
+        fila.className = 'prof-benef-fila';
+        fila.style.cssText = 'display:grid; grid-template-columns:1fr 120px 32px; gap:6px; margin-bottom:6px; align-items:center;';
+        var opciones = '<option value="">— Elegir beneficiario —</option>' + beneficiarios.map(function(b) {
+            return '<option value="' + escHtml(b.id || '') + '"' + (b.id === beneficiarioId ? ' selected' : '') + '>' + escHtml(b.nombre || '(sin nombre)') + '</option>';
+        }).join('');
+        fila.innerHTML =
+            '<select class="prof-benef-select">' + opciones + '</select>' +
+            '<input type="number" class="prof-benef-porcentaje" min="0" max="100" step="1" placeholder="%" value="' + (porcentaje !== null && porcentaje !== undefined && porcentaje !== '' ? escHtml(String(porcentaje)) : '') + '">' +
+            '<button type="button" class="btn btn-outline btn-sm" onclick="this.parentNode.remove()" title="Quitar">✕</button>';
+        cont.appendChild(fila);
+    }
+
     function abrirModalProfesional(idx) {
         editandoProfIdx = (idx !== undefined) ? idx : -1;
         var p = editandoProfIdx >= 0 ? profesionales[editandoProfIdx] : null;
@@ -13837,6 +13970,8 @@
         });
         var lista = document.getElementById('profTratamientosLista');
         if (lista) lista.innerHTML = '';
+        var listaBenef = document.getElementById('profBeneficiariosLista');
+        if (listaBenef) listaBenef.innerHTML = '';
         if (p) {
             document.getElementById('profNombre').value          = p.nombre || '';
             document.getElementById('profEspecialidad').value    = p.especialidad || '';
@@ -13847,6 +13982,9 @@
             document.getElementById('profNotas').value           = p.notas || '';
             (p.tratamientos || []).forEach(function(t) {
                 profAgregarTratamientoFila(t.nombre || '', t.porcentaje);
+            });
+            (p.repartoBeneficiarios || []).forEach(function(rb) {
+                profAgregarBeneficiarioFila(rb.beneficiarioId || '', rb.porcentaje);
             });
         }
         // Pacientes asignados (solo lectura): se listan los pacientes cuyo profesionalId coincide.
@@ -13881,6 +14019,19 @@
             var pStr = ((fila.querySelector('.prof-trat-porcentaje') || {}).value || '').trim();
             tratamientos.push({ nombre: n, porcentaje: pStr === '' ? null : (parseFloat(pStr) || 0) });
         });
+        // Feature 2 (motor de liquidación): reparto de la parte "consultorio" del profesional
+        // hacia beneficiarios. Son pesos relativos (no hace falta que sumen 100), se normalizan
+        // al calcular participaciones (ver _calcularParticipaciones). Filas sin beneficiario
+        // elegido o con porcentaje vacío/0 se descartan.
+        var repartoBeneficiarios = [];
+        document.querySelectorAll('#profBeneficiariosLista .prof-benef-fila').forEach(function(fila) {
+            var benefId = ((fila.querySelector('.prof-benef-select') || {}).value || '').trim();
+            if (!benefId) return;
+            var pStr = ((fila.querySelector('.prof-benef-porcentaje') || {}).value || '').trim();
+            var pct = pStr === '' ? 0 : (parseFloat(pStr) || 0);
+            if (!pct) return;
+            repartoBeneficiarios.push({ beneficiarioId: benefId, porcentaje: pct });
+        });
         var prev = editandoProfIdx >= 0 ? profesionales[editandoProfIdx] : null;
         var p = {
             id:              (prev && prev.id) ? prev.id : ('prof_' + Date.now()),
@@ -13891,7 +14042,8 @@
             email:           (document.getElementById('profEmail').value || '').trim(),
             comisionGeneral: comisionStr === '' ? 0 : (parseFloat(comisionStr) || 0),
             notas:           (document.getElementById('profNotas').value || '').trim(),
-            tratamientos:    tratamientos
+            tratamientos:    tratamientos,
+            repartoBeneficiarios: repartoBeneficiarios
         };
         if (editandoProfIdx >= 0) profesionales[editandoProfIdx] = p; else profesionales.push(p);
         persistirProfesionales();
@@ -14035,6 +14187,73 @@
                 '<td><div class="action-btns">' +
                     '<button class="btn btn-outline btn-sm" onclick="abrirModalPrestacion(' + idx + ')" title="Editar">✏</button>' +
                     (typeof btnElim === 'function' ? btnElim('prestacion', idx) : '<button class="btn btn-danger-sm" onclick="eliminarPrestacion(' + idx + ')">✕</button>') +
+                '</div></td>';
+            tbody.appendChild(tr);
+        });
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // BENEFICIARIOS — Feature 1 (motor de liquidación)
+    // ══════════════════════════════════════════════════════════
+    // El centro define acá sus beneficiarios (socios + fondo común + otros). Cada Profesional
+    // define, opcionalmente, cómo reparte hacia estos beneficiarios la parte "consultorio" de
+    // sus cobros (ver profBeneficiariosLista en el modal de Profesional y
+    // _calcularParticipaciones más abajo). Entidad simple, mismo patrón que Prestaciones.
+
+    function abrirModalBeneficiario(idx) {
+        editandoBenefIdx = (idx !== undefined) ? idx : -1;
+        var b = editandoBenefIdx >= 0 ? beneficiarios[editandoBenefIdx] : null;
+        document.getElementById('modalBeneficiarioTitle').textContent = b ? '🤝 Editar Beneficiario' : '🤝 Nuevo Beneficiario';
+        document.getElementById('benefNombre').value = b ? (b.nombre || '') : '';
+        document.getElementById('benefTipo').value   = b ? (b.tipo || 'socio') : 'socio';
+        document.getElementById('benefNotas').value  = b ? (b.notas || '') : '';
+        document.getElementById('modalBeneficiario').classList.add('active');
+    }
+
+    function cerrarModalBeneficiario() { document.getElementById('modalBeneficiario').classList.remove('active'); }
+
+    function guardarBeneficiario() {
+        var nombre = (document.getElementById('benefNombre').value || '').trim();
+        if (!nombre) { alert('El nombre del beneficiario es obligatorio.'); return; }
+        var prev = editandoBenefIdx >= 0 ? beneficiarios[editandoBenefIdx] : null;
+        var b = {
+            id:     (prev && prev.id) ? prev.id : ('benef_' + Date.now()),
+            nombre: nombre,
+            tipo:   document.getElementById('benefTipo').value || 'socio',
+            notas:  (document.getElementById('benefNotas').value || '').trim()
+        };
+        if (editandoBenefIdx >= 0) beneficiarios[editandoBenefIdx] = b; else beneficiarios.push(b);
+        persistirBeneficiarios();
+        cerrarModalBeneficiario();
+        renderBeneficiarios();
+    }
+
+    function eliminarBeneficiario(idx) {
+        if (!confirm('¿Eliminar este beneficiario? Esta acción no se puede deshacer.')) return;
+        beneficiarios.splice(idx, 1);
+        persistirBeneficiarios();
+        renderBeneficiarios();
+    }
+
+    function renderBeneficiarios() {
+        var tbody = document.getElementById('beneficiariosBody');
+        if (!tbody) return;
+        var totEl = document.getElementById('benefTotal');
+        if (totEl) totEl.textContent = beneficiarios.length;
+        if (!beneficiarios.length) {
+            tbody.innerHTML = '<tr><td colspan="3" class="empty-msg">No hay beneficiarios cargados.</td></tr>';
+            return;
+        }
+        var TIPO_LABEL = { socio: 'Socio', fondo_comun: 'Fondo común', otro: 'Otro' };
+        tbody.innerHTML = '';
+        beneficiarios.forEach(function(b, idx) {
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+                '<td><strong>' + escHtml(b.nombre || '—') + '</strong></td>' +
+                '<td>' + escHtml(TIPO_LABEL[b.tipo] || b.tipo || '—') + '</td>' +
+                '<td><div class="action-btns">' +
+                    '<button class="btn btn-outline btn-sm" onclick="abrirModalBeneficiario(' + idx + ')" title="Editar">✏</button>' +
+                    (typeof btnElim === 'function' ? btnElim('beneficiario', idx) : '<button class="btn btn-danger-sm" onclick="eliminarBeneficiario(' + idx + ')">✕</button>') +
                 '</div></td>';
             tbody.appendChild(tr);
         });
@@ -14444,6 +14663,39 @@
         }
     }
 
+    // Feature 3 (motor de liquidación): reparte montoConsultorio entre los beneficiarios que el
+    // profesional configuró (ver repartoBeneficiarios en guardarProfesional). Se llama DESPUÉS
+    // de que guardarEvolucion calcule montoConsultorio — no toca ese cálculo, solo lo consume.
+    // Si el profesional no tiene reparto configurado (retrocompatibilidad con los que ya
+    // existen), todo el montoConsultorio va a un bucket "Sin asignar" — comportamiento por
+    // defecto, sin que el usuario tenga que configurar nada.
+    function _calcularParticipaciones(prof, montoConsultorio) {
+        var reparto = (prof && prof.repartoBeneficiarios) || [];
+        var sumaPct = reparto.reduce(function(acc, r) { return acc + (parseFloat(r.porcentaje) || 0); }, 0);
+        if (!reparto.length || !sumaPct) {
+            return [{ beneficiarioId: null, beneficiarioNombre: 'Sin asignar', monto: montoConsultorio }];
+        }
+        // Normaliza cada porcentaje contra la suma total (no hace falta que sumen 100 exacto) y
+        // redondea a 2 decimales, ajustando el ÚLTIMO ítem para que la suma dé EXACTO
+        // montoConsultorio (evita diferencias de centavos por redondeo).
+        var participaciones = [];
+        var acumulado = 0;
+        reparto.forEach(function(r, i) {
+            var benef = beneficiarios.filter(function(b) { return b.id === r.beneficiarioId; })[0];
+            var nombre = benef ? benef.nombre : 'Beneficiario eliminado';
+            var monto;
+            if (i === reparto.length - 1) {
+                monto = +(montoConsultorio - acumulado).toFixed(2);
+            } else {
+                var pctNormalizado = (parseFloat(r.porcentaje) || 0) / sumaPct;
+                monto = +(montoConsultorio * pctNormalizado).toFixed(2);
+                acumulado = +(acumulado + monto).toFixed(2);
+            }
+            participaciones.push({ beneficiarioId: r.beneficiarioId || null, beneficiarioNombre: nombre, monto: monto });
+        });
+        return participaciones;
+    }
+
     function guardarEvolucion() {
         if (_evoPacienteIdx < 0) { alert('No hay paciente en contexto.'); return; }
         var p = pacientes[_evoPacienteIdx];
@@ -14477,6 +14729,11 @@
         var montoConsultorio  = +(monto * (pctConsultorio / 100)).toFixed(2);
         var montoProfesional  = +(monto - montoConsultorio).toFixed(2);
 
+        // Feature 3 (motor de liquidación) — paso ADITIVO, se agrega después del cálculo de
+        // arriba sin tocarlo. Reparte montoConsultorio entre beneficiarios según la
+        // configuración del profesional (o "Sin asignar" si no configuró nada).
+        var participaciones = _calcularParticipaciones(prof, montoConsultorio);
+
         var evo = {
             id:                   'evo_' + Date.now(),
             fecha:                new Date().toISOString().slice(0, 10),
@@ -14494,6 +14751,7 @@
             porcentajeProfesional: +(100 - pctConsultorio).toFixed(2),
             montoProfesional:     montoProfesional,
             montoConsultorio:     montoConsultorio,
+            participaciones:      participaciones,
             creadoEn:             Date.now()
         };
         evoluciones.push(evo);
@@ -14559,6 +14817,80 @@
                 '<td>$' + Math.round(c.montoConsultorio || 0).toLocaleString('es-AR') + '</td>';
             tbody.appendChild(tr);
         });
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // LIQUIDACIÓN — Feature 4 (motor de liquidación, reporte de solo lectura)
+    // ══════════════════════════════════════════════════════════
+    // Suma las participaciones (por beneficiario) y el montoProfesional (por profesional) de
+    // los cobros cuya fecha cae dentro de [liqDesde, liqHasta] (inclusive). Corte diario por
+    // defecto (liqDesde = liqHasta = hoy), configurable por el usuario.
+    function renderLiquidacion() {
+        var desdeEl = document.getElementById('liqDesde');
+        var hastaEl = document.getElementById('liqHasta');
+        if (!desdeEl || !hastaEl) return;
+        var hoy = new Date().toISOString().slice(0, 10);
+        if (!desdeEl.value) desdeEl.value = hoy;
+        if (!hastaEl.value) hastaEl.value = hoy;
+        var desde = desdeEl.value;
+        var hasta = hastaEl.value;
+
+        var filtrados = cobros.filter(function(c) {
+            if (!c.fecha) return false;
+            if (desde && c.fecha < desde) return false;
+            if (hasta && c.fecha > hasta) return false;
+            return true;
+        });
+
+        // Por beneficiario: agrupa participaciones[] de todos los cobros filtrados.
+        var porBenef = {};
+        filtrados.forEach(function(c) {
+            (c.participaciones || []).forEach(function(part) {
+                var key = part.beneficiarioId || 'sin_asignar';
+                if (!porBenef[key]) porBenef[key] = { nombre: part.beneficiarioNombre || 'Sin asignar', total: 0 };
+                porBenef[key].total = +(porBenef[key].total + (part.monto || 0)).toFixed(2);
+            });
+        });
+
+        // Por profesional: agrupa montoProfesional de todos los cobros filtrados.
+        var porProf = {};
+        filtrados.forEach(function(c) {
+            var key = c.profesionalId || 'sin_profesional';
+            if (!porProf[key]) {
+                var prof = profesionales.filter(function(p) { return p.id === c.profesionalId; })[0];
+                porProf[key] = { nombre: prof ? prof.nombre : '—', total: 0 };
+            }
+            porProf[key].total = +(porProf[key].total + (c.montoProfesional || 0)).toFixed(2);
+        });
+
+        var totalGeneral = filtrados.reduce(function(acc, c) { return acc + (c.monto || 0); }, 0);
+
+        var tbodyBenef = document.getElementById('liqBeneficiariosBody');
+        if (tbodyBenef) {
+            var clavesBenef = Object.keys(porBenef);
+            if (!clavesBenef.length) {
+                tbodyBenef.innerHTML = '<tr><td colspan="2" class="empty-msg">Sin cobros en el período seleccionado.</td></tr>';
+            } else {
+                tbodyBenef.innerHTML = clavesBenef.map(function(k) {
+                    return '<tr><td>' + escHtml(porBenef[k].nombre) + '</td><td>$' + Math.round(porBenef[k].total).toLocaleString('es-AR') + '</td></tr>';
+                }).join('');
+            }
+        }
+
+        var tbodyProf = document.getElementById('liqProfesionalesBody');
+        if (tbodyProf) {
+            var clavesProf = Object.keys(porProf);
+            if (!clavesProf.length) {
+                tbodyProf.innerHTML = '<tr><td colspan="2" class="empty-msg">Sin cobros en el período seleccionado.</td></tr>';
+            } else {
+                tbodyProf.innerHTML = clavesProf.map(function(k) {
+                    return '<tr><td>' + escHtml(porProf[k].nombre) + '</td><td>$' + Math.round(porProf[k].total).toLocaleString('es-AR') + '</td></tr>';
+                }).join('');
+            }
+        }
+
+        var totEl = document.getElementById('liqTotalGeneral');
+        if (totEl) totEl.textContent = '$' + Math.round(totalGeneral).toLocaleString('es-AR');
     }
 
     // ══════════════════════════════════════════════════════════
@@ -20040,6 +20372,12 @@
         <button type="button" class="btn btn-outline btn-sm" onclick="profAgregarTratamientoFila()">+ Agregar tratamiento</button>
       </div>
       <div class="form-group">
+        <label>Reparto entre beneficiarios (de la parte que no es del profesional)</label>
+        <div id="profBeneficiariosLista"></div>
+        <button type="button" class="btn btn-outline btn-sm" onclick="profAgregarBeneficiarioFila()">+ Agregar beneficiario</button>
+        <div style="color:var(--text-3); font-size:11px; margin-top:4px;">Los porcentajes se toman de forma proporcional entre sí (no hace falta que sumen exactamente 100).</div>
+      </div>
+      <div class="form-group">
         <label>Notas</label>
         <textarea id="profNotas" rows="2" placeholder="Observaciones…"></textarea>
       </div>
@@ -20151,6 +20489,38 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" onclick="cerrarModalPrestacion()">Cancelar</button>
         <button type="button" class="btn btn-gold" onclick="guardarPrestacion()">💾 Guardar Prestación</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL: BENEFICIARIO ═══════════════ -->
+<div class="modal" id="modalBeneficiario">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 id="modalBeneficiarioTitle">🤝 Nuevo Beneficiario</h2>
+      <button class="modal-close" onclick="cerrarModalBeneficiario()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nombre *</label>
+        <input type="text" id="benefNombre" placeholder="Ej: Dr. Pérez, Fondo común…">
+      </div>
+      <div class="form-group">
+        <label>Tipo</label>
+        <select id="benefTipo">
+          <option value="socio">Socio</option>
+          <option value="fondo_comun">Fondo común</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Notas</label>
+        <textarea id="benefNotas" rows="2" placeholder="Observaciones…"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="cerrarModalBeneficiario()">Cancelar</button>
+        <button type="button" class="btn btn-gold" onclick="guardarBeneficiario()">💾 Guardar Beneficiario</button>
       </div>
     </div>
   </div>
