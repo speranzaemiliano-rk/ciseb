@@ -107,14 +107,14 @@ Leyenda: ✅ construido · 🟡 parcial · ⬜ no existe todavía.
 |---|---|---|
 | Ficha de **Paciente** | ✅ | Datos personales, obra social, notas/antecedentes, profesional asignado, estudios adjuntos. Falta el campo formal de *consentimiento de comunicaciones*. |
 | **Profesionales** con especialidad/matrícula | ✅ | |
-| **Reglas de reparto** por profesional | 🟡 | Hay `% general + override por tratamiento`, pero **hacia un solo destino**, no el modelo de **beneficiarios múltiples** (socios + fondo común) del piloto. |
+| **Reglas de reparto** por profesional | ✅ | `% general + override por tratamiento` hacia el profesional, y esa parte se reparte además entre **beneficiarios múltiples** (socios + fondo común) configurables por profesional. Retrocompatible: sin configurar nada, cae en un bucket "Sin asignar". |
 | **Turnos** / agenda | 🟡 | Listado filtrable por fecha/estado. **Sin** sincronización con Google Calendar ni confirmación automática 24 h. |
 | **Catálogo de prestaciones** | ✅ | Entidad propia (`prestaciones`): nombre, especialidad, duración, precio de referencia, flag *requiere consentimiento*. Separado del módulo heredado "Tratamientos" (facturación por cliente, es otra cosa). |
 | **Evolución estructurada** (entrada única) | ✅ | Implementada: profesional + prestación + piezas/caras + estado + texto → en un guardado actualiza odontograma y genera el cobro. Falta el vínculo a un Turno concreto y a Documento/Imagen. |
 | **Odontograma** FDI, ambas denticiones, 5 superficies | 🟡 | Numeración FDI completa (permanente + temporal), modo Adulto/Mixta, 5 caras + condición de pieza. **2 capas** (`inicial` editable a mano, `realizado` desde evolución) — la capa `planificado` queda reservada para cuando exista Plan de Tratamiento (Fase 4). |
 | **Plan de tratamiento / presupuesto por etapas** | 🟡 | Hay Presupuestos genéricos (heredados del sistema base), no por etapas clínicas con aceptación del paciente. Sin vínculo todavía con la capa `planificado` del odontograma. |
 | **Esquemas de pago** (sesión/cuota/adelantado/libre) | 🟡 | Cada evolución genera un cobro puntual; falta imputar cobros a un plan con saldo/avance de pago. |
-| **Cobro → liquidación** desde la evolución | 🟡 | Cada evolución genera un `cobro` trazable con el split profesional/consultorio ya calculado (base lista). Falta el **motor de liquidación con beneficiarios múltiples** (sumarizar por período, por socio/fondo común) — la próxima pieza a construir. |
+| **Cobro → liquidación** desde la evolución | ✅ | Cada cobro reparte `montoConsultorio` entre beneficiarios (`participaciones[]`, normalizado y redondeado sin diferencia de centavos). Reporte **Liquidación** por rango de fechas: totales por beneficiario y por profesional, con total general para reconciliar. Falta: corte configurable más allá del rango manual (diario/semanal/mensual automático) y exportación. |
 | **Estudios/imágenes** vinculados a paciente | ✅ | PDFs/imágenes por paciente en Firebase Storage. Falta el **portal de signed URLs** y el vínculo a la evolución. |
 | **Consentimiento electrónico con evidencia** | ⬜ | No existe. Prerrequisito legal de la Fase 4 (validar textos con abogado). |
 | **Lista de espera** estructurada | ⬜ | No existe. |
@@ -123,12 +123,12 @@ Leyenda: ✅ construido · 🟡 parcial · ⬜ no existe todavía.
 | **RBAC efectivo / SSO Workspace** | ⬜ | Roles solo en cliente; las reglas de Firebase son la única defensa real. |
 | **Infra como código** (instalador) | ⬜ | Instancia única, no replicable por script todavía. |
 
-**Lectura de una línea:** CISEB ya tiene el **núcleo clínico** que el documento
-pone en el centro — evolución estructurada → odontograma → cobro — funcionando
-de punta a punta. Lo que sigue: el **motor de liquidación con beneficiarios
-múltiples** (socios + fondo común), los **planes de tratamiento por etapas**
-(que activarían la capa `planificado` del odontograma) y los
-**consentimientos con evidencia**.
+**Lectura de una línea:** CISEB ya tiene el **núcleo clínico completo** que el
+documento pone en el centro — evolución estructurada → odontograma → cobro →
+**liquidación con beneficiarios múltiples** — funcionando de punta a punta y
+reconciliando exacto. Lo que sigue: los **planes de tratamiento por etapas**
+(que activarían la capa `planificado` del odontograma), los **consentimientos
+con evidencia**, y la sincronización de agenda con Google Calendar.
 
 ## 7. Roadmap del relevamiento (§8) y dónde estamos parados
 
@@ -137,7 +137,7 @@ múltiples** (socios + fondo común), los **planes de tratamiento por etapas**
 | **0 — Definición** | Modelo de datos clínico, pantalla de evolución, mapa de riesgos, diseño del paquete llave en mano, consulta legal de consentimientos | En curso (este documento es insumo) |
 | **1 — Núcleo clínico** | Login+RBAC, ficha, historia clínica, **evolución→odontograma** (FDI, 3 capas, por cara), adjuntos y portal de signed URLs | 🟡 ficha, adjuntos y **evolución→odontograma sí** (2 de 3 capas); falta RBAC efectivo y portal de signed URLs |
 | **2 — Agenda** | Catálogo con duraciones, sync Calendar, confirmación 24 h, notas de preferencia, lista de espera | 🟡 turnos básicos + catálogo de prestaciones con duración; falta sync/confirmación/lista |
-| **3 — Finanzas** | Cobros desde la evolución, motor de beneficiarios, liquidación configurable, esquemas de pago, reporte por profesional/beneficiario | 🟡 **cobros ya nacen de la evolución** con split profesional/consultorio; falta el motor de beneficiarios múltiples y el reporte de liquidación |
+| **3 — Finanzas** | Cobros desde la evolución, motor de beneficiarios, liquidación configurable, esquemas de pago, reporte por profesional/beneficiario | 🟡 **cobros desde la evolución + motor de beneficiarios múltiples + reporte por profesional/beneficiario, listos.** Falta esquemas de pago (sesión/cuota/adelantado/libre) imputados a un plan — **fin del MVP comercializable** cuando esto cierre |
 | **4 — Planes y consentimientos** | Presupuestos por etapas, aceptación, consentimiento con firma+evidencia, bloqueo de evolución sin consentimiento | ⬜ |
 | **5 — IA** | Asistente clínico interno (context injection, solo lectura, logging) y luego bot WhatsApp | 🟡 asistente sí, controles del SGIA no |
 
