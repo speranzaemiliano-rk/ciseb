@@ -2207,6 +2207,35 @@
             body.printing-rv #modalResumenVentas .modal-head .modal-close { display: none !important; }
             body.printing-rv #modalResumenVentas canvas { max-width: 100%; }
         }
+
+        /* ══════════════════════════════════════════════════════════
+           ODONTOGRAMA (Núcleo clínico — Feature 2)
+           ══════════════════════════════════════════════════════════ */
+        .odo-widget { }
+        .odo-toolbar { margin-bottom: 12px; display: flex; align-items: center; }
+        .odo-arco { display: flex; flex-direction: column; gap: 16px; align-items: center; margin-bottom: 16px; }
+        .odo-fila { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+        .odo-fila-temp .odo-pieza { opacity: .88; transform: scale(.86); }
+        .odo-pieza { width: 46px; text-align: center; }
+        .odo-pieza-num { font-size: 10px; color: var(--text-3, #777); cursor: pointer; padding: 2px 0; border-radius: 4px; user-select: none; }
+        .odo-pieza-num:hover { background: rgba(0,0,0,.06); }
+        .odo-pieza-wrap { position: relative; border: 2px solid transparent; border-radius: 6px; padding: 2px; display: inline-block; }
+        .odo-pieza-wrap.odo-selected { border-color: var(--gold-light); box-shadow: 0 0 0 2px rgba(74,138,194,.35); }
+        .odo-pieza-wrap.odo-piezaestado-ausente { background: repeating-linear-gradient(45deg, rgba(120,120,120,.18), rgba(120,120,120,.18) 3px, transparent 3px, transparent 7px); }
+        .odo-pieza-wrap.odo-piezaestado-corona { border-color: #D9A932; }
+        .odo-pieza-wrap.odo-piezaestado-implante { border-color: var(--success); }
+        .odo-pieza-wrap.odo-piezaestado-indicacion_extraccion { border-color: #E67E22; border-style: dashed; }
+        .odo-pieza-grid { display: grid; grid-template-columns: 14px 18px 14px; grid-template-rows: 14px 18px 14px; grid-template-areas: ". v ." "m o d" ". p ."; gap: 1px; position: relative; margin: 0 auto; }
+        .odo-cara { border: 1px solid var(--border, #ccc); background: #fff; cursor: pointer; position: relative; }
+        .odo-cara.odo-v { grid-area: v; } .odo-cara.odo-p { grid-area: p; } .odo-cara.odo-m { grid-area: m; } .odo-cara.odo-d { grid-area: d; } .odo-cara.odo-o { grid-area: o; }
+        .odo-cara.odo-disabled { cursor: default; background: repeating-linear-gradient(45deg, #eee, #eee 2px, #f7f7f7 2px, #f7f7f7 4px); }
+        .odo-real-dot { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: #222; border: 1px solid #fff; top: -3px; right: -3px; z-index: 2; }
+        .odo-ausente-x { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; color: rgba(120,10,10,.55); font-weight: 700; pointer-events: none; }
+        .odo-leyenda { display: flex; flex-wrap: wrap; gap: 10px; font-size: 10.5px; color: var(--text-3, #777); justify-content: center; }
+        .odo-leyenda .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 3px; vertical-align: middle; border: 1px solid rgba(0,0,0,.15); }
+        .odo-popup { position: fixed; z-index: 9999; background: #fff; border: 1px solid var(--border, #ccc); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.25); padding: 8px; display: flex; flex-direction: column; gap: 2px; min-width: 190px; max-width: 260px; }
+        .odo-popup button { text-align: left; padding: 7px 10px; border: none; background: transparent; cursor: pointer; border-radius: 5px; font-size: 12.5px; font-family: inherit; }
+        .odo-popup button:hover { background: #f0f0f0; }
     </style>
 
 </head>
@@ -2568,6 +2597,12 @@
                 </button>
                 <button class="nav-item nav-sub" id="tabBtnProfesionales" data-navkey="profesionales" onclick="mostrarTab('Profesionales')" title="Profesionales del consultorio">
                     <span class="nav-drag-handle">⠿</span><span class="nav-icon">badge</span> Profesionales
+                </button>
+                <button class="nav-item nav-sub" id="tabBtnPrestaciones" data-navkey="prestaciones" onclick="mostrarTab('Prestaciones')" title="Catálogo de prestaciones">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">medical_information</span> Prestaciones
+                </button>
+                <button class="nav-item nav-sub" id="tabBtnCobros" data-navkey="cobros" onclick="mostrarTab('Cobros')" title="Cobros generados desde Evoluciones">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">payments</span> Cobros
                 </button>
             </div>
             </div>
@@ -3264,6 +3299,76 @@
                     </div>
                 </div>
             </div><!-- /panelProfesionales -->
+
+            <!-- TAB: PRESTACIONES -->
+            <div class="tab-panel" id="panelPrestaciones">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Prestaciones cargadas</div>
+                        <div class="stat-value" id="prestTotal">0</div>
+                    </div>
+                </div>
+                <div class="table-card">
+                    <div class="table-card-head">
+                        <h3>🦷 Prestaciones — Catálogo clínico</h3>
+                        <button class="btn btn-gold btn-sm" id="btnAgregarPrestacion" onclick="abrirModalPrestacion()">➕ Nueva Prestación</button>
+                    </div>
+                    <div class="search-row">
+                        <input type="text" class="search-input" id="prestBuscador" oninput="renderPrestaciones()" placeholder="Buscar por nombre o especialidad…">
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Especialidad</th>
+                                    <th>Duración</th>
+                                    <th>Precio Referencia</th>
+                                    <th>Consentimiento</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="prestacionesBody">
+                                <tr><td colspan="6" class="empty-msg">No hay prestaciones cargadas.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div><!-- /panelPrestaciones -->
+
+            <!-- TAB: COBROS (solo lectura, generados desde Evoluciones) -->
+            <div class="tab-panel" id="panelCobros">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Cobros registrados</div>
+                        <div class="stat-value" id="cobTotal">0</div>
+                    </div>
+                </div>
+                <div class="table-card">
+                    <div class="table-card-head">
+                        <h3>💰 Cobros — generados desde Evoluciones</h3>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Paciente</th>
+                                    <th>Profesional</th>
+                                    <th>Prestación</th>
+                                    <th>Monto</th>
+                                    <th>% Profesional</th>
+                                    <th>Monto Profesional</th>
+                                    <th>Monto Consultorio</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cobrosBody">
+                                <tr><td colspan="8" class="empty-msg">No hay cobros registrados todavía.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div><!-- /panelCobros -->
 
             <!-- TAB: DASHBOARD -->
             <div class="tab-panel" id="panelDashboard" style="background:var(--surface-2,#F1F3F4);margin:-28px -32px 0;min-height:calc(100vh - 56px);padding:0;">
@@ -8122,12 +8227,12 @@
     function refreshTabActivo(){
         var btn=document.getElementById('btnRefresh');
         if(btn){btn.classList.add('spin');setTimeout(function(){btn.classList.remove('spin');},520);}
-        var map={'Presupuestos':renderizar,'Proveedores':renderProveedores,'Facturas':renderFacturas,'Documentos':renderDocumentos,'ResumenIngresos':renderResumenIngresos,'Servicios':renderServicios,'IngGeneral':renderIngGeneral,'Pacientes':renderPacientes,'Turnos':renderTurnos,'Profesionales':renderProfesionales,'Egresos':renderEgresos,'Pagos':renderPagos,'CajaGeneral':renderCajaGeneral,'EfectivoPesos':renderEfectivoPesos,'EfectivoUSD':renderEfectivoUSD,'CuentasBancarias':renderCuentasBancarias,'PlanTrabajo':renderPlanTrabajo,'Tesoreria':renderTesoreria};
+        var map={'Presupuestos':renderizar,'Proveedores':renderProveedores,'Facturas':renderFacturas,'Documentos':renderDocumentos,'ResumenIngresos':renderResumenIngresos,'Servicios':renderServicios,'IngGeneral':renderIngGeneral,'Pacientes':renderPacientes,'Turnos':renderTurnos,'Profesionales':renderProfesionales,'Prestaciones':renderPrestaciones,'Cobros':renderCobros,'Egresos':renderEgresos,'Pagos':renderPagos,'CajaGeneral':renderCajaGeneral,'EfectivoPesos':renderEfectivoPesos,'EfectivoUSD':renderEfectivoUSD,'CuentasBancarias':renderCuentasBancarias,'PlanTrabajo':renderPlanTrabajo,'Tesoreria':renderTesoreria};
         var fn=map[_tabActivo];if(fn)fn();
     }
     function mostrarTab(nombre) {
         const ALL_TABS = [
-            'Home','Pacientes','Turnos','Profesionales',
+            'Home','Pacientes','Turnos','Profesionales','Prestaciones','Cobros',
             'Presupuestos','Proveedores','Facturas','Documentos',
             'ResumenIngresos','Servicios','IngGeneral',
             'Egresos','CompRecibidos','Pagos','Caja','CajaGeneral','PlanTrabajo',
@@ -8146,7 +8251,7 @@
         if (btnHome) btnHome.classList.toggle('active', nombre === 'Home');
 
         // Submenú Consultorio (Pacientes / Turnos)
-        const SUB_CONSULTORIO = ['Pacientes','Turnos','Profesionales'];
+        const SUB_CONSULTORIO = ['Pacientes','Turnos','Profesionales','Prestaciones','Cobros'];
         SUB_CONSULTORIO.forEach(t => {
             const btn = document.getElementById('tabBtn' + t);
             if (btn) btn.classList.toggle('active', t === nombre);
@@ -8217,6 +8322,8 @@
             'Pacientes':         'Pacientes',
             'Turnos':            'Turnos — Agenda',
             'Profesionales':     'Profesionales — Consultorio',
+            'Prestaciones':      'Prestaciones — Catálogo clínico',
+            'Cobros':            'Cobros — Generados desde Evoluciones',
             'Presupuestos':      'Presupuestos y Pagos',
             'Proveedores':       'Datos de Proveedores',
             'Facturas':          'Facturas de Proveedores',
@@ -8244,6 +8351,8 @@
         if (nombre === 'Pacientes')         renderPacientes();
         if (nombre === 'Turnos')            renderTurnos();
         if (nombre === 'Profesionales')     renderProfesionales();
+        if (nombre === 'Prestaciones')      renderPrestaciones();
+        if (nombre === 'Cobros')            renderCobros();
         if (nombre === 'Dashboard')        renderDashboard();
         if (nombre === 'Egresos')          renderEgresos();
         if (nombre === 'CompRecibidos')    renderCompRecibidos();
@@ -9481,7 +9590,8 @@
                 prestamo:    function() { eliminarPrestamo(idx); },
                 paciente:    function() { eliminarPaciente(idx); },
                 turno:       function() { eliminarTurno(idx); },
-                profesional: function() { eliminarProfesional(idx); }
+                profesional: function() { eliminarProfesional(idx); },
+                prestacion:  function() { eliminarPrestacion(idx); }
             };
             if (fns[tipo]) fns[tipo]();
             return;
@@ -9540,6 +9650,12 @@
                 var prof = profesionales[idx]; if (!prof) { alert('Ítem no encontrado.'); return; }
                 descripcion = 'Profesional: ' + (prof.nombre||'?') + (prof.matricula ? ' (Mat. ' + prof.matricula + ')' : '');
                 itemData = { id: prof.id, nombre: prof.nombre, matricula: prof.matricula };
+                break;
+            }
+            case 'prestacion': {
+                var pres = prestaciones[idx]; if (!pres) { alert('Ítem no encontrado.'); return; }
+                descripcion = 'Prestación: ' + (pres.nombre||'?') + (pres.especialidad ? ' (' + pres.especialidad + ')' : '');
+                itemData = { id: pres.id, nombre: pres.nombre };
                 break;
             }
             default: alert('Tipo no soportado: ' + tipo); return;
@@ -9610,6 +9726,11 @@
                     var i = D.id ? profesionales.findIndex(function(pr){ return pr.id===D.id; })
                                  : profesionales.findIndex(function(pr){ return pr.nombre===D.nombre && pr.matricula===D.matricula; });
                     if (i !== -1) { profesionales.splice(i, 1); persistirProfesionales(); deleted = true; } break;
+                }
+                case 'prestacion': {
+                    var i = D.id ? prestaciones.findIndex(function(pr){ return pr.id===D.id; })
+                                 : prestaciones.findIndex(function(pr){ return pr.nombre===D.nombre; });
+                    if (i !== -1) { prestaciones.splice(i, 1); persistirPrestaciones(); deleted = true; } break;
                 }
                 case 'movcaja':
                 case 'inggeneral': {
@@ -13361,6 +13482,14 @@
     let REF_PROFESIONALES = null;
     let profesionales = [];
     var editandoProfIdx = -1;
+    // Núcleo clínico (Feature 1/2/3): catálogo de prestaciones, evoluciones y cobros generados.
+    let REF_PRESTACIONES = null;
+    let prestaciones = [];
+    var editandoPrestIdx = -1;
+    let REF_EVOLUCIONES = null;
+    let evoluciones = [];
+    let REF_COBROS = null;
+    let cobros = [];
 
     // Se llama desde actualizarRefs()
     function actualizarRefsIngresos() {
@@ -13373,6 +13502,9 @@
         REF_PACIENTES   = db.ref(base + '/pacientes');
         REF_TURNOS      = db.ref(base + '/turnos');
         REF_PROFESIONALES = db.ref(base + '/profesionales');
+        REF_PRESTACIONES  = db.ref(base + '/prestaciones');
+        REF_EVOLUCIONES   = db.ref(base + '/evoluciones');
+        REF_COBROS        = db.ref(base + '/cobros');
     }
 
     // Helper: carga con listener .on() reactivo
@@ -13396,6 +13528,9 @@
         _cargarConListener(REF_PACIENTES,   function(v) { pacientes = v; if (typeof renderPacientes==='function') renderPacientes(); });
         _cargarConListener(REF_TURNOS,      function(v) { turnos = v; if (typeof renderTurnos==='function') renderTurnos(); });
         _cargarConListener(REF_PROFESIONALES, function(v) { profesionales = v; if (typeof renderProfesionales==='function') renderProfesionales(); });
+        _cargarConListener(REF_PRESTACIONES, function(v) { prestaciones = v; if (typeof renderPrestaciones==='function') renderPrestaciones(); });
+        _cargarConListener(REF_EVOLUCIONES, function(v) { evoluciones = v; if (typeof _fichaClinicaPacIdx !== 'undefined' && _fichaClinicaPacIdx >= 0 && typeof _renderEvolucionesFicha==='function') _renderEvolucionesFicha(_fichaClinicaPacIdx); });
+        _cargarConListener(REF_COBROS, function(v) { cobros = v; if (typeof renderCobros==='function') renderCobros(); });
         if (REF_PLAN) {
             REF_PLAN.on('value', function(snap) {
                 var val = snap.val();
@@ -13422,6 +13557,24 @@
         if (!REF_PROFESIONALES) return;
         REF_PROFESIONALES.set(profesionales)
             .catch(function(e) { console.error('Error guardando profesionales:', e); alert('Error al guardar. Revisá la conexión.'); });
+    }
+
+    function persistirPrestaciones() {
+        if (!REF_PRESTACIONES) return;
+        REF_PRESTACIONES.set(prestaciones)
+            .catch(function(e) { console.error('Error guardando prestaciones:', e); alert('Error al guardar. Revisá la conexión.'); });
+    }
+
+    function persistirEvoluciones() {
+        if (!REF_EVOLUCIONES) return;
+        REF_EVOLUCIONES.set(evoluciones)
+            .catch(function(e) { console.error('Error guardando evoluciones:', e); alert('Error al guardar. Revisá la conexión.'); });
+    }
+
+    function persistirCobros() {
+        if (!REF_COBROS) return;
+        REF_COBROS.set(cobros)
+            .catch(function(e) { console.error('Error guardando cobros:', e); alert('Error al guardar. Revisá la conexión.'); });
     }
 
     // ══════════════════════════════════════════════════════════
@@ -13628,6 +13781,7 @@
                 '<td>' + escHtml(p.nroAfiliado || '—') + '</td>' +
                 '<td>' + escHtml(profAsig ? (profAsig.nombre || '—') : '—') + '</td>' +
                 '<td><div class="action-btns">' +
+                    '<button class="btn btn-outline btn-sm" onclick="abrirFichaClinica(' + idx + ')" title="Ficha Clínica">🦷 Ficha Clínica</button>' +
                     '<button class="btn btn-outline btn-sm" onclick="abrirModalPaciente(' + idx + ')" title="Editar">✏</button>' +
                     (typeof btnElim === 'function' ? btnElim('paciente', idx) : '<button class="btn btn-danger-sm" onclick="eliminarPaciente(' + idx + ')">✕</button>') +
                 '</div></td>';
@@ -13639,14 +13793,18 @@
     // PROFESIONALES
     // ══════════════════════════════════════════════════════════
 
-    // Pobla el <datalist> del modal de profesional con los tratamientos del catálogo (servicios).
+    // Pobla el <datalist> del modal de profesional con los nombres del catálogo de Prestaciones.
+    // Corrección: antes se poblaba desde 'servicios' (facturación de clientes con ajuste CAC, un
+    // módulo totalmente distinto heredado del sistema inmobiliario — era un mapeo incorrecto).
+    // Los tratamientos ya guardados en profesionales[].tratamientos[].nombre siguen siendo texto
+    // libre, así que datos viejos no se rompen: esto solo cambia de dónde salen las sugerencias.
     function _profPoblarDatalistTratamientos() {
         var dl = document.getElementById('profTratamientosList');
         if (!dl) return;
         dl.innerHTML = '';
         var vistos = {};
-        servicios.forEach(function(s) {
-            var n = (s.descripcion || s.nombre || '').trim();
+        prestaciones.forEach(function(p) {
+            var n = (p.nombre || '').trim();
             if (!n || vistos[n]) return;
             vistos[n] = true;
             var o = document.createElement('option');
@@ -13778,6 +13936,627 @@
                     '<button class="btn btn-outline btn-sm" onclick="abrirModalProfesional(' + idx + ')" title="Editar">✏</button>' +
                     (typeof btnElim === 'function' ? btnElim('profesional', idx) : '<button class="btn btn-danger-sm" onclick="eliminarProfesional(' + idx + ')">✕</button>') +
                 '</div></td>';
+            tbody.appendChild(tr);
+        });
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // PRESTACIONES (catálogo clínico) — Feature 1
+    // ══════════════════════════════════════════════════════════
+    // Entidad nueva y separada del módulo "Servicios" (que en realidad es facturación de
+    // clientes con ajuste CAC, heredado del sistema inmobiliario original). Este es el
+    // catálogo real de prestaciones odontológicas: nombre, especialidad, duración, precio de
+    // referencia y si requiere consentimiento firmado. Lo usan Profesionales (tratamientos que
+    // realiza) y Evolución (Feature 3).
+
+    function _prestPoblarDatalistEspecialidades() {
+        var dl = document.getElementById('prestEspecialidadesList');
+        if (!dl) return;
+        dl.innerHTML = '';
+        var vistos = {};
+        profesionales.forEach(function(p) {
+            var e = (p.especialidad || '').trim();
+            if (!e || vistos[e]) return;
+            vistos[e] = true;
+            var o = document.createElement('option');
+            o.value = e;
+            dl.appendChild(o);
+        });
+    }
+
+    function abrirModalPrestacion(idx) {
+        editandoPrestIdx = (idx !== undefined) ? idx : -1;
+        var p = editandoPrestIdx >= 0 ? prestaciones[editandoPrestIdx] : null;
+        document.getElementById('modalPrestacionTitle').textContent = p ? '🦷 Editar Prestación' : '🦷 Nueva Prestación';
+        _prestPoblarDatalistEspecialidades();
+        document.getElementById('prestNombre').value                    = p ? (p.nombre || '') : '';
+        document.getElementById('prestEspecialidad').value               = p ? (p.especialidad || '') : '';
+        document.getElementById('prestDuracionMin').value                = p ? (p.duracionMin !== null && p.duracionMin !== undefined ? p.duracionMin : 30) : 30;
+        document.getElementById('prestPrecioReferencia').value           = p ? (p.precioReferencia !== null && p.precioReferencia !== undefined ? p.precioReferencia : '') : '';
+        document.getElementById('prestRequiereConsentimiento').checked   = p ? !!p.requiereConsentimiento : false;
+        document.getElementById('prestNotas').value                      = p ? (p.notas || '') : '';
+        document.getElementById('modalPrestacion').classList.add('active');
+    }
+
+    function cerrarModalPrestacion() { document.getElementById('modalPrestacion').classList.remove('active'); }
+
+    function guardarPrestacion() {
+        var nombre = (document.getElementById('prestNombre').value || '').trim();
+        if (!nombre) { alert('El nombre de la prestación es obligatorio.'); return; }
+        var prev = editandoPrestIdx >= 0 ? prestaciones[editandoPrestIdx] : null;
+        var duracionStr = (document.getElementById('prestDuracionMin').value || '').trim();
+        var precioStr   = (document.getElementById('prestPrecioReferencia').value || '').trim();
+        var pr = {
+            id:                     (prev && prev.id) ? prev.id : ('prest_' + Date.now()),
+            nombre:                 nombre,
+            especialidad:           (document.getElementById('prestEspecialidad').value || '').trim(),
+            duracionMin:            duracionStr === '' ? 30 : (parseFloat(duracionStr) || 30),
+            precioReferencia:       precioStr === '' ? 0 : (parseFloat(precioStr) || 0),
+            requiereConsentimiento: !!document.getElementById('prestRequiereConsentimiento').checked,
+            notas:                  (document.getElementById('prestNotas').value || '').trim()
+        };
+        if (editandoPrestIdx >= 0) prestaciones[editandoPrestIdx] = pr; else prestaciones.push(pr);
+        persistirPrestaciones();
+        cerrarModalPrestacion();
+        renderPrestaciones();
+    }
+
+    function eliminarPrestacion(idx) {
+        if (!confirm('¿Eliminar esta prestación? Esta acción no se puede deshacer.')) return;
+        prestaciones.splice(idx, 1);
+        persistirPrestaciones();
+        renderPrestaciones();
+    }
+
+    function renderPrestaciones() {
+        var tbody = document.getElementById('prestacionesBody');
+        if (!tbody) return;
+        var q = ((document.getElementById('prestBuscador') || {}).value || '').toLowerCase().trim();
+        var visibles = prestaciones.map(function(p, i) { return { p: p, i: i }; }).filter(function(x) {
+            if (!q) return true;
+            return ((x.p.nombre || '') + ' ' + (x.p.especialidad || '')).toLowerCase().indexOf(q) !== -1;
+        });
+        var totEl = document.getElementById('prestTotal');
+        if (totEl) totEl.textContent = prestaciones.length;
+        if (!visibles.length) {
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">' + (prestaciones.length ? 'Sin resultados.' : 'No hay prestaciones cargadas.') + '</td></tr>';
+            return;
+        }
+        tbody.innerHTML = '';
+        visibles.forEach(function(x) {
+            var p = x.p, idx = x.i;
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+                '<td><strong>' + escHtml(p.nombre || '—') + '</strong></td>' +
+                '<td>' + escHtml(p.especialidad || '—') + '</td>' +
+                '<td>' + (p.duracionMin !== null && p.duracionMin !== undefined ? (p.duracionMin + ' min') : '—') + '</td>' +
+                '<td>$' + Math.round(p.precioReferencia || 0).toLocaleString('es-AR') + '</td>' +
+                '<td style="text-align:center;">' + (p.requiereConsentimiento ? '✓' : '—') + '</td>' +
+                '<td><div class="action-btns">' +
+                    '<button class="btn btn-outline btn-sm" onclick="abrirModalPrestacion(' + idx + ')" title="Editar">✏</button>' +
+                    (typeof btnElim === 'function' ? btnElim('prestacion', idx) : '<button class="btn btn-danger-sm" onclick="eliminarPrestacion(' + idx + ')">✕</button>') +
+                '</div></td>';
+            tbody.appendChild(tr);
+        });
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // ODONTOGRAMA — Feature 2
+    // ══════════════════════════════════════════════════════════
+    // Modelo por paciente: p.odontograma = { "<piezaFDI>": { piezaEstado:{inicial,realizado},
+    // caras:{V,P,M,D,O} } }, p.odontogramaModo = 'adulto'|'mixta'.
+    // Dos capas hoy: 'inicial' (se edita a mano, una sola vez normalmente, desde este widget) y
+    // 'realizado' (solo lectura desde acá — se actualiza EXCLUSIVAMENTE al guardar una Evolución).
+    // TODO: capa 'planificado' — Fase 4, Planes de Tratamiento.
+
+    // Numeración FDI en el orden visual estándar ("espejo"): en pantalla, de izquierda a derecha.
+    var ODO_FILA_SUP_PERM = ['18','17','16','15','14','13','12','11','21','22','23','24','25','26','27','28'];
+    var ODO_FILA_INF_PERM = ['48','47','46','45','44','43','42','41','31','32','33','34','35','36','37','38'];
+    var ODO_FILA_SUP_TEMP = ['55','54','53','52','51','61','62','63','64','65'];
+    var ODO_FILA_INF_TEMP = ['85','84','83','82','81','71','72','73','74','75'];
+
+    var ODO_LABEL_CARA  = { caries: 'Caries', obturado: 'Obturado', sellante: 'Sellante', endodoncia: 'Endodoncia' };
+    var ODO_COLOR_CARA  = { caries: 'var(--danger)', obturado: 'var(--gold)', sellante: '#8ED9E0', endodoncia: 'var(--blue)' };
+    var ODO_LABEL_PIEZA = { ausente: 'Ausente', corona: 'Corona', implante: 'Implante', indicacion_extraccion: 'Indicación de extracción' };
+
+    // Contexto de cada widget renderizado, indexado por containerId, para que los handlers de
+    // click sepan a qué paciente/modo corresponden sin tener que serializar todo en el onclick.
+    var _odoCtx = {};
+
+    // Selección múltiple activa (usada desde el formulario de Evolución). Se puede leer con
+    // window._odoSeleccionActual directamente o con _odoObtenerSeleccion().
+    window._odoSeleccionActual = [];
+    function _odoObtenerSeleccion() { return window._odoSeleccionActual; }
+    function _odoLimpiarSeleccion() { window._odoSeleccionActual = []; }
+    function _odoEstaSeleccionado(pieza, cara) {
+        var c = cara || null;
+        return window._odoSeleccionActual.some(function(s) { return s.pieza === pieza && (s.cara || null) === c; });
+    }
+    function _odoToggleSeleccion(pieza, cara) {
+        var c = cara || null;
+        var idx = window._odoSeleccionActual.findIndex(function(s) { return s.pieza === pieza && (s.cara || null) === c; });
+        if (idx >= 0) window._odoSeleccionActual.splice(idx, 1);
+        else window._odoSeleccionActual.push({ pieza: pieza, cara: c });
+    }
+
+    function _odoEstadoVacio() {
+        return {
+            piezaEstado: { inicial: null, realizado: null },
+            caras: {
+                V: { inicial: null, realizado: null },
+                P: { inicial: null, realizado: null },
+                M: { inicial: null, realizado: null },
+                D: { inicial: null, realizado: null },
+                O: { inicial: null, realizado: null }
+            }
+        };
+    }
+
+    // Lee el estado de una pieza para un paciente, completando con valores por defecto
+    // cualquier subcampo faltante (datos legacy o parciales). No muta al paciente.
+    function _odoObtenerEstadoPieza(paciente, pieza) {
+        var base = _odoEstadoVacio();
+        var d = paciente && paciente.odontograma && paciente.odontograma[pieza];
+        if (!d) return base;
+        base.piezaEstado = Object.assign({}, base.piezaEstado, d.piezaEstado || {});
+        Object.keys(base.caras).forEach(function(c) {
+            base.caras[c] = Object.assign({}, base.caras[c], (d.caras && d.caras[c]) || {});
+        });
+        return base;
+    }
+
+    // Única forma de setear la capa 'inicial'. cara=null → aplica a piezaEstado (toda la pieza).
+    // La capa 'realizado' NUNCA se toca desde acá: solo se escribe desde guardarEvolucion().
+    function _odoSetInicial(pacienteIdx, pieza, cara, estado) {
+        var p = pacientes[pacienteIdx];
+        if (!p) return;
+        if (!p.odontograma) p.odontograma = {};
+        if (!p.odontograma[pieza]) p.odontograma[pieza] = _odoEstadoVacio();
+        if (cara) {
+            if (!p.odontograma[pieza].caras[cara]) p.odontograma[pieza].caras[cara] = { inicial: null, realizado: null };
+            p.odontograma[pieza].caras[cara].inicial = estado || null;
+        } else {
+            if (!p.odontograma[pieza].piezaEstado) p.odontograma[pieza].piezaEstado = { inicial: null, realizado: null };
+            p.odontograma[pieza].piezaEstado.inicial = estado || null;
+        }
+        persistirPacientes();
+    }
+
+    function _odoCambiarModo(containerId, modo) {
+        var ctx = _odoCtx[containerId];
+        if (!ctx) return;
+        var p = pacientes[ctx.pacienteIdx];
+        if (!p) return;
+        p.odontogramaModo = (modo === 'mixta') ? 'mixta' : 'adulto';
+        persistirPacientes();
+        renderOdontograma(ctx.pacienteIdx, containerId, ctx.modoSeleccionMultiple);
+    }
+
+    // Dibuja el widget completo del odontograma dentro de containerId. Reutilizable: se usa
+    // tanto en la Ficha Clínica (modoSeleccionMultiple=false, solo carga/lectura de 'inicial')
+    // como en el formulario de Evolución (modoSeleccionMultiple=true, para elegir sobre qué
+    // piezas/caras es la evolución — ver window._odoSeleccionActual).
+    function renderOdontograma(pacienteIdx, containerId, modoSeleccionMultiple) {
+        var modoSel = !!modoSeleccionMultiple;
+        var cont = document.getElementById(containerId);
+        if (!cont) return;
+        var p = pacientes[pacienteIdx];
+        if (!p) { cont.innerHTML = '<div class="empty-msg">Paciente no encontrado.</div>'; return; }
+        _odoCtx[containerId] = { pacienteIdx: pacienteIdx, modoSeleccionMultiple: modoSel };
+        var modo = p.odontogramaModo || 'adulto';
+        var odo  = p.odontograma || {};
+
+        var html = '<div class="odo-widget">';
+        html += '<div class="odo-toolbar"><label style="font-size:12px;color:var(--text-3);margin-right:8px;">Dentición:</label>' +
+            '<select onchange="_odoCambiarModo(\'' + containerId + '\', this.value)" style="width:auto;padding:4px 8px;font-size:12px;">' +
+            '<option value="adulto"' + (modo === 'adulto' ? ' selected' : '') + '>Adulto (32 piezas)</option>' +
+            '<option value="mixta"' + (modo === 'mixta' ? ' selected' : '') + '>Mixta / Infantil (32 + 20)</option>' +
+            '</select></div>';
+
+        html += '<div class="odo-arco">';
+        html += _odoRenderFilaHTML(ODO_FILA_SUP_PERM, odo, modoSel, containerId, '');
+        if (modo === 'mixta') html += _odoRenderFilaHTML(ODO_FILA_SUP_TEMP, odo, modoSel, containerId, 'odo-fila-temp');
+        if (modo === 'mixta') html += _odoRenderFilaHTML(ODO_FILA_INF_TEMP, odo, modoSel, containerId, 'odo-fila-temp');
+        html += _odoRenderFilaHTML(ODO_FILA_INF_PERM, odo, modoSel, containerId, '');
+        html += '</div>';
+
+        html += '<div class="odo-leyenda">' +
+            '<span><span class="sw" style="background:var(--danger);"></span>Caries</span>' +
+            '<span><span class="sw" style="background:var(--gold);"></span>Obturado</span>' +
+            '<span><span class="sw" style="background:#8ED9E0;"></span>Sellante</span>' +
+            '<span><span class="sw" style="background:var(--blue);"></span>Endodoncia</span>' +
+            '<span><span class="sw" style="background:#D9A932;"></span>Corona</span>' +
+            '<span><span class="sw" style="background:var(--success);"></span>Implante</span>' +
+            '<span><span class="sw" style="background:#E67E22;border-style:dashed;"></span>Indic. extracción</span>' +
+            '<span><span class="sw" style="background:repeating-linear-gradient(45deg,#999,#999 2px,#eee 2px,#eee 4px);"></span>Ausente</span>' +
+            '<span>● negro = registrado por Evolución (solo lectura)</span>' +
+            (modoSel ? '<span style="color:var(--gold-light);font-weight:600;">Click para seleccionar piezas/caras de esta evolución</span>' : '') +
+            '</div>';
+        html += '</div>';
+
+        cont.innerHTML = html;
+    }
+
+    function _odoRenderFilaHTML(piezas, odo, modoSel, containerId, filaClass) {
+        var html = '<div class="odo-fila ' + (filaClass || '') + '">';
+        piezas.forEach(function(pieza) {
+            html += _odoRenderPiezaHTML(pieza, odo[pieza] || _odoEstadoVacio(), modoSel, containerId);
+        });
+        html += '</div>';
+        return html;
+    }
+
+    // Arma el HTML de una pieza individual: cruz de 5 superficies clickeables (V/P/M/D/O) +
+    // marcador de estado de toda la pieza + número FDI. modoSeleccionMultiple decide si el click
+    // togglea la selección (Evolución) o abre el selector de estado 'inicial' (Ficha Clínica).
+    function _odoRenderPiezaHTML(pieza, datosPieza, modoSeleccionMultiple, containerId) {
+        var ultimoDigito = parseInt(pieza.charAt(pieza.length - 1), 10);
+        var tieneOclusal = ultimoDigito >= 4; // molares/premolares; simplificación MVP para incisivos/caninos
+        var pe = datosPieza.piezaEstado || { inicial: null, realizado: null };
+        var seleccionadaPieza = modoSeleccionMultiple && _odoEstaSeleccionado(pieza, null);
+
+        var wrapClass = 'odo-pieza-wrap';
+        if (pe.inicial) wrapClass += ' odo-piezaestado-' + pe.inicial;
+        if (seleccionadaPieza) wrapClass += ' odo-selected';
+
+        var carasHtml = '';
+        ['V', 'M', 'O', 'D', 'P'].forEach(function(cara) {
+            if (cara === 'O' && !tieneOclusal) {
+                carasHtml += '<div class="odo-cara odo-o odo-disabled" title="No aplica en esta pieza"></div>';
+                return;
+            }
+            var cd = datosPieza.caras[cara] || { inicial: null, realizado: null };
+            var color = cd.inicial ? ODO_COLOR_CARA[cd.inicial] : 'transparent';
+            var seleccionadaCara = modoSeleccionMultiple && _odoEstaSeleccionado(pieza, cara);
+            var dot = cd.realizado ? '<span class="odo-real-dot" title="Realizado (evolución): ' + (ODO_LABEL_CARA[cd.realizado] || cd.realizado) + '"></span>' : '';
+            var cls = 'odo-cara odo-' + cara.toLowerCase() + (seleccionadaCara ? ' odo-selected' : '');
+            var tt = pieza + ' — ' + cara + (cd.inicial ? (': ' + (ODO_LABEL_CARA[cd.inicial] || cd.inicial)) : ': sano');
+            carasHtml += '<div class="' + cls + '" style="background:' + color + ';" title="' + escHtml(tt) + '" ' +
+                'onclick="_odoClickCara(this,\'' + containerId + '\',\'' + pieza + '\',\'' + cara + '\')">' + dot + '</div>';
+        });
+
+        var ausenteMark = (pe.inicial === 'ausente') ? '<div class="odo-ausente-x">✕</div>' : '';
+        var realizadoPiezaDot = pe.realizado ? '<span class="odo-real-dot" style="top:auto;bottom:-3px;left:-3px;right:auto;" title="Realizado (evolución): ' + (ODO_LABEL_PIEZA[pe.realizado] || pe.realizado) + '"></span>' : '';
+
+        return '<div class="odo-pieza">' +
+            '<div class="' + wrapClass + '">' +
+                '<div class="odo-pieza-grid">' + carasHtml + ausenteMark + realizadoPiezaDot + '</div>' +
+            '</div>' +
+            '<div class="odo-pieza-num" title="' + escHtml(pieza + (pe.inicial ? (' — ' + (ODO_LABEL_PIEZA[pe.inicial] || pe.inicial)) : '')) + '" ' +
+                'onclick="_odoClickPieza(this,\'' + containerId + '\',\'' + pieza + '\')">' + pieza + '</div>' +
+        '</div>';
+    }
+
+    // Click en una superficie (cara). En modo selección múltiple: togglea. Si no: abre el
+    // selector para editar la capa 'inicial' de esa cara (la capa 'realizado' nunca se edita
+    // a mano: se ve superpuesta con el puntito, pero el click siempre actúa sobre 'inicial').
+    function _odoClickCara(el, containerId, pieza, cara) {
+        var ctx = _odoCtx[containerId];
+        if (!ctx) return;
+        if (ctx.modoSeleccionMultiple) {
+            _odoToggleSeleccion(pieza, cara);
+            renderOdontograma(ctx.pacienteIdx, containerId, true);
+            return;
+        }
+        _odoAbrirSelectorCara(containerId, ctx.pacienteIdx, pieza, cara, el);
+    }
+
+    function _odoClickPieza(el, containerId, pieza) {
+        var ctx = _odoCtx[containerId];
+        if (!ctx) return;
+        if (ctx.modoSeleccionMultiple) {
+            _odoToggleSeleccion(pieza, null);
+            renderOdontograma(ctx.pacienteIdx, containerId, true);
+            return;
+        }
+        _odoAbrirSelectorPieza(containerId, ctx.pacienteIdx, pieza, el);
+    }
+
+    function _odoAbrirSelectorCara(containerId, pacienteIdx, pieza, cara, el) {
+        var p = pacientes[pacienteIdx];
+        if (!p) return;
+        var datos = _odoObtenerEstadoPieza(p, pieza);
+        var actual = datos.caras[cara] ? datos.caras[cara].inicial : null;
+        var realizado = datos.caras[cara] ? datos.caras[cara].realizado : null;
+        var opciones = [{ v: null, label: 'Sano / sin marcar' }].concat(
+            Object.keys(ODO_LABEL_CARA).map(function(k) { return { v: k, label: ODO_LABEL_CARA[k] }; })
+        );
+        var html = '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);margin-bottom:2px;padding:0 6px;">Pieza ' + pieza + ' — Cara ' + cara + ' (inicial)</div>';
+        opciones.forEach(function(o) {
+            html += '<button type="button" onclick="_odoElegirCara(\'' + containerId + '\',' + pacienteIdx + ',\'' + pieza + '\',\'' + cara + '\',' + (o.v === null ? 'null' : ("'" + o.v + "'")) + ')" style="' + (o.v === actual ? 'font-weight:700;color:var(--gold-light);' : '') + '">' + (o.v === actual ? '✓ ' : '') + o.label + '</button>';
+        });
+        if (realizado) html += '<div style="font-size:11px;color:var(--text-3);border-top:1px solid var(--border,#eee);margin-top:4px;padding:6px;">Ya registrado por Evolución: <strong>' + (ODO_LABEL_CARA[realizado] || realizado) + '</strong> (solo lectura, no editable acá).</div>';
+        html += '<button type="button" onclick="_odoCerrarPopup()" style="color:var(--text-3);">Cerrar</button>';
+        _odoMostrarPopup(html, el);
+    }
+
+    function _odoAbrirSelectorPieza(containerId, pacienteIdx, pieza, el) {
+        var p = pacientes[pacienteIdx];
+        if (!p) return;
+        var datos = _odoObtenerEstadoPieza(p, pieza);
+        var actual = datos.piezaEstado.inicial;
+        var realizado = datos.piezaEstado.realizado;
+        var opciones = [{ v: null, label: 'Sano / sin marcar' }].concat(
+            Object.keys(ODO_LABEL_PIEZA).map(function(k) { return { v: k, label: ODO_LABEL_PIEZA[k] }; })
+        );
+        var html = '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);margin-bottom:2px;padding:0 6px;">Pieza ' + pieza + ' completa (inicial)</div>';
+        opciones.forEach(function(o) {
+            html += '<button type="button" onclick="_odoElegirPieza(\'' + containerId + '\',' + pacienteIdx + ',\'' + pieza + '\',' + (o.v === null ? 'null' : ("'" + o.v + "'")) + ')" style="' + (o.v === actual ? 'font-weight:700;color:var(--gold-light);' : '') + '">' + (o.v === actual ? '✓ ' : '') + o.label + '</button>';
+        });
+        if (realizado) html += '<div style="font-size:11px;color:var(--text-3);border-top:1px solid var(--border,#eee);margin-top:4px;padding:6px;">Ya registrado por Evolución: <strong>' + (ODO_LABEL_PIEZA[realizado] || realizado) + '</strong> (solo lectura, no editable acá).</div>';
+        html += '<button type="button" onclick="_odoCerrarPopup()" style="color:var(--text-3);">Cerrar</button>';
+        _odoMostrarPopup(html, el);
+    }
+
+    function _odoElegirCara(containerId, pacienteIdx, pieza, cara, valor) {
+        _odoSetInicial(pacienteIdx, pieza, cara, valor);
+        _odoCerrarPopup();
+        var ctx = _odoCtx[containerId];
+        renderOdontograma(pacienteIdx, containerId, ctx ? ctx.modoSeleccionMultiple : false);
+    }
+
+    function _odoElegirPieza(containerId, pacienteIdx, pieza, valor) {
+        _odoSetInicial(pacienteIdx, pieza, null, valor);
+        _odoCerrarPopup();
+        var ctx = _odoCtx[containerId];
+        renderOdontograma(pacienteIdx, containerId, ctx ? ctx.modoSeleccionMultiple : false);
+    }
+
+    function _odoMostrarPopup(html, el) {
+        _odoCerrarPopup();
+        var pop = document.createElement('div');
+        pop.className = 'odo-popup';
+        pop.id = '_odoPopupEl';
+        pop.innerHTML = html;
+        document.body.appendChild(pop);
+        var rect = el.getBoundingClientRect();
+        var top = rect.bottom + 4;
+        var left = rect.left;
+        var maxLeft = window.innerWidth - pop.offsetWidth - 10;
+        if (left > maxLeft) left = Math.max(10, maxLeft);
+        var maxTop = window.innerHeight - pop.offsetHeight - 10;
+        if (top > maxTop) top = Math.max(10, rect.top - pop.offsetHeight - 4);
+        pop.style.top = top + 'px';
+        pop.style.left = left + 'px';
+        setTimeout(function() { document.addEventListener('click', _odoClickFueraPopup); }, 0);
+    }
+
+    function _odoClickFueraPopup(ev) {
+        var pop = document.getElementById('_odoPopupEl');
+        if (pop && !pop.contains(ev.target)) _odoCerrarPopup();
+    }
+
+    function _odoCerrarPopup() {
+        var pop = document.getElementById('_odoPopupEl');
+        if (pop) pop.remove();
+        document.removeEventListener('click', _odoClickFueraPopup);
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // FICHA CLÍNICA (odontograma + historial de evoluciones de un paciente)
+    // ══════════════════════════════════════════════════════════
+    var _fichaClinicaPacIdx = -1;
+
+    function abrirFichaClinica(idx) {
+        var p = pacientes[idx];
+        if (!p) { alert('Paciente no encontrado.'); return; }
+        _fichaClinicaPacIdx = idx;
+        document.getElementById('modalHistoriaClinicaTitle').textContent = '🦷 Ficha Clínica — ' + (p.nombre || '');
+        renderOdontograma(idx, 'fichaClinicaOdontograma', false);
+        _renderEvolucionesFicha(idx);
+        document.getElementById('modalHistoriaClinica').classList.add('active');
+    }
+
+    function cerrarFichaClinica() {
+        document.getElementById('modalHistoriaClinica').classList.remove('active');
+        _odoCerrarPopup();
+    }
+
+    function _renderEvolucionesFicha(pacienteIdx) {
+        var p = pacientes[pacienteIdx];
+        var cont = document.getElementById('fichaClinicaEvoluciones');
+        if (!p || !cont) return;
+        var lista = evoluciones.filter(function(e) { return e.pacienteId === p.id; })
+            .slice().sort(function(a, b) { return (b.creadoEn || 0) - (a.creadoEn || 0); });
+        if (!lista.length) { cont.innerHTML = '<div class="empty-msg" style="padding:14px;">Sin evoluciones registradas todavía.</div>'; return; }
+        cont.innerHTML = lista.map(function(e) {
+            var prof = profesionales.filter(function(pr) { return pr.id === e.profesionalId; })[0];
+            var piezasTxt = (e.piezas || []).map(function(x) { return x.pieza + (x.cara ? ('-' + x.cara) : ' (completa)'); }).join(', ') || '—';
+            var estadoLbl = e.estadoRegistrado ? (ODO_LABEL_CARA[e.estadoRegistrado] || ODO_LABEL_PIEZA[e.estadoRegistrado] || e.estadoRegistrado) : '';
+            return '<div style="padding:10px 16px;border-bottom:1px solid var(--border,#eee);">' +
+                '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">' +
+                    '<strong>' + (e.fecha ? formatearFecha(e.fecha) : '—') + ' · ' + escHtml(e.prestacionNombre || '—') + '</strong>' +
+                    '<span style="color:var(--text-3);font-size:12px;">' + escHtml(prof ? (prof.nombre || '') : '—') + (e.firmada ? ' · ✅ Firmada' : ' · ⚠️ Sin firmar') + '</span>' +
+                '</div>' +
+                '<div style="font-size:12px;color:var(--text-3);margin-top:3px;">Piezas: ' + escHtml(piezasTxt) + (estadoLbl ? (' · Estado: ' + escHtml(estadoLbl)) : '') + '</div>' +
+                (e.texto ? ('<div style="font-size:12.5px;margin-top:4px;">' + escHtml(e.texto) + '</div>') : '') +
+                '<div style="font-size:11.5px;color:var(--text-3);margin-top:4px;">$' + Math.round(e.monto || 0).toLocaleString('es-AR') + ' ' + (e.moneda || 'ARS') + '</div>' +
+            '</div>';
+        }).join('');
+    }
+
+    function abrirModalEvolucionDesdeFicha() {
+        if (_fichaClinicaPacIdx < 0) { alert('Abrí primero la ficha de un paciente.'); return; }
+        abrirModalEvolucion(_fichaClinicaPacIdx);
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // EVOLUCIÓN — Feature 3 (el punto de entrada único del núcleo clínico)
+    // ══════════════════════════════════════════════════════════
+    // Un solo gesto: elegir prestación + marcar piezas/caras + texto → (a) actualiza el
+    // odontograma (capa 'realizado'), (b) genera el cobro del día. "Una carga, tres módulos."
+    var _evoPacienteIdx = -1;
+
+    function abrirModalEvolucion(pacienteIdx) {
+        var p = pacientes[pacienteIdx];
+        if (!p) { alert('Paciente no encontrado.'); return; }
+        _evoPacienteIdx = pacienteIdx;
+        _odoLimpiarSeleccion();
+        document.getElementById('evoPacienteNombre').textContent = p.nombre || '(sin nombre)';
+
+        var selProf = document.getElementById('evoProfesional');
+        selProf.innerHTML = '<option value="">— Elegir —</option>';
+        profesionales.forEach(function(pr) {
+            var o = document.createElement('option');
+            o.value = pr.id || '';
+            o.textContent = pr.nombre || '(sin nombre)';
+            selProf.appendChild(o);
+        });
+        if (p.profesionalId) selProf.value = p.profesionalId;
+
+        var selPrest = document.getElementById('evoPrestacion');
+        selPrest.innerHTML = '<option value="">— Elegir —</option>';
+        prestaciones.forEach(function(pr) {
+            var o = document.createElement('option');
+            o.value = pr.id || '';
+            o.textContent = pr.nombre || '(sin nombre)';
+            selPrest.appendChild(o);
+        });
+
+        document.getElementById('evoEstadoRegistrado').value = '';
+        document.getElementById('evoTexto').value = '';
+        document.getElementById('evoFirmada').checked = false;
+        document.getElementById('evoMonto').value = '';
+        document.getElementById('evoMoneda').value = 'ARS';
+        document.getElementById('evoAvisoConsentimiento').style.display = 'none';
+
+        renderOdontograma(pacienteIdx, 'evoModoSeleccionOdontograma', true);
+        document.getElementById('modalEvolucion').classList.add('active');
+    }
+
+    function cerrarModalEvolucion() {
+        document.getElementById('modalEvolucion').classList.remove('active');
+        _odoCerrarPopup();
+    }
+
+    // Al elegir prestación: precarga el monto de referencia y avisa si requiere consentimiento.
+    // TODO Fase 4: bloquear guardado real hasta que exista consentimiento firmado (hoy es solo aviso).
+    function _evoAlCambiarPrestacion() {
+        var selPrest = document.getElementById('evoPrestacion');
+        var prest = prestaciones.filter(function(p) { return p.id === selPrest.value; })[0];
+        var montoEl = document.getElementById('evoMonto');
+        var aviso = document.getElementById('evoAvisoConsentimiento');
+        if (prest) {
+            if (montoEl && (montoEl.value === '' || montoEl.value === '0')) montoEl.value = prest.precioReferencia || '';
+            aviso.style.display = prest.requiereConsentimiento ? '' : 'none';
+        } else {
+            aviso.style.display = 'none';
+        }
+    }
+
+    function guardarEvolucion() {
+        if (_evoPacienteIdx < 0) { alert('No hay paciente en contexto.'); return; }
+        var p = pacientes[_evoPacienteIdx];
+        if (!p) { alert('Paciente no encontrado.'); return; }
+        var profId  = document.getElementById('evoProfesional').value;
+        var prestId = document.getElementById('evoPrestacion').value;
+        if (!profId)  { alert('Elegí un profesional.'); return; }
+        if (!prestId) { alert('Elegí una prestación.'); return; }
+        var prof  = profesionales.filter(function(pr) { return pr.id === profId; })[0];
+        var prest = prestaciones.filter(function(pr) { return pr.id === prestId; })[0];
+        if (!prof || !prest) { alert('Profesional o prestación no encontrados.'); return; }
+
+        var piezasSel = (_odoObtenerSeleccion() || []).map(function(s) { return { pieza: s.pieza, cara: s.cara || null }; });
+        var estadoRegistrado = document.getElementById('evoEstadoRegistrado').value || null;
+        var monto   = parseFloat(document.getElementById('evoMonto').value) || 0;
+        var moneda  = document.getElementById('evoMoneda').value || 'ARS';
+        var firmada = !!document.getElementById('evoFirmada').checked;
+
+        // Reparto profesional/consultorio: override por tratamiento (match por nombre de la
+        // prestación, no es un match perfecto pero es lo que hay hoy) > comisionGeneral > 0.
+        // comisionGeneral / el override representan el % que el profesional DEJA al consultorio.
+        var pctConsultorio = parseFloat(prof.comisionGeneral) || 0;
+        if (prof.tratamientos && prof.tratamientos.length) {
+            var match = prof.tratamientos.filter(function(t) {
+                return (t.nombre || '').trim().toLowerCase() === (prest.nombre || '').trim().toLowerCase();
+            })[0];
+            if (match && match.porcentaje !== null && match.porcentaje !== undefined && match.porcentaje !== '') {
+                pctConsultorio = parseFloat(match.porcentaje) || 0;
+            }
+        }
+        var montoConsultorio  = +(monto * (pctConsultorio / 100)).toFixed(2);
+        var montoProfesional  = +(monto - montoConsultorio).toFixed(2);
+
+        var evo = {
+            id:                   'evo_' + Date.now(),
+            fecha:                new Date().toISOString().slice(0, 10),
+            pacienteId:           p.id,
+            profesionalId:        prof.id,
+            prestacionId:         prest.id,
+            prestacionNombre:     prest.nombre || '',
+            piezas:               piezasSel,
+            estadoRegistrado:     piezasSel.length ? estadoRegistrado : null,
+            texto:                (document.getElementById('evoTexto').value || '').trim(),
+            firmada:              firmada,
+            firmadaEn:            firmada ? Date.now() : null,
+            monto:                monto,
+            moneda:               moneda,
+            porcentajeProfesional: +(100 - pctConsultorio).toFixed(2),
+            montoProfesional:     montoProfesional,
+            montoConsultorio:     montoConsultorio,
+            creadoEn:             Date.now()
+        };
+        evoluciones.push(evo);
+        persistirEvoluciones();
+
+        // (a) Actualiza el odontograma — SOLO la capa 'realizado', solo si se marcaron piezas y
+        // se especificó un estado a registrar.
+        if (piezasSel.length && evo.estadoRegistrado) {
+            if (!p.odontograma) p.odontograma = {};
+            piezasSel.forEach(function(sel) {
+                if (!p.odontograma[sel.pieza]) p.odontograma[sel.pieza] = _odoEstadoVacio();
+                if (sel.cara) {
+                    if (!p.odontograma[sel.pieza].caras[sel.cara]) p.odontograma[sel.pieza].caras[sel.cara] = { inicial: null, realizado: null };
+                    p.odontograma[sel.pieza].caras[sel.cara].realizado = evo.estadoRegistrado;
+                } else {
+                    if (!p.odontograma[sel.pieza].piezaEstado) p.odontograma[sel.pieza].piezaEstado = { inicial: null, realizado: null };
+                    p.odontograma[sel.pieza].piezaEstado.realizado = evo.estadoRegistrado;
+                }
+            });
+            persistirPacientes();
+        }
+
+        // (b) Genera el cobro del día. Entidad separada y simple — NO se integra con
+        // ingGeneral/Ingresos (ese módulo tiene ajuste CAC, es de otro modelo, no aplica acá).
+        // La liquidación multi-beneficiario completa (repartiendo entre varios beneficiarios,
+        // no solo profesional/consultorio) es un desarrollo futuro (Fase 3 completa). Esto es
+        // una base compatible: el split profesional/consultorio ya queda guardado y trazable
+        // por cobro, listo para sumarizar cuando se construya el motor de liquidación real.
+        var cobro = Object.assign({}, evo, { evolucionId: evo.id, id: 'cobro_' + Date.now() });
+        cobros.push(cobro);
+        persistirCobros();
+
+        cerrarModalEvolucion();
+        renderOdontograma(_evoPacienteIdx, 'fichaClinicaOdontograma', false);
+        _renderEvolucionesFicha(_evoPacienteIdx);
+        if (typeof renderCobros === 'function') renderCobros();
+        alert('✓ Evolución guardada. Odontograma y cobro actualizados.');
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // COBROS (solo lectura — generados automáticamente desde Evolución)
+    // ══════════════════════════════════════════════════════════
+    function renderCobros() {
+        var tbody = document.getElementById('cobrosBody');
+        if (!tbody) return;
+        var lista = cobros.slice().sort(function(a, b) { return (b.creadoEn || 0) - (a.creadoEn || 0); });
+        var totEl = document.getElementById('cobTotal');
+        if (totEl) totEl.textContent = cobros.length;
+        if (!lista.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-msg">No hay cobros registrados todavía.</td></tr>'; return; }
+        tbody.innerHTML = '';
+        lista.forEach(function(c) {
+            var pac  = pacientes.filter(function(p) { return p.id === c.pacienteId; })[0];
+            var prof = profesionales.filter(function(p) { return p.id === c.profesionalId; })[0];
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+                '<td>' + (c.fecha ? formatearFecha(c.fecha) : '—') + '</td>' +
+                '<td>' + escHtml(pac ? pac.nombre : '—') + '</td>' +
+                '<td>' + escHtml(prof ? prof.nombre : '—') + '</td>' +
+                '<td>' + escHtml(c.prestacionNombre || '—') + '</td>' +
+                '<td>$' + Math.round(c.monto || 0).toLocaleString('es-AR') + ' ' + (c.moneda || 'ARS') + '</td>' +
+                '<td>' + (c.porcentajeProfesional !== null && c.porcentajeProfesional !== undefined ? (c.porcentajeProfesional + '%') : '—') + '</td>' +
+                '<td>$' + Math.round(c.montoProfesional || 0).toLocaleString('es-AR') + '</td>' +
+                '<td>$' + Math.round(c.montoConsultorio || 0).toLocaleString('es-AR') + '</td>';
             tbody.appendChild(tr);
         });
     }
@@ -19322,6 +20101,146 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" onclick="cerrarModalTurno()">Cancelar</button>
         <button type="button" class="btn btn-gold" onclick="guardarTurno()">💾 Guardar Turno</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL: PRESTACIÓN (catálogo clínico) ═══════════════ -->
+<div class="modal" id="modalPrestacion">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 id="modalPrestacionTitle">🦷 Nueva Prestación</h2>
+      <button class="modal-close" onclick="cerrarModalPrestacion()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nombre *</label>
+        <input type="text" id="prestNombre" placeholder="Ej: Consulta, Limpieza, Endodoncia unirradicular…">
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label>Especialidad</label>
+          <input type="text" id="prestEspecialidad" list="prestEspecialidadesList" placeholder="Ej: Ortodoncia, Endodoncia…">
+          <datalist id="prestEspecialidadesList"></datalist>
+        </div>
+        <div class="form-group">
+          <label>Duración</label>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <input type="number" id="prestDuracionMin" min="0" step="5" value="30" style="max-width:120px;">
+            <span style="color:var(--text-3);">min</span>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Precio de referencia</label>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="color:var(--text-3);">$</span>
+          <input type="number" id="prestPrecioReferencia" min="0" step="0.01" style="max-width:200px;">
+        </div>
+      </div>
+      <div class="form-group">
+        <label style="display:flex; align-items:center; gap:8px; font-weight:400;">
+          <input type="checkbox" id="prestRequiereConsentimiento"> Requiere consentimiento firmado
+        </label>
+      </div>
+      <div class="form-group">
+        <label>Notas</label>
+        <textarea id="prestNotas" rows="2" placeholder="Observaciones…"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="cerrarModalPrestacion()">Cancelar</button>
+        <button type="button" class="btn btn-gold" onclick="guardarPrestacion()">💾 Guardar Prestación</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL: FICHA CLÍNICA (odontograma + evoluciones) ═══════════════ -->
+<div class="modal" id="modalHistoriaClinica">
+  <div class="modal-box modal-box-wide" style="max-width:960px;max-height:94vh;">
+    <div class="modal-head">
+      <h2 id="modalHistoriaClinicaTitle">🦷 Ficha Clínica</h2>
+      <button class="modal-close" onclick="cerrarFichaClinica()">✕</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto; max-height:calc(94vh - 90px);">
+      <div id="fichaClinicaOdontograma"></div>
+      <div class="table-card" style="margin-top:18px;">
+        <div class="table-card-head">
+          <h3>📝 Evoluciones</h3>
+          <button class="btn btn-gold btn-sm" onclick="abrirModalEvolucionDesdeFicha()">➕ Nueva Evolución</button>
+        </div>
+        <div id="fichaClinicaEvoluciones"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL: EVOLUCIÓN (punto de entrada único) ═══════════════ -->
+<div class="modal" id="modalEvolucion">
+  <div class="modal-box modal-box-wide" style="max-width:900px;max-height:94vh;">
+    <div class="modal-head">
+      <h2>📝 Nueva Evolución</h2>
+      <button class="modal-close" onclick="cerrarModalEvolucion()">✕</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto; max-height:calc(94vh - 90px);">
+      <div class="form-group">
+        <label>Paciente</label>
+        <div id="evoPacienteNombre" style="font-weight:600; padding:6px 0;"></div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label>Profesional *</label>
+          <select id="evoProfesional"><option value="">— Elegir —</option></select>
+        </div>
+        <div class="form-group">
+          <label>Prestación *</label>
+          <select id="evoPrestacion" onchange="_evoAlCambiarPrestacion()"><option value="">— Elegir —</option></select>
+        </div>
+      </div>
+      <div id="evoAvisoConsentimiento" style="display:none; background:#FFF3CD; border:1px solid #FFC107; color:#7a5b00; padding:8px 12px; border-radius:6px; font-size:12.5px; margin-bottom:10px;">
+        ⚠️ Esta prestación requiere consentimiento firmado. (Módulo de consentimientos: pendiente — Fase 4)
+      </div>
+      <div class="form-group">
+        <label>Odontograma — marcá las piezas/caras de esta evolución (opcional)</label>
+        <div id="evoModoSeleccionOdontograma"></div>
+      </div>
+      <div class="form-group">
+        <label>Estado a registrar (si marcaste piezas)</label>
+        <select id="evoEstadoRegistrado">
+          <option value="">— Sin especificar —</option>
+          <option value="caries">Caries</option>
+          <option value="obturado">Obturado</option>
+          <option value="sellante">Sellante</option>
+          <option value="endodoncia">Endodoncia</option>
+          <option value="ausente">Ausente (pieza completa)</option>
+          <option value="corona">Corona (pieza completa)</option>
+          <option value="implante">Implante (pieza completa)</option>
+          <option value="indicacion_extraccion">Indicación de extracción (pieza completa)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Evolución / observaciones</label>
+        <textarea id="evoTexto" rows="3" placeholder="Texto libre…"></textarea>
+      </div>
+      <div class="form-group">
+        <label style="display:flex; align-items:center; gap:8px; font-weight:400;">
+          <input type="checkbox" id="evoFirmada"> Firmado por el profesional
+        </label>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label>Monto</label>
+          <input type="number" id="evoMonto" min="0" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Moneda</label>
+          <select id="evoMoneda"><option value="ARS">ARS</option><option value="USD">USD</option></select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="cerrarModalEvolucion()">Cancelar</button>
+        <button type="button" class="btn btn-gold" onclick="guardarEvolucion()">💾 Guardar Evolución</button>
       </div>
     </div>
   </div>
