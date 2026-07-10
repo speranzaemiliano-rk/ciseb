@@ -1,0 +1,39 @@
+{
+  "name": "CISEB · Sistema de Gestión Odontológica",
+  "short_name": "CISEB",
+  "description": "Sistema de gestión para consultorio odontológico con facturación ARCA",
+  "start_url": "/ciseb/",
+  "scope": "/ciseb/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f1117",
+  "theme_color": "#000000",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "health", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Ingresos",
+      "url": "/ciseb/#ingresos",
+      "description": "Ir a Ingresos"
+    },
+    {
+      "name": "Facturas ARCA",
+      "url": "/ciseb/#facturas",
+      "description": "Emitir facturas electrónicas"
+    }
+  ]
+}

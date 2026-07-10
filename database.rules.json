@@ -1,0 +1,45 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "roles": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "root.child('roles').child(auth.uid).val() === 'superadmin'"
+      }
+    },
+
+    "usuarios": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+
+    "empresas": {
+      ".read": "auth != null",
+      ".write": "root.child('roles').child(auth.uid).val() === 'superadmin' || root.child('roles').child(auth.uid).val() === 'admin' || root.child('roles').child(auth.uid).val() === 'editor'"
+    },
+
+    "global": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val() !== 'lector'"
+    },
+
+    "solicitudesBorrado": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+
+    "dashboardPagos": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val() !== 'lector'"
+    },
+
+    "temp-pdf": {
+      "$docId": {
+        ".read": true,
+        ".write": "auth != null"
+      }
+    }
+  }
+}

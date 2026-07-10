@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
+  <rect width="500" height="500" fill="#000"/>
+
+  <!-- R: translate(52,90), 172x240 -->
+  <g transform="translate(52,90)">
+    <!-- C hueca: outer rect con esquinas redondeadas, inner cutout (evenodd) -->
+    <path fill="#fff" fill-rule="evenodd" d="
+      M 0,0
+      H 116 Q 172,0 172,56
+      V 100 Q 172,156 116,156
+      H 0 Z
+      M 40,40
+      H 106 Q 132,40 132,66
+      V 90  Q 132,116 106,116
+      H 40 Z
+    "/>
+    <!-- Barra vertical izq, debajo del tazón C -->
+    <rect x="0" y="156" width="40" height="84" fill="#fff"/>
+    <!-- Pierna diagonal: triángulo desde inner-der hasta esquina inf-der -->
+    <polygon fill="#fff" points="106,116  172,156  172,240  106,170"/>
+  </g>
+
+  <!-- K: translate(242,90), 208x240 -->
+  <g transform="translate(242,90)">
+    <!-- Triángulo superior -->
+    <polygon fill="#fff" points="0,0  208,0  0,120"/>
+    <!-- Triángulo inferior -->
+    <polygon fill="#fff" points="0,120  208,240  0,240"/>
+  </g>
+
+  <!-- ARQUITECTURA -->
+  <text x="250" y="462"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="27" font-weight="300"
+        letter-spacing="8" text-anchor="middle"
+        fill="#fff">ARQUITECTURA</text>
+</svg>
