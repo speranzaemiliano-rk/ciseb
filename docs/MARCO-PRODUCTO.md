@@ -1,0 +1,189 @@
+# CISEB — Marco de Producto
+
+> Documento de encuadre. Traduce el *Relevamiento del Ecosistema Odontológico v1.0*
+> (fuente de verdad del proyecto hasta el cierre de la Fase 0) al contexto del
+> código que vive en este repositorio, y deja explícito **qué de la visión ya
+> está construido y qué falta**. Idioma del proyecto: español (Argentina).
+>
+> Si hay conflicto entre este documento y el relevamiento original sobre la
+> *visión*, manda el relevamiento. Sobre el *estado del código*, manda este.
+
+---
+
+## 1. Qué es CISEB (una frase)
+
+Un ecosistema digital para centros odontológicos chicos y medianos (~10
+profesionales), entregado **llave en mano**: cada centro es dueño de su instancia,
+sus datos y su entorno, y paga un **abono de mantenimiento y cumplimiento**. El
+diferencial no es funcional sino de **confianza**: se desarrolla y mantiene bajo
+un SGSI (ISO 27001) y un SGIA (ISO 42001) del proveedor, y cada instalación
+incluye un sistema de gestión plantilla para el centro, pre-mapeado a la
+normativa argentina de datos de salud.
+
+**Centro piloto:** el consultorio de la fundadora. Regla dura del MVP: **debe
+operar ese centro de punta a punta con datos reales.**
+
+## 2. Posicionamiento (las tres capas del cumplimiento)
+
+Las ISO certifican **sistemas de gestión de organizaciones, no productos**. El
+discurso comercial se apoya en tres capas y no debe confundirlas:
+
+1. **Proveedor certificado** — la empresa se certifica en 27001/42001 con alcance
+   sobre diseño, desarrollo, implementación y soporte del ecosistema. Mensaje
+   mientras no haya auditoría: *"diseñado bajo 27001, en proceso de certificación"*.
+2. **SGI plantilla incluido** — cada instalación entrega, además del software, la
+   documentación de gestión del centro (políticas, matriz de riesgos, gestión de
+   accesos, respaldo, registro de tratamiento de datos sensibles) pre-mapeada al
+   Anexo A y a la Ley 25.326.
+3. **Acompañamiento a certificación (opcional)** — servicio aparte para el centro
+   que quiera certificarse. La certificación la emite siempre un tercero.
+
+**Fuera de alcance por decisión explícita:** el circuito de **obras sociales**
+(padrones, débitos, facturación por convenio). El producto apunta a atención
+**privada/particular**. Se puede agregar a futuro, pero no condiciona el diseño.
+
+## 3. Principio rector de arquitectura
+
+**Una sola frontera, que además es política del SGSI:**
+
+> **Lo clínico nunca vive en Workspace. Lo administrativo puede vivir en Workspace.**
+> Ambos mundos comparten una sola identidad.
+
+De esa frontera se desprende también qué IA toca qué: la IA administrativa
+(Gemini de Workspace) nunca toca dato clínico; la IA clínica (asistente interno
+por API, con context injection) hereda los permisos del usuario, es **solo
+lectura** en el MVP y **registra toda consulta** (controles del SGIA).
+
+## 4. Modelo de datos objetivo (tesis central)
+
+El hallazgo que ordena todo el diseño: **nadie llena el odontograma porque es
+trabajo duplicado.** La solución no es un odontograma más lindo, sino **eliminar
+el doble registro: la evolución es el punto de entrada único.**
+
+El profesional carga la evolución de forma estructurada (elige prestación del
+catálogo, marca pieza y cara en FDI, agrega texto libre) y de ese **único gesto**
+el sistema: (a) actualiza el odontograma, (b) genera el cobro del día, (c)
+alimenta la liquidación. **Una carga, tres módulos.** La meta de UX: cargar una
+evolución en **menos de 30 segundos** — si es más rápido que el papel, se usa.
+
+Entidades objetivo (resumen del relevamiento §6):
+
+| Entidad | Rol |
+|---|---|
+| **Paciente** | Núcleo. Incluye consentimiento de comunicaciones desde el día 1 (habilita CRM y cumple Ley 25.326). |
+| **Profesional** | Usuario con rol (RBAC), especialidad y regla de reparto. |
+| **Prestación (catálogo)** | Entidad central: nombre, especialidad, duración, precio de referencia, flag *requiere consentimiento*. Une agenda, clínica y finanzas. |
+| **Turno** | Paciente + profesional + prestación + fecha/hora + estado. Sincroniza bidireccional con Google Calendar. |
+| **Evolución** | **Punto de entrada único.** Turno + prestación + piezas/caras (FDI) + texto + firma. Dispara odontograma y cobro. Bloquea si falta consentimiento requerido. |
+| **Odontograma** | FDI, por cara, tres capas (inicial / planificado / realizado). Se actualiza desde la evolución. Reserva estructura para periodontograma (post-MVP). |
+| **Plan / Presupuesto** | Prestaciones por etapas con precios; documento enviable, aceptación/firma. Ortodoncia es el piloto natural. |
+| **Esquema de pago** | Desacoplado de la visita: por sesión, cuota fija, adelantado o libre. Ficha muestra avance de tratamiento vs. avance de pago. |
+| **Cobro y Liquidación** | Cada cobro se descompone en **participaciones** según la regla del profesional ejecutante hacia **beneficiarios** (en el piloto: cada socio + el fondo común). Liquidación por período configurable (diaria en el piloto). |
+| **Documento / Imagen** | Radiografías, fotos, consentimientos: en Cloud Storage, cifrados, vinculados a paciente y evolución, con registro de origen. |
+| **Lista de espera** | Estructura el criterio hoy tácito de la asistente: ante cancelación, el sistema sugiere candidatos, el humano decide. |
+
+## 5. Arquitectura objetivo vs. stack actual
+
+| Capa | Objetivo del relevamiento | Stack actual de este repo |
+|---|---|---|
+| Identidad | Google Workspace SSO + RBAC por rol | Firebase Auth (email/password + Google sign-in); roles `superadmin/admin/editor/lector` **aplicados solo en cliente** |
+| Dato clínico | GCP **Firestore** (relacional, concurrencia, trazabilidad fina) | Firebase **Realtime Database** (mismo ecosistema Google, pero sin la trazabilidad fina de Firestore) |
+| Imágenes | GCP Cloud Storage + **portal de carga por signed URLs** | Firebase Storage, subida **directa desde el modal** (sin portal de enlaces firmados) |
+| Frontera clínico/admin | Separación física (clínico fuera de Workspace) | **Todo junto** en una misma base Realtime DB |
+| Interfaz | App web propia con RBAC real | `index.html` único, JS vanilla sin build, hospedado en GitHub Pages |
+| IA administrativa | Gemini de Workspace | — (no aplica al modo actual) |
+| IA clínica | Asistente por API, solo lectura, con logging de cada consulta | Asistente Gemini con *context injection* de los datos de la app **sin** el scoping de permisos ni el logging clínico que exige el SGIA |
+| Backend | Infra como código, un código base / N configuraciones | Backend Express en Railway (ARCA, Belvo/Prometeo, WhatsApp, mail bot); instancia única, no parametrizada por centro |
+
+> **Nota:** Firebase *es* parte de GCP. La distancia real no es de proveedor sino
+> de piezas: Realtime DB → Firestore, subida directa → portal de signed URLs,
+> auth propia → Workspace SSO, roles cliente → RBAC efectivo.
+
+## 6. Estado actual del código vs. objetivo (mapa honesto)
+
+Leyenda: ✅ construido · 🟡 parcial · ⬜ no existe todavía.
+
+| Capacidad del relevamiento | Estado | Nota |
+|---|---|---|
+| Ficha de **Paciente** | ✅ | Datos personales, obra social, notas/antecedentes, profesional asignado, estudios adjuntos. Falta el campo formal de *consentimiento de comunicaciones*. |
+| **Profesionales** con especialidad/matrícula | ✅ | |
+| **Reglas de reparto** por profesional | 🟡 | Hay `% general + override por tratamiento`, pero **hacia un solo destino**, no el modelo de **beneficiarios múltiples** (socios + fondo común) del piloto. |
+| **Turnos** / agenda | 🟡 | Listado filtrable por fecha/estado. **Sin** sincronización con Google Calendar ni confirmación automática 24 h. |
+| **Catálogo de prestaciones** | 🟡 | Módulo "Tratamientos" con nombre + precio. Falta duración, especialidad y flag *requiere consentimiento*. |
+| **Evolución estructurada** (entrada única) | ⬜ | **No existe.** Es el núcleo del producto y el mayor faltante. |
+| **Odontograma** FDI 3 capas | ⬜ | No existe. |
+| **Plan de tratamiento / presupuesto por etapas** | 🟡 | Hay Presupuestos genéricos (heredados del sistema base), no por etapas clínicas con aceptación del paciente. |
+| **Esquemas de pago** (sesión/cuota/adelantado/libre) | 🟡 | Hay cobros e ingresos genéricos; falta imputarlos a un plan con avance tratamiento vs. pago. |
+| **Cobro → liquidación** desde la evolución | ⬜ | Hoy los ingresos se cargan a mano; no nacen de una evolución. |
+| **Estudios/imágenes** vinculados a paciente | ✅ | PDFs/imágenes por paciente en Firebase Storage. Falta el **portal de signed URLs** y el vínculo a la evolución. |
+| **Consentimiento electrónico con evidencia** | ⬜ | No existe. Prerrequisito legal de la Fase 4 (validar textos con abogado). |
+| **Lista de espera** estructurada | ⬜ | No existe. |
+| **Asistente clínico** (solo lectura + logging) | 🟡 | Hay asistente Gemini útil, pero **sin** el scoping por permisos ni el registro de consultas que pide el SGIA. |
+| **Bot de WhatsApp** de turnos | 🟡 | Backend preparado; falta cuenta de Meta + credenciales + alcance cerrado documentado. |
+| **RBAC efectivo / SSO Workspace** | ⬜ | Roles solo en cliente; las reglas de Firebase son la única defensa real. |
+| **Infra como código** (instalador) | ⬜ | Instancia única, no replicable por script todavía. |
+
+**Lectura de una línea:** CISEB hoy es una **base administrativa + clínica-liviana
+sólida** (Pacientes, Profesionales con reparto simple, Turnos, Tratamientos,
+estudios, más toda la contabilidad y facturación ARCA heredada). Le falta el
+**núcleo clínico** que el documento pone en el centro: evolución estructurada →
+odontograma → cobro → liquidación, con consentimientos y planes por etapas.
+
+## 7. Roadmap del relevamiento (§8) y dónde estamos parados
+
+| Fase | Contenido | Dónde estamos |
+|---|---|---|
+| **0 — Definición** | Modelo de datos clínico, pantalla de evolución, mapa de riesgos, diseño del paquete llave en mano, consulta legal de consentimientos | En curso (este documento es insumo) |
+| **1 — Núcleo clínico** | Login+RBAC, ficha, historia clínica, **evolución→odontograma** (FDI, 3 capas, por cara), adjuntos y portal de signed URLs | 🟡 ficha y adjuntos sí; evolución+odontograma **no** |
+| **2 — Agenda** | Catálogo con duraciones, sync Calendar, confirmación 24 h, notas de preferencia, lista de espera | 🟡 turnos básicos; falta sync/confirmación/lista |
+| **3 — Finanzas** | Cobros desde la evolución, motor de beneficiarios, liquidación configurable, esquemas de pago, reporte por profesional/beneficiario | 🟡 finanzas genéricas; falta atar todo a la evolución y a beneficiarios múltiples |
+| **4 — Planes y consentimientos** | Presupuestos por etapas, aceptación, consentimiento con firma+evidencia, bloqueo de evolución sin consentimiento | ⬜ |
+| **5 — IA** | Asistente clínico interno (context injection, solo lectura, logging) y luego bot WhatsApp | 🟡 asistente sí, controles del SGIA no |
+
+**Fin del MVP comercializable = fin de Fase 3.**
+
+## 8. Decisiones de diseño ya tomadas (no rediscutir sin nueva evidencia)
+
+Del relevamiento §7. Las más determinantes para el código:
+
+- **Dato clínico fuera de Workspace, en GCP.**
+- **Identidad única: SSO Workspace + RBAC por rol** (no por persona).
+- **Frontera clínico/administrativo como política**, no como sugerencia.
+- **Evolución estructurada como registro único** (elimina el doble trabajo).
+- **Sin módulo de obras sociales** (segmento privado/particular).
+- **Periodontograma: estructura sí, funcionalidad post-MVP.**
+- **Sillones no modelados en el MVP.**
+- **Motor de liquidación con beneficiarios múltiples desde el MVP** (el centro de
+  dueño único es el caso trivial del mismo motor).
+- **Consentimiento electrónico con evidencia en el MVP**; firma digital
+  certificada a futuro (validar textos con abogado de salud antes de vender).
+- **Bot clínico interno de solo lectura con logging total antes que WhatsApp.**
+- **Infra como código para toda instalación** (un código base, N configuraciones).
+- **Reglas de negocio configurables, estructura del dato fija.**
+
+## 9. Marco de cumplimiento (normativa argentina)
+
+- **Ley 26.529** (derechos del paciente): admite historia clínica informatizada
+  garantizando integridad, autenticidad, inalterabilidad y recuperabilidad;
+  conservación mínima **10 años**.
+- **Ley 25.326** (datos personales): los datos de salud son **sensibles**; el
+  consentimiento para comunicaciones de marketing es requisito, no detalle.
+- **Ley 25.506** (firma digital): distingue firma digital certificada de firma
+  electrónica; la electrónica es válida con carga de prueba sobre quien la invoca
+  → de ahí el diseño con **rastro de evidencia fuerte** (quién, cuándo,
+  dispositivo, versión del texto).
+
+## 10. Advertencia de encuadre para quien trabaje el código
+
+Este repo nació como adaptación de un sistema administrativo/contable (rubro
+inmobiliario) hacia el rubro odontológico. Por eso convive mucha funcionalidad
+**administrativa madura** (caja, bancos, ingresos/egresos, proveedores,
+facturación ARCA, reportes) con módulos clínicos **incipientes**. Al planificar
+trabajo nuevo:
+
+1. No confundir "lo que la app ya hace" con "lo que el producto será". Usar la
+   tabla del §6 como verdad del estado.
+2. El próximo salto de valor **no** es pulir lo administrativo: es construir el
+   **núcleo clínico** (evolución → odontograma → cobro → liquidación).
+3. Toda decisión nueva o cambio sobre lo aquí registrado **se versiona**. Ese
+   hábito, además de orden, es evidencia de gestión para el futuro SGSI.
