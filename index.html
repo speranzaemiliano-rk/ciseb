@@ -9681,7 +9681,8 @@
                 turno:       function() { eliminarTurno(idx); },
                 profesional: function() { eliminarProfesional(idx); },
                 prestacion:  function() { eliminarPrestacion(idx); },
-                beneficiario: function() { eliminarBeneficiario(idx); }
+                beneficiario: function() { eliminarBeneficiario(idx); },
+                plantrat:    function() { eliminarPlanTrat(idx); }
             };
             if (fns[tipo]) fns[tipo]();
             return;
@@ -9752,6 +9753,12 @@
                 var ben = beneficiarios[idx]; if (!ben) { alert('Ítem no encontrado.'); return; }
                 descripcion = 'Beneficiario: ' + (ben.nombre||'?');
                 itemData = { id: ben.id, nombre: ben.nombre };
+                break;
+            }
+            case 'plantrat': {
+                var pt = planesTrat[idx]; if (!pt) { alert('Ítem no encontrado.'); return; }
+                descripcion = 'Plan de tratamiento: ' + (pt.descripcion||'?') + ' ($' + Math.round(pt.montoTotal||0).toLocaleString('es-AR') + ')';
+                itemData = { id: pt.id, descripcion: pt.descripcion };
                 break;
             }
             default: alert('Tipo no soportado: ' + tipo); return;
@@ -9832,6 +9839,11 @@
                     var i = D.id ? beneficiarios.findIndex(function(b){ return b.id===D.id; })
                                  : beneficiarios.findIndex(function(b){ return b.nombre===D.nombre; });
                     if (i !== -1) { beneficiarios.splice(i, 1); persistirBeneficiarios(); deleted = true; } break;
+                }
+                case 'plantrat': {
+                    var i = D.id ? planesTrat.findIndex(function(pt){ return pt.id===D.id; })
+                                 : planesTrat.findIndex(function(pt){ return pt.descripcion===D.descripcion; });
+                    if (i !== -1) { planesTrat.splice(i, 1); persistirPlanesTrat(); deleted = true; } break;
                 }
                 case 'movcaja':
                 case 'inggeneral': {
@@ -13595,6 +13607,12 @@
     let REF_BENEFICIARIOS = null;
     let beneficiarios = [];
     var editandoBenefIdx = -1;
+    // Planes de Tratamiento / Esquemas de Pago — OJO: entidad distinta de "Plan de Trabajo"
+    // (planTrabajo/REF_PLAN, tablero de tareas). Acá SIEMPRE planesTrat/REF_PLANES_TRAT.
+    let REF_PLANES_TRAT = null;
+    let planesTrat = [];
+    var editandoPlanTratIdx = -1;
+    var _planTratPacienteCtx = null;
 
     // Se llama desde actualizarRefs()
     function actualizarRefsIngresos() {
@@ -13611,6 +13629,7 @@
         REF_EVOLUCIONES   = db.ref(base + '/evoluciones');
         REF_COBROS        = db.ref(base + '/cobros');
         REF_BENEFICIARIOS = db.ref(base + '/beneficiarios');
+        REF_PLANES_TRAT   = db.ref(base + '/planesTrat');
     }
 
     // Helper: carga con listener .on() reactivo
@@ -13638,6 +13657,7 @@
         _cargarConListener(REF_EVOLUCIONES, function(v) { evoluciones = v; if (typeof _fichaClinicaPacIdx !== 'undefined' && _fichaClinicaPacIdx >= 0 && typeof _renderEvolucionesFicha==='function') _renderEvolucionesFicha(_fichaClinicaPacIdx); });
         _cargarConListener(REF_COBROS, function(v) { cobros = v; if (typeof renderCobros==='function') renderCobros(); });
         _cargarConListener(REF_BENEFICIARIOS, function(v) { beneficiarios = v; if (typeof renderBeneficiarios==='function') renderBeneficiarios(); });
+        _cargarConListener(REF_PLANES_TRAT, function(v) { planesTrat = v; if (typeof _fichaClinicaPacIdx !== 'undefined' && _fichaClinicaPacIdx >= 0 && typeof _renderFichaClinicaPlanes==='function') _renderFichaClinicaPlanes(_fichaClinicaPacIdx); });
         if (REF_PLAN) {
             REF_PLAN.on('value', function(snap) {
                 var val = snap.val();
@@ -13688,6 +13708,12 @@
         if (!REF_BENEFICIARIOS) return;
         REF_BENEFICIARIOS.set(beneficiarios)
             .catch(function(e) { console.error('Error guardando beneficiarios:', e); alert('Error al guardar. Revisá la conexión.'); });
+    }
+
+    function persistirPlanesTrat() {
+        if (!REF_PLANES_TRAT) return;
+        REF_PLANES_TRAT.set(planesTrat)
+            .catch(function(e) { console.error('Error guardando planes de tratamiento:', e); alert('Error al guardar. Revisá la conexión.'); });
     }
 
     // ══════════════════════════════════════════════════════════
@@ -14562,6 +14588,7 @@
         _fichaClinicaPacIdx = idx;
         document.getElementById('modalHistoriaClinicaTitle').textContent = '🦷 Ficha Clínica — ' + (p.nombre || '');
         renderOdontograma(idx, 'fichaClinicaOdontograma', false);
+        _renderFichaClinicaPlanes(idx);
         _renderEvolucionesFicha(idx);
         document.getElementById('modalHistoriaClinica').classList.add('active');
     }
@@ -14638,6 +14665,7 @@
         document.getElementById('evoMonto').value = '';
         document.getElementById('evoMoneda').value = 'ARS';
         document.getElementById('evoAvisoConsentimiento').style.display = 'none';
+        _evoPoblarSelectPlanesTrat();
 
         renderOdontograma(pacienteIdx, 'evoModoSeleccionOdontograma', true);
         document.getElementById('modalEvolucion').classList.add('active');
@@ -14661,6 +14689,24 @@
         } else {
             aviso.style.display = 'none';
         }
+    }
+
+    // Planes de Tratamiento (Feature 2, aditivo): permite imputar esta evolución a un plan
+    // desacoplado de la visita. Solo lista planes ACTIVOS del paciente en contexto — no toca
+    // ningún cálculo de guardarEvolucion, es un dato más que viaja en el objeto evo/cobro.
+    function _evoPoblarSelectPlanesTrat() {
+        var sel = document.getElementById('evoPlanTrat');
+        if (!sel) return;
+        sel.innerHTML = '<option value="">— Ninguno —</option>';
+        var p = pacientes[_evoPacienteIdx];
+        if (!p) return;
+        planesTrat.filter(function(pl) { return pl.pacienteId === p.id && pl.estado === 'activo'; })
+            .forEach(function(pl) {
+                var o = document.createElement('option');
+                o.value = pl.id;
+                o.textContent = (pl.descripcion || '(sin descripción)') + ' — $' + Math.round(pl.montoTotal || 0).toLocaleString('es-AR');
+                sel.appendChild(o);
+            });
     }
 
     // Feature 3 (motor de liquidación): reparte montoConsultorio entre los beneficiarios que el
@@ -14713,6 +14759,10 @@
         var monto   = parseFloat(document.getElementById('evoMonto').value) || 0;
         var moneda  = document.getElementById('evoMoneda').value || 'ARS';
         var firmada = !!document.getElementById('evoFirmada').checked;
+        // Planes de Tratamiento (Feature 2, aditivo): imputación opcional a un plan. Si el
+        // select no existe o está vacío, queda null — no afecta nada de lo que ya funciona.
+        var evoPlanTratSel = document.getElementById('evoPlanTrat');
+        var planTratId = (evoPlanTratSel && evoPlanTratSel.value) ? evoPlanTratSel.value : null;
 
         // Reparto profesional/consultorio: override por tratamiento (match por nombre de la
         // prestación, no es un match perfecto pero es lo que hay hoy) > comisionGeneral > 0.
@@ -14752,6 +14802,7 @@
             montoProfesional:     montoProfesional,
             montoConsultorio:     montoConsultorio,
             participaciones:      participaciones,
+            planTratId:           planTratId,
             creadoEn:             Date.now()
         };
         evoluciones.push(evo);
@@ -14787,6 +14838,9 @@
         cerrarModalEvolucion();
         renderOdontograma(_evoPacienteIdx, 'fichaClinicaOdontograma', false);
         _renderEvolucionesFicha(_evoPacienteIdx);
+        // Feature 2 (aditivo): si la evolución se imputó a un plan, refresca el avance de pago
+        // en la ficha clínica (si sigue abierta).
+        if (evo.planTratId && typeof _renderFichaClinicaPlanes === 'function') _renderFichaClinicaPlanes(_evoPacienteIdx);
         if (typeof renderCobros === 'function') renderCobros();
         alert('✓ Evolución guardada. Odontograma y cobro actualizados.');
     }
@@ -14891,6 +14945,274 @@
 
         var totEl = document.getElementById('liqTotalGeneral');
         if (totEl) totEl.textContent = '$' + Math.round(totalGeneral).toLocaleString('es-AR');
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // PLANES DE TRATAMIENTO — esquemas de pago desacoplados de la visita
+    // ══════════════════════════════════════════════════════════
+    // Entidad liviana: un plan agrupa un tratamiento (ej. "Ortodoncia") con un monto total y un
+    // esquema de pago (sesion/cuota/adelantado/libre). Los cobros (tanto los que nacen de una
+    // Evolución como los "pago directo" de más abajo) se imputan OPCIONALMENTE a un plan vía
+    // cobro.planTratId — el avance de pago se calcula sumando esos cobros, sin modificar nunca
+    // evoluciones/cobros existentes. Se gestiona desde la Ficha Clínica del paciente, no tiene
+    // tab propio en el sidebar (para no inflar el menú).
+    // OJO NOMBRES: esto es planesTrat/REF_PLANES_TRAT — el módulo "Plan de Trabajo" (tablero de
+    // tareas, planTrabajo/REF_PLAN) es una entidad completamente distinta, no tocar ni confundir.
+
+    var ESQUEMA_PAGO_LABEL = {
+        sesion:     'Por sesión',
+        cuota:      'Cuota fija (ej. ortodoncia)',
+        adelantado: 'Total adelantado',
+        libre:      'Libre (pagos a cuenta)'
+    };
+
+    // Togglea el input de "monto de cuota" según el esquema elegido en el modal.
+    function _planTratTogglearCuota() {
+        var sel = document.getElementById('planTratEsquema');
+        var grp = document.getElementById('planTratCuotaGrupo');
+        if (!sel || !grp) return;
+        grp.style.display = (sel.value === 'cuota') ? '' : 'none';
+    }
+
+    // Puebla el modal a partir de un plan (null = formulario vacío para uno nuevo). Función
+    // interna compartida por abrirModalPlanTrat (nuevo) y editarPlanTrat (editar) para no
+    // duplicar el llenado de campos.
+    function _planTratPoblarModal(plan) {
+        document.getElementById('modalPlanTratTitle').textContent = plan ? '💳 Editar Plan de Tratamiento' : '💳 Nuevo Plan de Tratamiento';
+        var pacCtx = pacientes.filter(function(p) { return p.id === _planTratPacienteCtx; })[0];
+        document.getElementById('planTratPacienteNombre').textContent = pacCtx ? (pacCtx.nombre || '(sin nombre)') : '(paciente no encontrado)';
+
+        var selProf = document.getElementById('planTratProfesional');
+        selProf.innerHTML = '<option value="">— Sin asignar —</option>';
+        profesionales.forEach(function(pr) {
+            var o = document.createElement('option');
+            o.value = pr.id || '';
+            o.textContent = pr.nombre || '(sin nombre)';
+            selProf.appendChild(o);
+        });
+
+        document.getElementById('planTratDescripcion').value = plan ? (plan.descripcion || '') : '';
+        selProf.value = plan ? (plan.profesionalId || '') : '';
+        document.getElementById('planTratMontoTotal').value  = plan ? (plan.montoTotal !== null && plan.montoTotal !== undefined ? plan.montoTotal : '') : '';
+        document.getElementById('planTratEsquema').value     = plan ? (plan.esquemaPago || 'libre') : 'libre';
+        document.getElementById('planTratCuotaMonto').value  = plan ? (plan.cuotaMonto !== null && plan.cuotaMonto !== undefined ? plan.cuotaMonto : '') : '';
+        document.getElementById('planTratFechaInicio').value = plan ? (plan.fechaInicio || '') : new Date().toISOString().slice(0, 10);
+        document.getElementById('planTratNotas').value       = plan ? (plan.notas || '') : '';
+        _planTratTogglearCuota();
+        document.getElementById('modalPlanTrat').classList.add('active');
+    }
+
+    // Nuevo plan — mismo patrón que abrirModalEvolucion(pacienteIdx): recibe el índice del
+    // paciente en pacientes[].
+    function abrirModalPlanTrat(pacienteIdx) {
+        var p = pacientes[pacienteIdx];
+        if (!p) { alert('Paciente no encontrado.'); return; }
+        editandoPlanTratIdx = -1;
+        _planTratPacienteCtx = p.id;
+        _planTratPoblarModal(null);
+    }
+
+    // Wrapper desde la Ficha Clínica — igual patrón que abrirModalEvolucionDesdeFicha().
+    function abrirModalPlanTratDesdeFicha() {
+        if (_fichaClinicaPacIdx < 0) { alert('Abrí primero la ficha de un paciente.'); return; }
+        abrirModalPlanTrat(_fichaClinicaPacIdx);
+    }
+
+    // Editar plan existente — recibe el índice DENTRO de planesTrat (espacio de índices
+    // distinto al de pacienteIdx de arriba, por eso es una función separada en vez de
+    // sobrecargar abrirModalPlanTrat con un segundo significado del mismo parámetro).
+    function editarPlanTrat(idx) {
+        var plan = planesTrat[idx];
+        if (!plan) { alert('Plan no encontrado.'); return; }
+        editandoPlanTratIdx = idx;
+        _planTratPacienteCtx = plan.pacienteId;
+        _planTratPoblarModal(plan);
+    }
+
+    function cerrarModalPlanTrat() { document.getElementById('modalPlanTrat').classList.remove('active'); }
+
+    function guardarPlanTrat() {
+        if (!_planTratPacienteCtx) { alert('No hay paciente en contexto.'); return; }
+        var montoTotal = parseFloat(document.getElementById('planTratMontoTotal').value);
+        if (!montoTotal || montoTotal <= 0) { alert('El monto total es obligatorio y debe ser mayor a 0.'); return; }
+        var prev = editandoPlanTratIdx >= 0 ? planesTrat[editandoPlanTratIdx] : null;
+        var cuotaStr = (document.getElementById('planTratCuotaMonto').value || '').trim();
+        var plan = {
+            id:            (prev && prev.id) ? prev.id : ('plantrat_' + Date.now()),
+            pacienteId:    _planTratPacienteCtx,
+            descripcion:   (document.getElementById('planTratDescripcion').value || '').trim(),
+            profesionalId: document.getElementById('planTratProfesional').value || '',
+            montoTotal:    montoTotal,
+            esquemaPago:   document.getElementById('planTratEsquema').value || 'libre',
+            cuotaMonto:    cuotaStr === '' ? null : (parseFloat(cuotaStr) || null),
+            fechaInicio:   document.getElementById('planTratFechaInicio').value || new Date().toISOString().slice(0, 10),
+            estado:        prev ? (prev.estado || 'activo') : 'activo',
+            notas:         (document.getElementById('planTratNotas').value || '').trim()
+        };
+        if (editandoPlanTratIdx >= 0) planesTrat[editandoPlanTratIdx] = plan; else planesTrat.push(plan);
+        persistirPlanesTrat();
+        cerrarModalPlanTrat();
+        var pacIdx = pacientes.findIndex(function(p) { return p.id === plan.pacienteId; });
+        if (pacIdx >= 0) _renderFichaClinicaPlanes(pacIdx);
+    }
+
+    function eliminarPlanTrat(idx) {
+        if (!confirm('¿Eliminar este plan de tratamiento? Esta acción no se puede deshacer (los cobros ya imputados NO se eliminan, solo pierden el vínculo visual).')) return;
+        var pacienteId = planesTrat[idx] ? planesTrat[idx].pacienteId : null;
+        planesTrat.splice(idx, 1);
+        persistirPlanesTrat();
+        var pacIdx = pacientes.findIndex(function(p) { return p.id === pacienteId; });
+        if (pacIdx >= 0) _renderFichaClinicaPlanes(pacIdx);
+    }
+
+    // Togglea Activo/Cerrado a mano (además de quedar disponible cuando el saldo llega a 0).
+    function toggleEstadoPlanTrat(idx) {
+        var plan = planesTrat[idx];
+        if (!plan) return;
+        plan.estado = (plan.estado === 'activo') ? 'cerrado' : 'activo';
+        persistirPlanesTrat();
+        var pacIdx = pacientes.findIndex(function(p) { return p.id === plan.pacienteId; });
+        if (pacIdx >= 0) _renderFichaClinicaPlanes(pacIdx);
+    }
+
+    // Total cobrado de un plan: suma el monto de los cobros (nacidos de una evolución o de un
+    // pago directo, da igual — misma colección, mismos campos) cuyo planTratId coincida EXACTO
+    // con este plan. No filtra por evolucionId, ver Feature 4.
+    function _planTratTotalCobrado(planId) {
+        return cobros.filter(function(c) { return c.planTratId === planId; })
+            .reduce(function(acc, c) { return acc + (parseFloat(c.monto) || 0); }, 0);
+    }
+
+    // Arma el listado de planes del paciente dentro de la Ficha Clínica: descripción, esquema,
+    // monto total, total cobrado, saldo pendiente y % de avance de pago (barra simple). Se
+    // llama al abrir la ficha y después de cualquier alta/edición/borrado de plan o pago.
+    function _renderFichaClinicaPlanes(pacienteIdx) {
+        var p = pacientes[pacienteIdx];
+        var cont = document.getElementById('fichaClinicaPlanes');
+        if (!p || !cont) return;
+        var lista = planesTrat.map(function(pl, i) { return { pl: pl, i: i }; })
+            .filter(function(x) { return x.pl.pacienteId === p.id; })
+            .sort(function(a, b) { return (b.pl.fechaInicio || '').localeCompare(a.pl.fechaInicio || ''); });
+        if (!lista.length) { cont.innerHTML = '<div class="empty-msg" style="padding:14px;">Sin planes de tratamiento cargados.</div>'; return; }
+        cont.innerHTML = lista.map(function(x) {
+            var pl = x.pl, idx = x.i;
+            var cobrado = _planTratTotalCobrado(pl.id);
+            var saldo   = +((pl.montoTotal || 0) - cobrado).toFixed(2);
+            var avance  = pl.montoTotal > 0 ? Math.min(100, Math.max(0, Math.round((cobrado / pl.montoTotal) * 100))) : 0;
+            return '<div style="padding:12px 16px;border-bottom:1px solid var(--border,#eee);">' +
+                '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">' +
+                    '<strong>' + escHtml(pl.descripcion || '(sin descripción)') + '</strong>' +
+                    '<span style="font-size:12px;color:var(--text-3);">' + escHtml(ESQUEMA_PAGO_LABEL[pl.esquemaPago] || pl.esquemaPago || '—') + ' · ' + (pl.estado === 'activo' ? '🟢 Activo' : '⚪ Cerrado') + '</span>' +
+                '</div>' +
+                '<div style="font-size:12.5px;color:var(--text-3);margin-top:4px;">' +
+                    'Total: $' + Math.round(pl.montoTotal || 0).toLocaleString('es-AR') +
+                    ' · Cobrado: $' + Math.round(cobrado).toLocaleString('es-AR') +
+                    ' · Saldo: $' + Math.round(saldo).toLocaleString('es-AR') +
+                '</div>' +
+                '<div style="background:var(--border,#eee);border-radius:4px;height:8px;margin-top:6px;overflow:hidden;">' +
+                    '<div style="background:var(--gold);height:100%;width:' + avance + '%;"></div>' +
+                '</div>' +
+                '<div style="font-size:11px;color:var(--text-3);margin-top:2px;">' + avance + '% cobrado</div>' +
+                '<div class="action-btns" style="margin-top:8px;">' +
+                    '<button class="btn btn-gold btn-sm" onclick="abrirModalRegistrarPago(' + idx + ')">💰 Registrar Pago</button>' +
+                    '<button class="btn btn-outline btn-sm" onclick="editarPlanTrat(' + idx + ')" title="Editar">✏</button>' +
+                    '<button class="btn btn-outline btn-sm" onclick="toggleEstadoPlanTrat(' + idx + ')" title="Cambiar estado">' + (pl.estado === 'activo' ? '🔒 Cerrar' : '🔓 Reabrir') + '</button>' +
+                    (typeof btnElim === 'function' ? btnElim('plantrat', idx) : '<button class="btn btn-danger-sm" onclick="eliminarPlanTrat(' + idx + ')">✕</button>') +
+                '</div>' +
+            '</div>';
+        }).join('');
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // REGISTRAR PAGO — Feature 3 (pago directo, desacoplado de una visita clínica)
+    // ══════════════════════════════════════════════════════════
+    // Genera un cobro SIN pasar por evoluciones: no hay prestación asociada, así que el
+    // reparto usa directamente prof.comisionGeneral (sin buscar override por tratamiento, ese
+    // match es por nombre de prestación y acá no hay prestación). Reutiliza
+    // _calcularParticipaciones tal cual está — no la toca.
+    var _pagoDirectoPlanIdx = -1;
+
+    function abrirModalRegistrarPago(idxPlan) {
+        var plan = planesTrat[idxPlan];
+        if (!plan) { alert('Plan no encontrado.'); return; }
+        _pagoDirectoPlanIdx = idxPlan;
+        var pac = pacientes.filter(function(p) { return p.id === plan.pacienteId; })[0];
+        document.getElementById('pagoDirectoPlanLabel').textContent =
+            (plan.descripcion || '(sin descripción)') + ' — ' + (pac ? (pac.nombre || '(sin nombre)') : '(paciente no encontrado)');
+
+        var selProf = document.getElementById('pagoDirectoProfesional');
+        selProf.innerHTML = '<option value="">— Elegir —</option>';
+        profesionales.forEach(function(pr) {
+            var o = document.createElement('option');
+            o.value = pr.id || '';
+            o.textContent = pr.nombre || '(sin nombre)';
+            selProf.appendChild(o);
+        });
+        selProf.value = plan.profesionalId || '';
+
+        document.getElementById('pagoDirectoMonto').value  = (plan.esquemaPago === 'cuota' && plan.cuotaMonto) ? plan.cuotaMonto : '';
+        document.getElementById('pagoDirectoMoneda').value  = 'ARS';
+        document.getElementById('pagoDirectoMedio').value   = 'efectivo';
+        document.getElementById('pagoDirectoFecha').value   = new Date().toISOString().slice(0, 10);
+        document.getElementById('pagoDirectoNotas').value   = '';
+        document.getElementById('modalRegistrarPago').classList.add('active');
+    }
+
+    function cerrarModalRegistrarPago() { document.getElementById('modalRegistrarPago').classList.remove('active'); }
+
+    function guardarPagoDirecto() {
+        var plan = planesTrat[_pagoDirectoPlanIdx];
+        if (!plan) { alert('No hay plan en contexto.'); return; }
+        var profId = document.getElementById('pagoDirectoProfesional').value;
+        if (!profId) { alert('Elegí un profesional.'); return; }
+        var prof = profesionales.filter(function(pr) { return pr.id === profId; })[0];
+        if (!prof) { alert('Profesional no encontrado.'); return; }
+        var monto = parseFloat(document.getElementById('pagoDirectoMonto').value) || 0;
+        if (monto <= 0) { alert('El monto debe ser mayor a 0.'); return; }
+        var moneda    = document.getElementById('pagoDirectoMoneda').value || 'ARS';
+        var medioPago = document.getElementById('pagoDirectoMedio').value || 'otro';
+        var fecha     = document.getElementById('pagoDirectoFecha').value || new Date().toISOString().slice(0, 10);
+        var notas     = (document.getElementById('pagoDirectoNotas').value || '').trim();
+
+        // Un pago directo no tiene prestación asociada (no nace de una evolución), así que no
+        // hay override por tratamiento posible (ese match es por nombre de prestación, ver
+        // guardarEvolucion) — se usa directamente prof.comisionGeneral.
+        var pctConsultorio   = parseFloat(prof.comisionGeneral) || 0;
+        var montoConsultorio = +(monto * (pctConsultorio / 100)).toFixed(2);
+        var montoProfesional = +(monto - montoConsultorio).toFixed(2);
+        var participaciones  = _calcularParticipaciones(prof, montoConsultorio);
+
+        var cobro = {
+            id:                    'cobro_' + Date.now(),
+            fecha:                 fecha,
+            pacienteId:            plan.pacienteId,
+            profesionalId:         prof.id,
+            prestacionId:          null,
+            prestacionNombre:      'Pago directo (plan: ' + (plan.descripcion || '(sin descripción)') + ')',
+            piezas:                [],
+            estadoRegistrado:      null,
+            texto:                 notas,
+            firmada:               false,
+            firmadaEn:             null,
+            monto:                 monto,
+            moneda:                moneda,
+            porcentajeProfesional: +(100 - pctConsultorio).toFixed(2),
+            montoProfesional:      montoProfesional,
+            montoConsultorio:      montoConsultorio,
+            participaciones:       participaciones,
+            planTratId:            plan.id,
+            medioPago:             medioPago,
+            evolucionId:           null,
+            origenPago:            'directo',
+            creadoEn:              Date.now()
+        };
+        cobros.push(cobro);
+        persistirCobros();
+        cerrarModalRegistrarPago();
+        var pacIdx = pacientes.findIndex(function(p) { return p.id === plan.pacienteId; });
+        if (pacIdx >= 0) _renderFichaClinicaPlanes(pacIdx);
+        if (typeof renderCobros === 'function') renderCobros();
+        alert('✓ Pago registrado.');
     }
 
     // ══════════════════════════════════════════════════════════
@@ -20537,6 +20859,13 @@
       <div id="fichaClinicaOdontograma"></div>
       <div class="table-card" style="margin-top:18px;">
         <div class="table-card-head">
+          <h3>💳 Planes de Tratamiento</h3>
+          <button class="btn btn-gold btn-sm" onclick="abrirModalPlanTratDesdeFicha()">➕ Nuevo Plan</button>
+        </div>
+        <div id="fichaClinicaPlanes"></div>
+      </div>
+      <div class="table-card" style="margin-top:18px;">
+        <div class="table-card-head">
           <h3>📝 Evoluciones</h3>
           <button class="btn btn-gold btn-sm" onclick="abrirModalEvolucionDesdeFicha()">➕ Nueva Evolución</button>
         </div>
@@ -20598,6 +20927,10 @@
           <input type="checkbox" id="evoFirmada"> Firmado por el profesional
         </label>
       </div>
+      <div class="form-group">
+        <label>Imputar a un Plan de Tratamiento (opcional)</label>
+        <select id="evoPlanTrat"><option value="">— Ninguno —</option></select>
+      </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
         <div class="form-group">
           <label>Monto</label>
@@ -20611,6 +20944,122 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" onclick="cerrarModalEvolucion()">Cancelar</button>
         <button type="button" class="btn btn-gold" onclick="guardarEvolucion()">💾 Guardar Evolución</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL: PLAN DE TRATAMIENTO ═══════════════ -->
+<div class="modal" id="modalPlanTrat">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 id="modalPlanTratTitle">💳 Nuevo Plan de Tratamiento</h2>
+      <button class="modal-close" onclick="cerrarModalPlanTrat()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Paciente</label>
+        <div id="planTratPacienteNombre" style="font-weight:600; padding:6px 0;"></div>
+      </div>
+      <div class="form-group">
+        <label>Descripción</label>
+        <input type="text" id="planTratDescripcion" placeholder="Ej: Tratamiento de ortodoncia">
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label>Profesional</label>
+          <select id="planTratProfesional"><option value="">— Sin asignar —</option></select>
+        </div>
+        <div class="form-group">
+          <label>Fecha de inicio</label>
+          <input type="date" id="planTratFechaInicio">
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label>Monto total *</label>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="color:var(--text-3);">$</span>
+            <input type="number" id="planTratMontoTotal" min="0" step="0.01">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Esquema de pago</label>
+          <select id="planTratEsquema" onchange="_planTratTogglearCuota()">
+            <option value="sesion">Por sesión</option>
+            <option value="cuota">Cuota fija (ej. ortodoncia)</option>
+            <option value="adelantado">Total adelantado</option>
+            <option value="libre">Libre (pagos a cuenta)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" id="planTratCuotaGrupo" style="display:none;">
+        <label>Monto de la cuota</label>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="color:var(--text-3);">$</span>
+          <input type="number" id="planTratCuotaMonto" min="0" step="0.01" style="max-width:200px;">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notas</label>
+        <textarea id="planTratNotas" rows="2" placeholder="Observaciones…"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="cerrarModalPlanTrat()">Cancelar</button>
+        <button type="button" class="btn btn-gold" onclick="guardarPlanTrat()">💾 Guardar Plan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL: REGISTRAR PAGO (pago directo, desacoplado de la visita) ═══════════════ -->
+<div class="modal" id="modalRegistrarPago">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>💰 Registrar Pago</h2>
+      <button class="modal-close" onclick="cerrarModalRegistrarPago()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Plan</label>
+        <div id="pagoDirectoPlanLabel" style="font-weight:600; padding:6px 0;"></div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label>Profesional *</label>
+          <select id="pagoDirectoProfesional"><option value="">— Elegir —</option></select>
+        </div>
+        <div class="form-group">
+          <label>Medio de pago</label>
+          <select id="pagoDirectoMedio">
+            <option value="efectivo">Efectivo</option>
+            <option value="transferencia">Transferencia</option>
+            <option value="tarjeta">Tarjeta</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label>Monto *</label>
+          <input type="number" id="pagoDirectoMonto" min="0" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Moneda</label>
+          <select id="pagoDirectoMoneda"><option value="ARS">ARS</option><option value="USD">USD</option></select>
+        </div>
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="date" id="pagoDirectoFecha">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notas</label>
+        <textarea id="pagoDirectoNotas" rows="2" placeholder="Observaciones…"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="cerrarModalRegistrarPago()">Cancelar</button>
+        <button type="button" class="btn btn-gold" onclick="guardarPagoDirecto()">💾 Registrar Pago</button>
       </div>
     </div>
   </div>
