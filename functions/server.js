@@ -12,7 +12,7 @@ const admin   = require('firebase-admin');
         var sa64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
         if (sa64) {
             var sa = JSON.parse(Buffer.from(sa64, 'base64').toString('utf8'));
-            admin.initializeApp({ credential: admin.credential.cert(sa), databaseURL: 'https://CISEB-TU-PROYECTO-default-rtdb.firebaseio.com' });
+            admin.initializeApp({ credential: admin.credential.cert(sa), databaseURL: 'https://rkseguimientode-pagos-default-rtdb.firebaseio.com' });
         } else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
             admin.initializeApp({
                 credential: admin.credential.cert({
@@ -20,7 +20,7 @@ const admin   = require('firebase-admin');
                     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
                     privateKey: leerPem(process.env.FIREBASE_PRIVATE_KEY)
                 }),
-                databaseURL: 'https://CISEB-TU-PROYECTO-default-rtdb.firebaseio.com'
+                databaseURL: 'https://rkseguimientode-pagos-default-rtdb.firebaseio.com'
             });
         } else {
             console.warn('[Firebase Admin] No se configuró service account — los endpoints /usuarios/* no van a funcionar. Cargá FIREBASE_SERVICE_ACCOUNT_BASE64 en Railway.');
