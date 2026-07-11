@@ -62,15 +62,26 @@ administrativa madura con módulos clínicos incipientes (ver el §6 del marco).
 
 Ruta base por proyecto activo: `getBasePath()` → `empresas/<empresaId>/proyectos/<proyectoId>`.
 
-**Clínico/consultorio** (por proyecto): `/pacientes`, `/turnos`, `/profesionales`,
-`/servicios` (catálogo de "Tratamientos"), `/estudios/<pacienteId>/...` (en Storage).
+**Clínico/consultorio** (por proyecto): `/pacientes`, `/turnos`, `/listaEspera`,
+`/profesionales`, `/servicios` (catálogo de "Tratamientos"), `/estudios/<pacienteId>/...`
+(en Storage).
 - **Paciente**: nombre, dni, fechaNacimiento, telefono, email, obraSocial,
   nroAfiliado, direccion, notas, `profesionalId`, `estudios[]`, `id`.
 - **Profesional**: `id`, nombre, especialidad, matricula, contacto, `comisionGeneral`
   (% que deja al consultorio) y `tratamientos[]` (cada uno con `porcentaje` override
   opcional). ⚠️ hoy el reparto es hacia **un solo destino**, no el modelo de
   **beneficiarios múltiples** (socios + fondo común) que exige el marco.
-- **Turno**: fecha, hora, paciente, motivo/tratamiento, profesional, estado.
+- **Turno**: `id`, fecha, hora, `duracionMin`, `horaFin` (calculado), paciente
+  (texto) + `pacienteId` (FK resuelta por nombre), profesional (texto) +
+  `profesionalId` (FK), `prestacionId` (opcional, catálogo), motivo, estado
+  (Pendiente/Confirmado/Atendido/Cancelado/Ausente), `creadoEn`/`actualizadoEn`.
+  Detecta solapamiento de horario por profesional (`_turDetectarConflicto`),
+  con aviso no bloqueante. Al cancelar, sugiere candidatos de `/listaEspera`.
+- **ListaEspera**: `id`, paciente + `pacienteId`, profesional preferido (opcional)
+  + `profesionalId`, `prestacionId` opcional, motivo, disponibilidad (texto libre),
+  prioridad (Normal/Urgente), notas, estado (Esperando/Contactado/Agendado/Descartado),
+  `creadoEn`. El sistema solo **sugiere** candidatos ante una cancelación de turno;
+  el humano decide y confirma.
 
 **Administrativo/contable** (por proyecto, heredado y genérico): `/datos`,
 `/indiceCAC`, `/documentos`, `/tipoCambio`, `/facturas`, `/caja`, `/ingresos`,

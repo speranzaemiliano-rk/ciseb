@@ -2587,6 +2587,9 @@
                 <button class="nav-item nav-sub" id="tabBtnTurnos" data-navkey="turnos" onclick="mostrarTab('Turnos')" title="Agenda de turnos">
                     <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="turnos" onclick="event.stopPropagation();abrirModalVisibilidadItem('turnos')" title="Configurar visibilidad">👁️</span><span class="nav-icon">event</span> Turnos
                 </button>
+                <button class="nav-item nav-sub" id="tabBtnListaEspera" data-navkey="listaespera" onclick="mostrarTab('ListaEspera')" title="Lista de espera de pacientes">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="listaespera" onclick="event.stopPropagation();abrirModalVisibilidadItem('listaespera')" title="Configurar visibilidad">👁️</span><span class="nav-icon">hourglass_top</span> Lista de Espera
+                </button>
                 <button class="nav-item nav-sub" id="tabBtnProfesionales" data-navkey="profesionales" onclick="mostrarTab('Profesionales')" title="Profesionales del consultorio">
                     <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="profesionales" onclick="event.stopPropagation();abrirModalVisibilidadItem('profesionales')" title="Configurar visibilidad">👁️</span><span class="nav-icon">badge</span> Profesionales
                 </button>
@@ -3206,6 +3209,54 @@
                     </div>
                 </div>
             </div><!-- /panelTurnos -->
+
+            <!-- TAB: LISTA DE ESPERA -->
+            <div class="tab-panel" id="panelListaEspera">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Esperando</div>
+                        <div class="stat-value" id="esperaEsperando">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Urgentes</div>
+                        <div class="stat-value" id="esperaUrgentes" style="color:var(--danger);">0</div>
+                    </div>
+                </div>
+                <div class="table-card">
+                    <div class="table-card-head">
+                        <h3>⏳ Lista de Espera</h3>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                            <select id="esperaFiltroEstado" onchange="renderListaEspera()" style="padding:7px 10px; font-size:12px; width:auto;">
+                                <option value="">Todos los estados</option>
+                                <option value="Esperando">Esperando</option>
+                                <option value="Contactado">Contactado</option>
+                                <option value="Agendado">Agendado</option>
+                                <option value="Descartado">Descartado</option>
+                            </select>
+                            <input type="text" id="esperaBuscador" oninput="renderListaEspera()" placeholder="Paciente…" style="padding:7px 10px; font-size:12px; width:150px;">
+                            <button class="btn btn-gold btn-sm" onclick="abrirModalEspera()">➕ Agregar a la lista</button>
+                        </div>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Paciente</th>
+                                    <th>Prestación / Motivo</th>
+                                    <th>Profesional preferido</th>
+                                    <th>Disponibilidad</th>
+                                    <th>Prioridad</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="esperaBody">
+                                <tr><td colspan="7" class="empty-msg">No hay pacientes en lista de espera.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div><!-- /panelListaEspera -->
 
             <!-- TAB: PROFESIONALES -->
             <div class="tab-panel" id="panelProfesionales">
@@ -8265,12 +8316,12 @@
     function refreshTabActivo(){
         var btn=document.getElementById('btnRefresh');
         if(btn){btn.classList.add('spin');setTimeout(function(){btn.classList.remove('spin');},520);}
-        var map={'Presupuestos':renderizar,'Proveedores':renderProveedores,'Facturas':renderFacturas,'Documentos':renderDocumentos,'ResumenIngresos':renderResumenIngresos,'Servicios':renderServicios,'IngGeneral':renderIngGeneral,'Pacientes':renderPacientes,'Turnos':renderTurnos,'Profesionales':renderProfesionales,'Prestaciones':renderPrestaciones,'Cobros':renderCobros,'Beneficiarios':renderBeneficiarios,'Liquidacion':renderLiquidacion,'Egresos':renderEgresos,'Pagos':renderPagos,'CajaGeneral':renderCajaGeneral,'EfectivoPesos':renderEfectivoPesos,'EfectivoUSD':renderEfectivoUSD,'CuentasBancarias':renderCuentasBancarias,'PlanTrabajo':renderPlanTrabajo,'Tesoreria':renderTesoreria};
+        var map={'Presupuestos':renderizar,'Proveedores':renderProveedores,'Facturas':renderFacturas,'Documentos':renderDocumentos,'ResumenIngresos':renderResumenIngresos,'Servicios':renderServicios,'IngGeneral':renderIngGeneral,'Pacientes':renderPacientes,'Turnos':renderTurnos,'ListaEspera':renderListaEspera,'Profesionales':renderProfesionales,'Prestaciones':renderPrestaciones,'Cobros':renderCobros,'Beneficiarios':renderBeneficiarios,'Liquidacion':renderLiquidacion,'Egresos':renderEgresos,'Pagos':renderPagos,'CajaGeneral':renderCajaGeneral,'EfectivoPesos':renderEfectivoPesos,'EfectivoUSD':renderEfectivoUSD,'CuentasBancarias':renderCuentasBancarias,'PlanTrabajo':renderPlanTrabajo,'Tesoreria':renderTesoreria};
         var fn=map[_tabActivo];if(fn)fn();
     }
     function mostrarTab(nombre) {
         const ALL_TABS = [
-            'Home','Pacientes','Turnos','Profesionales','Prestaciones','Cobros',
+            'Home','Pacientes','Turnos','ListaEspera','Profesionales','Prestaciones','Cobros',
             'Beneficiarios','Liquidacion',
             'Presupuestos','Proveedores','Facturas','Documentos',
             'ResumenIngresos','Servicios','IngGeneral',
@@ -8290,7 +8341,7 @@
         if (btnHome) btnHome.classList.toggle('active', nombre === 'Home');
 
         // Submenú Consultorio (Pacientes / Turnos)
-        const SUB_CONSULTORIO = ['Pacientes','Turnos','Profesionales','Prestaciones','Cobros','Beneficiarios','Liquidacion'];
+        const SUB_CONSULTORIO = ['Pacientes','Turnos','ListaEspera','Profesionales','Prestaciones','Cobros','Beneficiarios','Liquidacion'];
         SUB_CONSULTORIO.forEach(t => {
             const btn = document.getElementById('tabBtn' + t);
             if (btn) btn.classList.toggle('active', t === nombre);
@@ -8360,6 +8411,7 @@
         const titles = {
             'Pacientes':         'Pacientes',
             'Turnos':            'Turnos — Agenda',
+            'ListaEspera':       'Lista de Espera',
             'Profesionales':     'Profesionales — Consultorio',
             'Prestaciones':      'Prestaciones — Catálogo clínico',
             'Cobros':            'Cobros — Generados desde Evoluciones',
@@ -8391,6 +8443,7 @@
         if (nombre === 'Home')             renderHome();
         if (nombre === 'Pacientes')         renderPacientes();
         if (nombre === 'Turnos')            renderTurnos();
+        if (nombre === 'ListaEspera')        renderListaEspera();
         if (nombre === 'Profesionales')     renderProfesionales();
         if (nombre === 'Prestaciones')      renderPrestaciones();
         if (nombre === 'Cobros')            renderCobros();
@@ -9813,6 +9866,7 @@
                 prestamo:    function() { eliminarPrestamo(idx); },
                 paciente:    function() { eliminarPaciente(idx); },
                 turno:       function() { eliminarTurno(idx); },
+                espera:      function() { eliminarEspera(idx); },
                 profesional: function() { eliminarProfesional(idx); },
                 prestacion:  function() { eliminarPrestacion(idx); },
                 beneficiario: function() { eliminarBeneficiario(idx); },
@@ -9869,6 +9923,12 @@
                 var tu = turnos[idx]; if (!tu) { alert('Ítem no encontrado.'); return; }
                 descripcion = 'Turno: ' + (tu.paciente||'?') + ' — ' + (tu.fecha||'?') + ' ' + (tu.hora||'');
                 itemData = { paciente: tu.paciente, fecha: tu.fecha, hora: tu.hora };
+                break;
+            }
+            case 'espera': {
+                var esp = listaEspera[idx]; if (!esp) { alert('Ítem no encontrado.'); return; }
+                descripcion = 'Lista de espera: ' + (esp.paciente||'?') + (esp.motivo ? ' — ' + esp.motivo : '');
+                itemData = { paciente: esp.paciente, motivo: esp.motivo };
                 break;
             }
             case 'profesional': {
@@ -13750,6 +13810,10 @@
     // Consentimiento electrónico con evidencia (Fase 4): registros firmados por paciente+prestación.
     let REF_CONSENTIMIENTOS = null;
     let consentimientos = [];
+    // Fase 2 (Agenda): lista de espera estructurada.
+    let REF_LISTA_ESPERA = null;
+    let listaEspera = [];
+    var editandoEsperaIdx = -1;
 
     // Se llama desde actualizarRefs()
     function actualizarRefsIngresos() {
@@ -13768,6 +13832,7 @@
         REF_BENEFICIARIOS = db.ref(base + '/beneficiarios');
         REF_PLANES_TRAT   = db.ref(base + '/planesTrat');
         REF_CONSENTIMIENTOS = db.ref(base + '/consentimientos');
+        REF_LISTA_ESPERA  = db.ref(base + '/listaEspera');
     }
 
     // Helper: carga con listener .on() reactivo
@@ -13789,7 +13854,7 @@
         _cargarConListener(REF_EMITIDOS,    function(v) { comprobantesEmitidos = v; if (typeof renderEmitidos==='function') renderEmitidos(); });
         _cargarConListener(REF_REMUN,       function(v) { remuneraciones = v; if (typeof renderRemuneraciones==='function') renderRemuneraciones(); });
         _cargarConListener(REF_PACIENTES,   function(v) { pacientes = v; if (typeof renderPacientes==='function') renderPacientes(); });
-        _cargarConListener(REF_TURNOS,      function(v) { turnos = v; if (typeof renderTurnos==='function') renderTurnos(); });
+        _cargarConListener(REF_TURNOS,      function(v) { turnos = v; _turMigrarIds(); if (typeof renderTurnos==='function') renderTurnos(); });
         _cargarConListener(REF_PROFESIONALES, function(v) { profesionales = v; if (typeof renderProfesionales==='function') renderProfesionales(); });
         _cargarConListener(REF_PRESTACIONES, function(v) { prestaciones = v; if (typeof renderPrestaciones==='function') renderPrestaciones(); });
         _cargarConListener(REF_EVOLUCIONES, function(v) { evoluciones = v; if (typeof _fichaClinicaPacIdx !== 'undefined' && _fichaClinicaPacIdx >= 0 && typeof _renderEvolucionesFicha==='function') _renderEvolucionesFicha(_fichaClinicaPacIdx); });
@@ -13797,6 +13862,7 @@
         _cargarConListener(REF_BENEFICIARIOS, function(v) { beneficiarios = v; if (typeof renderBeneficiarios==='function') renderBeneficiarios(); });
         _cargarConListener(REF_PLANES_TRAT, function(v) { planesTrat = v; if (typeof _fichaClinicaPacIdx !== 'undefined' && _fichaClinicaPacIdx >= 0 && typeof _renderFichaClinicaPlanes==='function') _renderFichaClinicaPlanes(_fichaClinicaPacIdx); });
         _cargarConListener(REF_CONSENTIMIENTOS, function(v) { consentimientos = v; if (typeof _fichaClinicaPacIdx !== 'undefined' && _fichaClinicaPacIdx >= 0 && typeof _renderFichaClinicaConsentimientos==='function') _renderFichaClinicaConsentimientos(_fichaClinicaPacIdx); });
+        _cargarConListener(REF_LISTA_ESPERA, function(v) { listaEspera = v; if (typeof renderListaEspera==='function') renderListaEspera(); });
         if (REF_PLAN) {
             REF_PLAN.on('value', function(snap) {
                 var val = snap.val();
@@ -13817,6 +13883,12 @@
         if (!REF_TURNOS) return;
         REF_TURNOS.set(turnos)
             .catch(function(e) { console.error('Error guardando turnos:', e); alert('Error al guardar. Revisá la conexión.'); });
+    }
+
+    function persistirListaEspera() {
+        if (!REF_LISTA_ESPERA) return;
+        REF_LISTA_ESPERA.set(listaEspera)
+            .catch(function(e) { console.error('Error guardando lista de espera:', e); alert('Error al guardar. Revisá la conexión.'); });
     }
 
     function persistirProfesionales() {
@@ -16208,16 +16280,116 @@
     // TURNOS
     // ══════════════════════════════════════════════════════════
     var editandoTurIdx = -1;
+    var _turIdsMigracionIntentada = false;
+    var _turUltimoLiberado = null;
+
+    // Migración única por sesión: turnos viejos no tenían `id` (necesario para
+    // sincronización con Google Calendar y recordatorios). Se backfillea en memoria
+    // y se persiste una sola vez si hizo falta.
+    function _turMigrarIds() {
+        if (_turIdsMigracionIntentada) return;
+        _turIdsMigracionIntentada = true;
+        var cambio = false;
+        turnos.forEach(function(t, i) {
+            if (!t.id) { t.id = 'turno_' + Date.now() + '_' + i; cambio = true; }
+        });
+        if (cambio) persistirTurnos();
+    }
 
     function _turPoblarDatalist() {
         var dl = document.getElementById('turPacientesList');
-        if (!dl) return;
-        dl.innerHTML = '';
-        pacientes.forEach(function(p) {
-            var o = document.createElement('option');
-            o.value = p.nombre;
-            dl.appendChild(o);
+        if (dl) {
+            dl.innerHTML = '';
+            pacientes.forEach(function(p) {
+                var o = document.createElement('option');
+                o.value = p.nombre;
+                dl.appendChild(o);
+            });
+        }
+        var dlProf = document.getElementById('turProfesionalesList');
+        if (dlProf) {
+            dlProf.innerHTML = '';
+            profesionales.forEach(function(pr) {
+                var o = document.createElement('option');
+                o.value = pr.nombre;
+                dlProf.appendChild(o);
+            });
+        }
+    }
+
+    // Busca por nombre exacto (case/acentos-insensible) para resolver la FK
+    // desde el texto libre que tipea el usuario en los inputs con datalist.
+    function _turBuscarPorNombre(lista, nombre) {
+        if (!nombre) return null;
+        var norm = function(s) { return (s || '').toString().trim().toLowerCase(); };
+        var n = norm(nombre);
+        var match = lista.filter(function(x) { return norm(x.nombre) === n; })[0];
+        return match || null;
+    }
+
+    function _turCalcularHoraFin(hora, duracionMin) {
+        if (!hora) return '';
+        var partes = hora.split(':');
+        var mins = parseInt(partes[0], 10) * 60 + parseInt(partes[1], 10) + (parseInt(duracionMin, 10) || 0);
+        mins = ((mins % 1440) + 1440) % 1440;
+        var hh = Math.floor(mins / 60), mm = mins % 60;
+        return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+    }
+
+    // Turno en conflicto: mismo profesional, misma fecha, rango horario solapado.
+    // Se ignoran los cancelados/ausentes y (al editar) el propio turno.
+    function _turDetectarConflicto(fecha, hora, duracionMin, profesionalId, idxExcluir) {
+        if (!fecha || !hora || !profesionalId) return null;
+        var ini = parseInt(hora.split(':')[0], 10) * 60 + parseInt(hora.split(':')[1], 10);
+        var fin = ini + (parseInt(duracionMin, 10) || 30);
+        var conflicto = null;
+        turnos.forEach(function(t, i) {
+            if (conflicto) return;
+            if (i === idxExcluir) return;
+            if (t.fecha !== fecha) return;
+            if (t.profesionalId !== profesionalId) return;
+            if (t.estado === 'Cancelado' || t.estado === 'Ausente') return;
+            if (!t.hora) return;
+            var tIni = parseInt(t.hora.split(':')[0], 10) * 60 + parseInt(t.hora.split(':')[1], 10);
+            var tFin = tIni + (parseInt(t.duracionMin, 10) || 30);
+            if (ini < tFin && tIni < fin) conflicto = t;
         });
+        return conflicto;
+    }
+
+    function _turActualizarPreview() {
+        var fecha = document.getElementById('turFecha').value;
+        var hora  = document.getElementById('turHora').value;
+        var dur   = document.getElementById('turDuracionMin').value;
+        var profNombre = (document.getElementById('turProfesional').value || '').trim();
+        var previewEl = document.getElementById('turHoraFinPreview');
+        var avisoEl   = document.getElementById('turConflictoAviso');
+        if (previewEl) {
+            var horaFin = _turCalcularHoraFin(hora, dur);
+            previewEl.textContent = horaFin ? ('Termina aprox. a las ' + horaFin) : '';
+        }
+        if (avisoEl) {
+            var prof = _turBuscarPorNombre(profesionales, profNombre);
+            var conflicto = prof ? _turDetectarConflicto(fecha, hora, dur, prof.id, editandoTurIdx) : null;
+            if (conflicto) {
+                avisoEl.style.display = 'block';
+                avisoEl.textContent = '⚠️ Se solapa con el turno de ' + (conflicto.paciente || 'otro paciente') + ' a las ' + conflicto.hora + ' con el mismo profesional.';
+            } else {
+                avisoEl.style.display = 'none';
+                avisoEl.textContent = '';
+            }
+        }
+    }
+
+    function _turAlCambiarPrestacion() {
+        var selPrest = document.getElementById('turPrestacionId');
+        var prest = prestaciones.filter(function(p) { return p.id === selPrest.value; })[0];
+        if (prest) {
+            document.getElementById('turDuracionMin').value = prest.duracionMin || 30;
+            var motivoEl = document.getElementById('turMotivo');
+            if (!motivoEl.value.trim()) motivoEl.value = prest.nombre;
+        }
+        _turActualizarPreview();
     }
 
     function abrirModalTurno(idx) {
@@ -16230,7 +16402,21 @@
         document.getElementById('turPaciente').value    = t ? (t.paciente || '') : '';
         document.getElementById('turMotivo').value      = t ? (t.motivo || '') : '';
         document.getElementById('turProfesional').value = t ? (t.profesional || '') : '';
+        document.getElementById('turDuracionMin').value = t ? (t.duracionMin || 30) : 30;
         document.getElementById('turEstado').value      = t ? (t.estado || 'Pendiente') : 'Pendiente';
+
+        var selPrest = document.getElementById('turPrestacionId');
+        selPrest.innerHTML = '<option value="">— Sin vincular —</option>';
+        prestaciones.forEach(function(pr) {
+            var o = document.createElement('option');
+            o.value = pr.id || '';
+            o.textContent = pr.nombre || '(sin nombre)';
+            selPrest.appendChild(o);
+        });
+        selPrest.value = t ? (t.prestacionId || '') : '';
+
+        document.getElementById('turConflictoAviso').style.display = 'none';
+        _turActualizarPreview();
         document.getElementById('modalTurno').classList.add('active');
     }
 
@@ -16240,15 +16426,35 @@
         var fecha = document.getElementById('turFecha').value;
         var hora  = document.getElementById('turHora').value;
         var paciente = (document.getElementById('turPaciente').value || '').trim();
+        var profesional = (document.getElementById('turProfesional').value || '').trim();
+        var duracionMin = parseInt(document.getElementById('turDuracionMin').value, 10) || 30;
         if (!fecha || !hora) { alert('Ingresá la fecha y la hora del turno.'); return; }
         if (!paciente) { alert('Ingresá el nombre del paciente.'); return; }
+
+        var pac  = _turBuscarPorNombre(pacientes, paciente);
+        var prof = _turBuscarPorNombre(profesionales, profesional);
+
+        if (prof) {
+            var conflicto = _turDetectarConflicto(fecha, hora, duracionMin, prof.id, editandoTurIdx);
+            if (conflicto && !confirm('⚠️ Este horario se solapa con el turno de ' + (conflicto.paciente || 'otro paciente') + ' a las ' + conflicto.hora + ' con el mismo profesional.\n\n¿Guardar igual?')) return;
+        }
+
+        var prev = editandoTurIdx >= 0 ? turnos[editandoTurIdx] : null;
         var t = {
-            fecha:       fecha,
-            hora:        hora,
-            paciente:    paciente,
-            motivo:      (document.getElementById('turMotivo').value || '').trim(),
-            profesional: (document.getElementById('turProfesional').value || '').trim(),
-            estado:      document.getElementById('turEstado').value || 'Pendiente'
+            id:            (prev && prev.id) ? prev.id : ('turno_' + Date.now()),
+            fecha:         fecha,
+            hora:          hora,
+            duracionMin:   duracionMin,
+            horaFin:       _turCalcularHoraFin(hora, duracionMin),
+            paciente:      paciente,
+            pacienteId:    pac ? pac.id : '',
+            motivo:        (document.getElementById('turMotivo').value || '').trim(),
+            profesional:   profesional,
+            profesionalId: prof ? prof.id : '',
+            prestacionId:  document.getElementById('turPrestacionId').value || '',
+            estado:        document.getElementById('turEstado').value || 'Pendiente',
+            creadoEn:      (prev && prev.creadoEn) ? prev.creadoEn : Date.now(),
+            actualizadoEn: Date.now()
         };
         if (editandoTurIdx >= 0) turnos[editandoTurIdx] = t; else turnos.push(t);
         persistirTurnos();
@@ -16258,9 +16464,11 @@
 
     function cambiarEstadoTurno(idx, estado) {
         var t = turnos[idx]; if (!t) return;
+        var eraCancelable = estado === 'Cancelado' && t.estado !== 'Cancelado';
         t.estado = estado;
         persistirTurnos();
         renderTurnos();
+        if (eraCancelable) _turSugerirListaEspera(t);
     }
 
     function eliminarTurno(idx) {
@@ -16300,7 +16508,7 @@
                     var tr = document.createElement('tr');
                     tr.innerHTML =
                         '<td>' + (t.fecha ? formatearFecha(t.fecha) : '—') + '</td>' +
-                        '<td>' + escHtml(t.hora || '—') + '</td>' +
+                        '<td>' + escHtml(t.hora || '—') + (t.horaFin ? ('–' + escHtml(t.horaFin)) : '') + '</td>' +
                         '<td><strong>' + escHtml(t.paciente || '—') + '</strong></td>' +
                         '<td>' + escHtml(t.motivo || '—') + '</td>' +
                         '<td>' + escHtml(t.profesional || '—') + '</td>' +
@@ -16335,12 +16543,209 @@
         }
     }
 
+    // ══════════════════════════════════════════════════════════
+    // LISTA DE ESPERA (Fase 2 — Agenda)
+    // ══════════════════════════════════════════════════════════
+
+    function _espPoblarDatalistYSelect() {
+        var dlPac = document.getElementById('espPacientesList');
+        if (dlPac) {
+            dlPac.innerHTML = '';
+            pacientes.forEach(function(p) {
+                var o = document.createElement('option');
+                o.value = p.nombre;
+                dlPac.appendChild(o);
+            });
+        }
+        var dlProf = document.getElementById('espProfesionalesList');
+        if (dlProf) {
+            dlProf.innerHTML = '';
+            profesionales.forEach(function(pr) {
+                var o = document.createElement('option');
+                o.value = pr.nombre;
+                dlProf.appendChild(o);
+            });
+        }
+        var selPrest = document.getElementById('espPrestacionId');
+        if (selPrest) {
+            selPrest.innerHTML = '<option value="">— Sin vincular —</option>';
+            prestaciones.forEach(function(pr) {
+                var o = document.createElement('option');
+                o.value = pr.id || '';
+                o.textContent = pr.nombre || '(sin nombre)';
+                selPrest.appendChild(o);
+            });
+        }
+    }
+
+    function abrirModalEspera(idx) {
+        editandoEsperaIdx = (idx !== undefined) ? idx : -1;
+        var e = editandoEsperaIdx >= 0 ? listaEspera[editandoEsperaIdx] : null;
+        _espPoblarDatalistYSelect();
+        document.getElementById('modalEsperaTitle').textContent = e ? '⏳ Editar en Lista de Espera' : '⏳ Agregar a Lista de Espera';
+        document.getElementById('espPaciente').value       = e ? (e.paciente || '') : '';
+        document.getElementById('espMotivo').value         = e ? (e.motivo || '') : '';
+        document.getElementById('espProfesional').value     = e ? (e.profesional || '') : '';
+        document.getElementById('espPrioridad').value       = e ? (e.prioridad || 'Normal') : 'Normal';
+        document.getElementById('espDisponibilidad').value  = e ? (e.disponibilidad || '') : '';
+        document.getElementById('espNotas').value           = e ? (e.notas || '') : '';
+        document.getElementById('espEstado').value          = e ? (e.estado || 'Esperando') : 'Esperando';
+        document.getElementById('espPrestacionId').value    = e ? (e.prestacionId || '') : '';
+        document.getElementById('modalEspera').classList.add('active');
+    }
+
+    function cerrarModalEspera() { document.getElementById('modalEspera').classList.remove('active'); }
+
+    function guardarEspera() {
+        var paciente = (document.getElementById('espPaciente').value || '').trim();
+        if (!paciente) { alert('Ingresá el nombre del paciente.'); return; }
+        var profesional = (document.getElementById('espProfesional').value || '').trim();
+        var pac  = _turBuscarPorNombre(pacientes, paciente);
+        var prof = _turBuscarPorNombre(profesionales, profesional);
+        var prev = editandoEsperaIdx >= 0 ? listaEspera[editandoEsperaIdx] : null;
+        var e = {
+            id:              (prev && prev.id) ? prev.id : ('espera_' + Date.now()),
+            paciente:        paciente,
+            pacienteId:      pac ? pac.id : '',
+            motivo:          (document.getElementById('espMotivo').value || '').trim(),
+            prestacionId:    document.getElementById('espPrestacionId').value || '',
+            profesional:     profesional,
+            profesionalId:   prof ? prof.id : '',
+            prioridad:       document.getElementById('espPrioridad').value || 'Normal',
+            disponibilidad:  (document.getElementById('espDisponibilidad').value || '').trim(),
+            notas:           (document.getElementById('espNotas').value || '').trim(),
+            estado:          document.getElementById('espEstado').value || 'Esperando',
+            creadoEn:        (prev && prev.creadoEn) ? prev.creadoEn : Date.now()
+        };
+        if (editandoEsperaIdx >= 0) listaEspera[editandoEsperaIdx] = e; else listaEspera.push(e);
+        persistirListaEspera();
+        cerrarModalEspera();
+        renderListaEspera();
+    }
+
+    function eliminarEspera(idx) {
+        if (!confirm('¿Eliminar este registro de la lista de espera?')) return;
+        listaEspera.splice(idx, 1);
+        persistirListaEspera();
+        renderListaEspera();
+    }
+
+    function cambiarEstadoEspera(idx, estado) {
+        var e = listaEspera[idx]; if (!e) return;
+        e.estado = estado;
+        persistirListaEspera();
+        renderListaEspera();
+    }
+
+    // Desde una fila de la lista de espera: precarga un Turno nuevo con los datos
+    // de este candidato y lo marca Agendado. Si viene de la sugerencia por
+    // cancelación, `turnoLiberado` trae fecha/hora/profesional a precargar también.
+    function agendarDesdeEspera(idx, turnoLiberado) {
+        var e = listaEspera[idx]; if (!e) return;
+        abrirModalTurno();
+        document.getElementById('turPaciente').value = e.paciente || '';
+        document.getElementById('turProfesional').value = e.profesional || (turnoLiberado ? (turnoLiberado.profesional || '') : '');
+        document.getElementById('turMotivo').value = e.motivo || '';
+        if (turnoLiberado) {
+            document.getElementById('turFecha').value = turnoLiberado.fecha || '';
+            document.getElementById('turHora').value = turnoLiberado.hora || '';
+        }
+        if (e.prestacionId) {
+            document.getElementById('turPrestacionId').value = e.prestacionId;
+            _turAlCambiarPrestacion();
+        }
+        _turActualizarPreview();
+        cambiarEstadoEspera(idx, 'Agendado');
+    }
+
+    function renderListaEspera() {
+        var tbody = document.getElementById('esperaBody');
+        if (tbody) {
+            var q = ((document.getElementById('esperaBuscador') || {}).value || '').toLowerCase().trim();
+            var fEstado = (document.getElementById('esperaFiltroEstado') || {}).value || '';
+            var visibles = listaEspera.map(function(e, i) { return { e: e, i: i }; }).filter(function(x) {
+                if (q && (x.e.paciente || '').toLowerCase().indexOf(q) === -1) return false;
+                if (fEstado && x.e.estado !== fEstado) return false;
+                return true;
+            }).sort(function(a, b) {
+                var prioA = a.e.prioridad === 'Urgente' ? 0 : 1;
+                var prioB = b.e.prioridad === 'Urgente' ? 0 : 1;
+                if (prioA !== prioB) return prioA - prioB;
+                return (a.e.creadoEn || 0) - (b.e.creadoEn || 0);
+            });
+
+            if (!visibles.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">' + (listaEspera.length ? 'Sin resultados.' : 'No hay pacientes en lista de espera.') + '</td></tr>';
+            } else {
+                tbody.innerHTML = '';
+                var estColor = { Esperando:'var(--warn,#d9a932)', Contactado:'var(--blue,#1a73e8)', Agendado:'var(--success)', Descartado:'var(--text-3)' };
+                visibles.forEach(function(x) {
+                    var e = x.e, idx = x.i;
+                    var prest = prestaciones.filter(function(p) { return p.id === e.prestacionId; })[0];
+                    var tr = document.createElement('tr');
+                    tr.innerHTML =
+                        '<td><strong>' + escHtml(e.paciente || '—') + '</strong></td>' +
+                        '<td>' + escHtml((prest ? prest.nombre : '') || e.motivo || '—') + '</td>' +
+                        '<td>' + escHtml(e.profesional || 'Cualquiera') + '</td>' +
+                        '<td>' + escHtml(e.disponibilidad || '—') + '</td>' +
+                        '<td>' + (e.prioridad === 'Urgente' ? '<span style="color:var(--danger);font-weight:600;">🔴 Urgente</span>' : 'Normal') + '</td>' +
+                        '<td><select onchange="cambiarEstadoEspera(' + idx + ',this.value)" style="font-size:11px;padding:3px 6px;color:' + (estColor[e.estado]||'inherit') + ';">' +
+                            ['Esperando','Contactado','Agendado','Descartado'].map(function(es) {
+                                return '<option value="' + es + '"' + (e.estado === es ? ' selected' : '') + '>' + es + '</option>';
+                            }).join('') +
+                        '</select></td>' +
+                        '<td><div class="action-btns">' +
+                            '<button class="btn btn-outline btn-sm" onclick="agendarDesdeEspera(' + idx + ')" title="Agendar turno">📅</button>' +
+                            '<button class="btn btn-outline btn-sm" onclick="abrirModalEspera(' + idx + ')" title="Editar">✏</button>' +
+                            (typeof btnElim === 'function' ? btnElim('espera', idx) : '<button class="btn btn-danger-sm" onclick="eliminarEspera(' + idx + ')">✕</button>') +
+                        '</div></td>';
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+        var sEl = function(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
+        sEl('esperaEsperando', listaEspera.filter(function(e){ return e.estado === 'Esperando'; }).length);
+        sEl('esperaUrgentes',  listaEspera.filter(function(e){ return e.estado === 'Esperando' && e.prioridad === 'Urgente'; }).length);
+    }
+
+    // Al cancelar un turno: sugiere candidatos de la lista de espera que coincidan
+    // (mismo profesional, o sin preferencia) para ofrecerles el horario liberado.
+    // El sistema solo sugiere — el humano decide y confirma manualmente.
+    function _turSugerirListaEspera(turnoCancelado) {
+        var candidatos = listaEspera.filter(function(e) {
+            if (e.estado !== 'Esperando') return false;
+            if (e.profesionalId && turnoCancelado.profesionalId && e.profesionalId !== turnoCancelado.profesionalId) return false;
+            return true;
+        }).sort(function(a, b) {
+            var prioA = a.prioridad === 'Urgente' ? 0 : 1;
+            var prioB = b.prioridad === 'Urgente' ? 0 : 1;
+            if (prioA !== prioB) return prioA - prioB;
+            return (a.creadoEn || 0) - (b.creadoEn || 0);
+        });
+        if (!candidatos.length) return;
+        _turUltimoLiberado = turnoCancelado;
+        var idxReales = candidatos.map(function(c) { return listaEspera.indexOf(c); });
+        var lista = document.getElementById('sugerenciaEsperaLista');
+        lista.innerHTML = candidatos.map(function(c, k) {
+            var idxReal = idxReales[k];
+            return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-soft);">' +
+                '<div><strong>' + escHtml(c.paciente) + '</strong>' + (c.prioridad === 'Urgente' ? ' <span style="color:var(--danger);">🔴 Urgente</span>' : '') +
+                '<div style="font-size:11px;color:var(--text-3);">' + escHtml(c.motivo || c.disponibilidad || '') + '</div></div>' +
+                '<button class="btn btn-gold btn-sm" onclick="cerrarModalSugerenciaEspera();agendarDesdeEspera(' + idxReal + ',_turUltimoLiberado)">📅 Agendar en ' + escHtml(turnoCancelado.hora || '') + '</button>' +
+            '</div>';
+        }).join('');
+        document.getElementById('modalSugerenciaEspera').classList.add('active');
+    }
+
+    function cerrarModalSugerenciaEspera() { document.getElementById('modalSugerenciaEspera').classList.remove('active'); }
+
     // Limpiar al cambiar empresa/proyecto
     function limpiarIngresos() {
-        servicios = []; ingGeneral = []; pacientes = []; turnos = [];
+        servicios = []; ingGeneral = []; pacientes = []; turnos = []; listaEspera = [];
         renderServicios(); renderIngGeneral();
         if (typeof renderPacientes === 'function') renderPacientes();
         if (typeof renderTurnos === 'function') renderTurnos();
+        if (typeof renderListaEspera === 'function') renderListaEspera();
     }
 
     // HELPERS CAC
@@ -21632,17 +22037,27 @@
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
         <div class="form-group">
           <label>Fecha *</label>
-          <input type="date" id="turFecha">
+          <input type="date" id="turFecha" onchange="_turActualizarPreview()">
         </div>
         <div class="form-group">
           <label>Hora *</label>
-          <input type="time" id="turHora">
+          <input type="time" id="turHora" onchange="_turActualizarPreview()">
         </div>
       </div>
       <div class="form-group">
         <label>Paciente *</label>
-        <input type="text" id="turPaciente" list="turPacientesList" placeholder="Nombre del paciente">
+        <input type="text" id="turPaciente" list="turPacientesList" placeholder="Nombre del paciente" oninput="_turActualizarPreview()">
         <datalist id="turPacientesList"></datalist>
+      </div>
+      <div style="display:grid; grid-template-columns:2fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label>Prestación (catálogo)</label>
+          <select id="turPrestacionId" onchange="_turAlCambiarPrestacion()"><option value="">— Sin vincular —</option></select>
+        </div>
+        <div class="form-group">
+          <label>Duración (min)</label>
+          <input type="number" id="turDuracionMin" min="5" step="5" value="30" oninput="_turActualizarPreview()">
+        </div>
       </div>
       <div class="form-group">
         <label>Tratamiento / Motivo</label>
@@ -21651,7 +22066,8 @@
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
         <div class="form-group">
           <label>Profesional</label>
-          <input type="text" id="turProfesional" placeholder="Nombre del profesional">
+          <input type="text" id="turProfesional" list="turProfesionalesList" placeholder="Nombre del profesional" oninput="_turActualizarPreview()">
+          <datalist id="turProfesionalesList"></datalist>
         </div>
         <div class="form-group">
           <label>Estado</label>
@@ -21664,9 +22080,88 @@
           </select>
         </div>
       </div>
+      <div id="turHoraFinPreview" style="font-size:11px;color:var(--text-3);margin:-4px 0 8px;"></div>
+      <div id="turConflictoAviso" style="display:none;font-size:12px;color:var(--danger);background:rgba(217,48,37,.08);border:1px solid var(--danger);border-radius:8px;padding:8px 12px;margin-bottom:10px;"></div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" onclick="cerrarModalTurno()">Cancelar</button>
         <button type="button" class="btn btn-gold" onclick="guardarTurno()">💾 Guardar Turno</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL: LISTA DE ESPERA ═══════════════ -->
+<div class="modal" id="modalEspera">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 id="modalEsperaTitle">⏳ Agregar a Lista de Espera</h2>
+      <button class="modal-close" onclick="cerrarModalEspera()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Paciente *</label>
+        <input type="text" id="espPaciente" list="espPacientesList" placeholder="Nombre del paciente">
+        <datalist id="espPacientesList"></datalist>
+      </div>
+      <div class="form-group">
+        <label>Prestación (catálogo)</label>
+        <select id="espPrestacionId"><option value="">— Sin vincular —</option></select>
+      </div>
+      <div class="form-group">
+        <label>Tratamiento / Motivo</label>
+        <input type="text" id="espMotivo" placeholder="Ej: Control, Limpieza, Endodoncia…">
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label>Profesional preferido</label>
+          <input type="text" id="espProfesional" list="espProfesionalesList" placeholder="(opcional) cualquiera si se deja vacío">
+          <datalist id="espProfesionalesList"></datalist>
+        </div>
+        <div class="form-group">
+          <label>Prioridad</label>
+          <select id="espPrioridad">
+            <option value="Normal">Normal</option>
+            <option value="Urgente">Urgente</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Disponibilidad del paciente</label>
+        <input type="text" id="espDisponibilidad" placeholder="Ej: Mañanas, fines de semana, cualquier horario…">
+      </div>
+      <div class="form-group">
+        <label>Notas</label>
+        <textarea id="espNotas" rows="2" placeholder="Notas adicionales…"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Estado</label>
+        <select id="espEstado">
+          <option value="Esperando">Esperando</option>
+          <option value="Contactado">Contactado</option>
+          <option value="Agendado">Agendado</option>
+          <option value="Descartado">Descartado</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="cerrarModalEspera()">Cancelar</button>
+        <button type="button" class="btn btn-gold" onclick="guardarEspera()">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL: SUGERENCIAS DE LISTA DE ESPERA (turno cancelado) ═══════════════ -->
+<div class="modal" id="modalSugerenciaEspera">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>💡 ¿Ofrecer este horario a alguien de la lista de espera?</h2>
+      <button class="modal-close" onclick="cerrarModalSugerenciaEspera()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--text-3);margin-top:0;">Se liberó un turno. Estos pacientes están esperando un horario similar:</p>
+      <div id="sugerenciaEsperaLista"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="cerrarModalSugerenciaEspera()">Cerrar</button>
       </div>
     </div>
   </div>
