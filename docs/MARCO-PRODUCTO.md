@@ -118,7 +118,7 @@ Leyenda: ✅ construido · 🟡 parcial · ⬜ no existe todavía.
 | **Estudios/imágenes** vinculados a paciente | ✅ | PDFs/imágenes por paciente en Firebase Storage, ahora con **portal de carga externa por signed URLs** (radiólogo/laboratorio sube sin credenciales del sistema, link temporal generado desde la ficha). Falta el vínculo a la evolución y desplegar/revisar `storage.rules` (recién agregado al repo, no deployado). |
 | **Consentimiento electrónico con evidencia** | ✅ | Firma en pantalla (canvas) + nombre del firmante + checkbox, con evidencia (texto exacto firmado, dispositivo, fecha). **Bloqueo real**: una evolución de una prestación que requiere consentimiento no se guarda sin uno vigente. Texto base configurable, con default marcado explícitamente como MODELO — falta la validación legal real con abogado antes de vender el feature. |
 | **Lista de espera** estructurada | ✅ | Entidad propia (`listaEspera`): paciente, profesional/prestación preferidos (opcionales), disponibilidad, prioridad (Normal/Urgente), estado. Al cancelar un turno, el sistema sugiere candidatos compatibles (mismo profesional o sin preferencia) y permite agendarlos en un clic — el humano decide y confirma. |
-| **Asistente clínico** (solo lectura + logging) | 🟡 | Hay asistente Gemini útil, pero **sin** el scoping por permisos ni el registro de consultas que pide el SGIA. |
+| **Asistente clínico** (solo lectura + logging) | 🟡 | Ahora **registra toda consulta** (quién, cuándo, rol, qué preguntó) con visor de auditoría para admin/superadmin, y se cerró el único punto donde escribía sin confirmación (adjuntar estudios). El contexto sigue sin filtrar por rol — deliberado: espeja los mismos permisos de lectura que ya tiene cualquier usuario en la UI, no un gap nuevo. Falta: separar dominio clínico de administrativo en el contexto inyectado (hoy no aplica porque el núcleo clínico estructurado —evoluciones, diagnósticos— todavía no se inyecta). |
 | **Bot de WhatsApp** de turnos | 🟡 | Backend preparado; falta cuenta de Meta + credenciales + alcance cerrado documentado. |
 | **RBAC efectivo / SSO Workspace** | ⬜ | Roles solo en cliente; las reglas de Firebase son la única defensa real. |
 | **Infra como código** (instalador) | ⬜ | Instancia única, no replicable por script todavía. |
@@ -132,8 +132,9 @@ con aceptación del paciente → consentimientos con evidencia → lista de espe
 — funcionando de punta a punta y probado en cada pieza. Lo que falta ya no es
 "más módulos clínicos": es la **capa de infraestructura y cumplimiento** que
 convierte esto en el ecosistema llave en mano del documento — RBAC/SSO real
-con Google Workspace, los controles del SGIA para el asistente (Fase 5), y el
-instalador infraestructura-como-código.
+con Google Workspace y el instalador infraestructura-como-código. Los
+controles del SGIA para el asistente (Fase 5) ya tienen su primera vuelta:
+logging de auditoría y cierre del único gap de escritura sin confirmación.
 
 ## 7. Roadmap del relevamiento (§8) y dónde estamos parados
 
@@ -144,7 +145,7 @@ instalador infraestructura-como-código.
 | **2 — Agenda** | Catálogo con duraciones, sync Calendar, confirmación 24 h, notas de preferencia, lista de espera | 🟡 turno vinculado a duración/prestación con detección de solapamiento, **lista de espera con sugerencia automática al cancelar**, **confirmación automática 24h por mail** y **sync app→Calendar** ya cerrados; falta la vía inversa (Calendar→app) y notas de preferencia estructuradas |
 | **3 — Finanzas** | Cobros desde la evolución, motor de beneficiarios, liquidación configurable, esquemas de pago, reporte por profesional/beneficiario | ✅ **Fase 3 cerrada.** Cobros desde la evolución, motor de beneficiarios múltiples, reporte por profesional/beneficiario, y esquemas de pago (sesión/cuota/adelantado/libre) imputados a un plan liviano — todo probado de punta a punta. **Fin del MVP comercializable según la regla del documento.** |
 | **4 — Planes y consentimientos** | Presupuestos por etapas, aceptación, consentimiento con firma+evidencia, bloqueo de evolución sin consentimiento | ✅ **Fase 4 cerrada.** Presupuestos por etapas con documento imprimible y aceptación firmada, consentimiento con firma+evidencia y bloqueo real de evolución sin consentimiento — todo probado de punta a punta, incluida la capa `planificado` del odontograma. |
-| **5 — IA** | Asistente clínico interno (context injection, solo lectura, logging) y luego bot WhatsApp | 🟡 asistente sí, controles del SGIA no |
+| **5 — IA** | Asistente clínico interno (context injection, solo lectura, logging) y luego bot WhatsApp | 🟡 asistente sí, **logging de auditoría y cierre del gap de escritura ya cerrados**; falta bot WhatsApp (credenciales pendientes) |
 
 **Fin del MVP comercializable = fin de Fase 3.**
 

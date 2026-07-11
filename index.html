@@ -2777,6 +2777,9 @@
                     <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="solicitudes" onclick="event.stopPropagation();abrirModalVisibilidadItem('solicitudes')" title="Configurar visibilidad">👁️</span><span class="nav-icon">download</span> Solicitudes
                     <span id="badgeSolicitudes" style="display:none;margin-left:auto;background:#E53935;color:#fff;border-radius:10px;font-size:10px;padding:1px 7px;font-weight:700;line-height:1.6;">0</span>
                 </button>
+                <button class="nav-item nav-sub" id="btnRegistroIA" data-navkey="registroia" onclick="_iaAbrirRegistroConsultas()" style="display:none;" title="Registro de consultas al Asistente (SGIA)">
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="registroia" onclick="event.stopPropagation();abrirModalVisibilidadItem('registroia')" title="Configurar visibilidad">👁️</span><span class="nav-icon">policy</span> Registro IA
+                </button>
             </div>
             </div>
             <div style="text-align:center;padding:10px 4px 2px;">
@@ -9671,6 +9674,9 @@
         const elS = document.getElementById('btnSolicitudes');
         if (elU) elU.style.display = esSuperAdmin ? '' : 'none';
         if (elS) elS.style.display = esAdmin ? '' : 'none';
+        // Registro de consultas al Asistente (SGIA): admin y superadmin
+        var elIA = document.getElementById('btnRegistroIA');
+        if (elIA) elIA.style.display = esAdmin ? '' : 'none';
         // Eliminar empresa/proyecto: solo superadmin
         ['obBtnElimEmpresa','obBtnElimProyecto','ddElimEmpresa','ddElimProyecto'].forEach(id => {
             const el = document.getElementById(id); if (el) el.style.display = esSuperAdmin ? '' : 'none';
@@ -13833,6 +13839,8 @@
     // Portal de carga externa de estudios (signed URLs): links temporales por paciente.
     let REF_SOLICITUDES_ESTUDIO = null;
     let solicitudesEstudio = [];
+    // Gobernanza IA (Fase 5): registro de auditoría de consultas al Asistente (SGIA).
+    let REF_LOG_ASISTENTE = null;
 
     // Se llama desde actualizarRefs()
     function actualizarRefsIngresos() {
@@ -13853,6 +13861,7 @@
         REF_CONSENTIMIENTOS = db.ref(base + '/consentimientos');
         REF_LISTA_ESPERA  = db.ref(base + '/listaEspera');
         REF_SOLICITUDES_ESTUDIO = db.ref(base + '/solicitudesEstudio');
+        REF_LOG_ASISTENTE = db.ref(base + '/logAsistente');
     }
 
     // Helper: carga con listener .on() reactivo
@@ -23644,6 +23653,28 @@
 </div>
 <!-- ═══════════════ FIN MODAL SOLICITUDES ═══════════════ -->
 
+<!-- ═══════════════ MODAL: REGISTRO DE CONSULTAS AL ASISTENTE (SGIA) ═══════════════ -->
+<div class="modal" id="modalRegistroIA">
+  <div class="modal-box" style="max-width:780px;max-height:92vh;">
+    <div class="modal-head" style="background:var(--ink);color:#fff;margin:0;padding:18px 24px;border-radius: var(--radius-sm);">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div>
+          <div style="font-size:10px;letter-spacing:.22em;text-transform:uppercase;font-family:monospace;color:rgba(255,255,255,.45);margin-bottom:3px;">Cumplimiento (SGIA)</div>
+          <h2 style="color:#fff;font-size:17px;font-weight:300;letter-spacing:.02em;">📋 Registro de consultas al Asistente</h2>
+        </div>
+        <div style="margin-left:auto;">
+          <button class="modal-close" onclick="_iaCerrarRegistroConsultas()" style="color:rgba(255,255,255,.6);">✕</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:16px;overflow-y:auto;max-height:calc(92vh - 80px);">
+      <p style="font-size:12px;color:var(--text-3);margin-top:0;">Últimas 100 consultas de este proyecto — quién, cuándo, y qué preguntó. Solo lectura.</p>
+      <div id="registroIALista">Cargando…</div>
+    </div>
+  </div>
+</div>
+<!-- ═══════════════ FIN MODAL REGISTRO IA ═══════════════ -->
+
 <!-- MODAL: EMITIR FACTURA ARCA/AFIP -->
 <div class="modal" id="modalEmitirAFIP">
   <div class="modal-box" style="max-width:620px;">
@@ -24176,7 +24207,7 @@
     <button id="ciseb-agente-borrar-btn" onclick="cisebBorrarMemoria()" title="Borrar el historial de esta conversación">🗑️</button>
     <button id="ciseb-agente-cerrar" onclick="cisebAgenteToggle()">✕</button>
   </div>
-  <div id="ciseb-agente-contexto">Sección activa: <span id="ciseb-agente-tab-nombre">—</span></div>
+  <div id="ciseb-agente-contexto">Sección activa: <span id="ciseb-agente-tab-nombre">—</span><br><span style="opacity:.7;font-size:10px;">🔒 Tus consultas quedan registradas para cumplimiento (SGIA).</span></div>
   <div id="ciseb-agente-mensajes"></div>
   <div id="ciseb-agente-footer">
     <label id="ciseb-agente-pdf-btn" title="Adjuntar PDF" style="cursor:pointer;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:rgba(100,100,200,.12);flex-shrink:0;transition:background .2s;" onmouseover="this.style.background='rgba(100,100,200,.25)'" onmouseout="this.style.background='rgba(100,100,200,.12)'">
@@ -24916,6 +24947,56 @@
     document.getElementById('ciseb-agente-input').placeholder = 'Preguntame algo sobre CISEB…';
   };
 
+  // Gobernanza IA (Fase 5, SGIA): registra quién le preguntó qué al asistente y cuándo.
+  // Best-effort — si falla (sin conexión, reglas, etc.) nunca interrumpe el chat.
+  function _iaRegistrarConsulta(pregunta, tuvoAdjunto) {
+    try {
+      if (!REF_LOG_ASISTENTE) return;
+      var rol = esSuperAdmin ? 'superadmin' : (esAdmin ? 'admin' : (puedeEditar ? 'editor' : 'lector'));
+      REF_LOG_ASISTENTE.push({
+        ts: Date.now(),
+        uid: (auth && auth.currentUser) ? auth.currentUser.uid : '',
+        email: (auth && auth.currentUser) ? auth.currentUser.email : '',
+        rol: rol,
+        pregunta: String(pregunta || '').slice(0, 500),
+        tuvoAdjunto: !!tuvoAdjunto
+      }).catch(function(e) { console.warn('[Asistente] no se pudo registrar la consulta:', e.message); });
+    } catch (e) { console.warn('[Asistente] error de logging:', e); }
+  }
+
+  // Visor de auditoría (solo lectura) para admin/superadmin: quién le preguntó
+  // qué al asistente y cuándo, en el proyecto activo.
+  window._iaAbrirRegistroConsultas = function() {
+    document.getElementById('modalRegistroIA').classList.add('active');
+    var lista = document.getElementById('registroIALista');
+    lista.textContent = 'Cargando…';
+    if (!REF_LOG_ASISTENTE) { lista.textContent = 'No hay proyecto activo.'; return; }
+    REF_LOG_ASISTENTE.limitToLast(100).once('value').then(function(snap) {
+      var val = snap.val();
+      var items = val ? Object.values(val) : [];
+      items.sort(function(a, b) { return (b.ts || 0) - (a.ts || 0); });
+      if (!items.length) { lista.innerHTML = '<div style="color:var(--text-3);padding:24px;text-align:center;">Todavía no hay consultas registradas.</div>'; return; }
+      lista.innerHTML = '<table style="width:100%;font-size:12px;border-collapse:collapse;">'
+        + '<thead><tr style="text-align:left;border-bottom:1px solid var(--border);">'
+        + '<th style="padding:6px;">Cuándo</th><th style="padding:6px;">Quién</th><th style="padding:6px;">Rol</th><th style="padding:6px;">Pregunta</th></tr></thead><tbody>'
+        + items.map(function(it) {
+            var f = it.ts ? new Date(it.ts) : null;
+            var fecha = f ? (f.toLocaleDateString('es-AR') + ' ' + f.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })) : '—';
+            return '<tr style="border-bottom:1px solid var(--border-soft);">'
+                + '<td style="padding:6px;white-space:nowrap;color:var(--text-3);">' + fecha + '</td>'
+                + '<td style="padding:6px;">' + escHtml(it.email || it.uid || '—') + '</td>'
+                + '<td style="padding:6px;">' + escHtml(it.rol || '—') + (it.tuvoAdjunto ? ' 📎' : '') + '</td>'
+                + '<td style="padding:6px;">' + escHtml(it.pregunta || '—') + '</td>'
+                + '</tr>';
+          }).join('')
+        + '</tbody></table>';
+    }).catch(function(e) {
+      lista.innerHTML = '<div style="color:var(--danger);padding:24px;text-align:center;">Error al cargar el registro: ' + escHtml(e.message || '') + '</div>';
+    });
+  };
+
+  window._iaCerrarRegistroConsultas = function() { document.getElementById('modalRegistroIA').classList.remove('active'); };
+
   window.cisebAgenteEnviar = function() {
     if (_rkEsperando) return;
     if (window.speechSynthesis) window.speechSynthesis.cancel();
@@ -25011,6 +25092,7 @@
       rkMensajeUser(texto);
     }
     _cisebHistorial.push({ role: 'user', parts: parts });
+    _iaRegistrarConsulta(texto, esPdf || esAudio);
     _rkEsperando = true;
 
     document.getElementById('ciseb-agente-enviar').disabled = true;
@@ -25128,7 +25210,11 @@
           var estQuery = '';
           try { var _ed = JSON.parse(mEst[1]); estQuery = (_ed && _ed.paciente ? String(_ed.paciente) : '').trim(); } catch(e) {}
           var _estBase64 = pdfBase64, _estNombre = pdfNombre;
-          if (!_estBase64) {
+          if (!puedeEditar) {
+            // Gobernanza IA (Fase 5, SGIA): el asistente es solo lectura para quien no
+            // puede editar — no escribe en la base aunque el modelo lo haya interpretado así.
+            cisebMensajeBot('Tu rol no permite adjuntar estudios a una ficha. Pedile a un editor o admin que lo suba.', null);
+          } else if (!_estBase64) {
             cisebMensajeBot('No tengo ningún PDF adjunto en este mensaje para guardar. Adjuntá el estudio y volvé a pedírmelo.', null);
           } else if (!estQuery) {
             cisebMensajeBot('¿A qué paciente querés que le adjunte este estudio? Decime el nombre o el DNI.', null);

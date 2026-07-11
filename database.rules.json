@@ -17,7 +17,16 @@
 
     "empresas": {
       ".read": "auth != null",
-      ".write": "root.child('roles').child(auth.uid).val() === 'superadmin' || root.child('roles').child(auth.uid).val() === 'admin' || root.child('roles').child(auth.uid).val() === 'editor'"
+      ".write": "root.child('roles').child(auth.uid).val() === 'superadmin' || root.child('roles').child(auth.uid).val() === 'admin' || root.child('roles').child(auth.uid).val() === 'editor'",
+      "$empresaId": {
+        "proyectos": {
+          "$proyectoId": {
+            "logAsistente": {
+              ".write": "auth != null"
+            }
+          }
+        }
+      }
     },
 
     "global": {

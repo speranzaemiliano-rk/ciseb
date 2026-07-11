@@ -111,10 +111,31 @@ Workspace (ver marco §5), aún no implementado.
 ## Integraciones
 
 ARCA/AFIP (`@afipsdk/afip.js`), Belvo/Prometeo (open banking), Google Gemini
-(asistente interno con *context injection* de los datos de la app; ⚠️ sin el
-scoping por permisos ni el logging de consultas que el SGIA exige para uso
-clínico), EmailJS, Firebase Storage (estudios de pacientes), WhatsApp Business
-Cloud API (backend listo, falta credenciales).
+(asistente interno con *context injection* de los datos de la app), EmailJS,
+Firebase Storage (estudios de pacientes, con portal de carga externa por
+signed URLs), WhatsApp Business Cloud API (backend listo, falta credenciales).
+
+**Gobernanza del Asistente IA (Fase 5, SGIA):** el contexto que se le inyecta
+(`rkResumenDatosApp()`) sigue sin filtrar por rol — es deliberado, espeja los
+mismos permisos de LECTURA que ya tiene cualquier usuario logueado en la UI
+(los roles hoy solo restringen edición, no visibilidad de datos — ver "Roles y
+permisos"). Lo que sí se agregó:
+- **Registro de auditoría**: cada consulta (`cisebAgenteEnviar`) se loguea en
+  `empresas/.../proyectos/.../logAsistente` (uid, email, rol, pregunta truncada
+  a 500 chars, si tuvo adjunto) vía `_iaRegistrarConsulta()`. Visor de solo
+  lectura para admin/superadmin: botón "Registro IA" en el sidebar →
+  `_iaAbrirRegistroConsultas()`. Requirió abrir una excepción en
+  `database.rules.json` (nodo `logAsistente` dentro de cada proyecto,
+  `.write: auth != null`) para que un `lector` —que no puede escribir en
+  `empresas/**`— pueda igual quedar registrado al usar el asistente.
+- **Se cerró el único gap de escritura real**: el marcador
+  `###ESTUDIO_PACIENTE:...###` (adjuntar un PDF a la ficha de un paciente
+  directamente desde el chat) ahora chequea `puedeEditar` antes de subir el
+  archivo — si el usuario no puede editar, el asistente avisa en vez de
+  escribir. El resto de las acciones (proveedor, mail, ingreso) ya eran
+  human-in-the-loop (piden confirmación explícita antes de guardar).
+- Disclosure visible en el panel del chat: "🔒 Tus consultas quedan
+  registradas para cumplimiento (SGIA)."
 
 **Recordatorios de turno (Fase 2 — Agenda):** `functions/server.js` revisa cada
 30 min (y a demanda vía `GET /turnos/recordatorios`) los turnos de **todas** las
