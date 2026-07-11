@@ -112,6 +112,15 @@ scoping por permisos ni el logging de consultas que el SGIA exige para uso
 clínico), EmailJS, Firebase Storage (estudios de pacientes), WhatsApp Business
 Cloud API (backend listo, falta credenciales).
 
+**Recordatorios de turno (Fase 2 — Agenda):** `functions/server.js` revisa cada
+30 min (y a demanda vía `GET /turnos/recordatorios`) los turnos de **todas** las
+empresas/proyectos que caen entre 20h y 28h desde ahora, y les manda un mail de
+recordatorio al paciente (reusa las credenciales del Mail Bot, `MAIL_BOT_*`) con
+un link de confirmación de un solo uso (`GET /turnos/confirmar`, protegido por el
+`tokenConfirmacion` propio de cada turno — no por `X-App-Token`, ver
+`_RUTAS_SIN_TOKEN`). Requiere Firebase Admin activo (`FIREBASE_SERVICE_ACCOUNT_BASE64`)
+y que el paciente tenga `email` cargado. Diagnóstico: `GET /turnos/diag`.
+
 ## Config del entorno del centro (a completar en cada instalación)
 
 - `firebaseConfig` en `index.html` (bloque cerca del `<head>`): apunta al proyecto
@@ -122,7 +131,9 @@ Cloud API (backend listo, falta credenciales).
   de Storage para que la subida de estudios funcione (el código tolera que no esté
   habilitado: avisa sin romper).
 - Backend en Railway con sus env vars (`AFIP_*`, `BELVO_*`, `PROMETEO_*`,
-  `WHATSAPP_*`, `GEMINI_API_KEY`, `MAIL_BOT_*`, `PORT`).
+  `WHATSAPP_*`, `GEMINI_API_KEY`, `MAIL_BOT_*`, `PORT`, `BACKEND_PUBLIC_URL`
+  opcional — URL pública del backend, para armar el link de confirmación de
+  turno en el mail de recordatorio; sin esto el mail sale sin ese link).
 
 ## PWA / Despliegue
 

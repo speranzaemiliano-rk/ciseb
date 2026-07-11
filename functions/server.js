@@ -44,7 +44,10 @@ app.use(express.json({ limit: '20mb' }));
 // en el log en cada request para que no pase desapercibido antes de producción.
 // El webhook de WhatsApp queda afuera porque lo llama Meta directamente (no
 // puede mandar nuestro header) y ya se valida con WHATSAPP_VERIFY_TOKEN aparte.
-const _RUTAS_SIN_TOKEN = ['/', '/whatsapp/webhook'];
+// /turnos/confirmar queda afuera porque lo abre el paciente desde el mail de
+// recordatorio (no puede mandar nuestro header) — se autentica solo con el
+// `tokenConfirmacion` propio de ese turno, que va en la URL.
+const _RUTAS_SIN_TOKEN = ['/', '/whatsapp/webhook', '/turnos/confirmar'];
 app.use(function(req, res, next) {
     if (_RUTAS_SIN_TOKEN.indexOf(req.path) !== -1) return next();
     const esperado = process.env.APP_API_TOKEN;
@@ -959,6 +962,170 @@ if (mailBotConfigurado()) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+//  RECORDATORIOS DE TURNOS — confirmación automática ~24h antes (Fase 2 — Agenda)
+//  Reutiliza las credenciales del Mail Bot (MAIL_BOT_USER / MAIL_BOT_APP_PASSWORD)
+//  para mandar un mail simple con link de confirmación de un solo uso (el
+//  `tokenConfirmacion` que la app genera al crear cada turno). Requiere Firebase
+//  Admin (arriba) para leer/escribir turnos de TODAS las empresas/proyectos.
+//  Variables de entorno adicionales:
+//    BACKEND_PUBLIC_URL → URL pública de este backend en Railway, para armar el
+//                          link "Confirmar turno" del mail (sin esto, el mail
+//                          sale sin link, solo como recordatorio informativo).
+// ═══════════════════════════════════════════════════════════════════
+
+function _recordatoriosConfigurado() { return mailBotConfigurado(); }
+
+async function _enviarEmailSimple(to, subject, text) {
+    if (!_recordatoriosConfigurado()) {
+        const err = new Error('Faltan MAIL_BOT_USER y MAIL_BOT_APP_PASSWORD en Railway.');
+        err.faltanCreds = true;
+        throw err;
+    }
+    const nodemailer = require('nodemailer');
+    const user = process.env.MAIL_BOT_USER, pass = process.env.MAIL_BOT_APP_PASSWORD;
+    const transporter = nodemailer.createTransport({ host: 'smtp.gmail.com', port: 465, secure: true, auth: { user, pass } });
+    await transporter.sendMail({ from: '"CISEB — Recordatorio de turno" <' + user + '>', to: to, subject: subject, text: text });
+}
+
+// Arma la fecha/hora real del turno (asume horario de Argentina, UTC-3 fijo).
+function _turnoFechaHora(t) {
+    if (!t.fecha || !t.hora) return null;
+    var d = new Date(t.fecha + 'T' + t.hora + ':00-03:00');
+    return isNaN(d.getTime()) ? null : d;
+}
+
+// Recorre empresas/proyectos, manda el recordatorio de los turnos que caen
+// entre 20h y 28h desde ahora (ventana amplia para no perder ninguno si el
+// intervalo de revisión no coincide justo con la hora 24). Marca cada turno
+// con `recordatorio24hEnviadoEn` para no reenviar.
+async function turnosRevisarRecordatorios() {
+    if (!admin.apps.length) { const e = new Error('Firebase Admin no está inicializado. Configurá FIREBASE_SERVICE_ACCOUNT_BASE64 en Railway.'); e.faltanCreds = true; throw e; }
+    if (!_recordatoriosConfigurado()) { const e = new Error('Faltan MAIL_BOT_USER y MAIL_BOT_APP_PASSWORD en Railway.'); e.faltanCreds = true; throw e; }
+
+    const empresasSnap = await admin.database().ref('empresas').once('value');
+    const empresas = empresasSnap.val() || {};
+    const ahora = Date.now();
+    const VENTANA_MIN_MS = 20 * 60 * 60 * 1000;
+    const VENTANA_MAX_MS = 28 * 60 * 60 * 1000;
+    let revisados = 0, enviados = 0, omitidosSinEmail = 0;
+
+    for (const empresaId of Object.keys(empresas)) {
+        const proyectos = (empresas[empresaId] && empresas[empresaId].proyectos) || {};
+        for (const proyectoId of Object.keys(proyectos)) {
+            const base = 'empresas/' + empresaId + '/proyectos/' + proyectoId;
+            const [turnosSnap, pacientesSnap] = await Promise.all([
+                admin.database().ref(base + '/turnos').once('value'),
+                admin.database().ref(base + '/pacientes').once('value')
+            ]);
+            let turnos = turnosSnap.val();
+            if (!turnos) continue;
+            turnos = Array.isArray(turnos) ? turnos : Object.values(turnos);
+            const pacientesVal = pacientesSnap.val();
+            const pacientesArr = pacientesVal ? (Array.isArray(pacientesVal) ? pacientesVal : Object.values(pacientesVal)) : [];
+            let cambio = false;
+
+            for (const t of turnos) {
+                if (!t || !t.id) continue;
+                if (t.estado === 'Cancelado' || t.estado === 'Atendido' || t.estado === 'Ausente') continue;
+                if (t.recordatorio24hEnviadoEn) continue;
+                const fh = _turnoFechaHora(t);
+                if (!fh) continue;
+                const faltan = fh.getTime() - ahora;
+                if (faltan < VENTANA_MIN_MS || faltan > VENTANA_MAX_MS) continue;
+                revisados++;
+
+                const pac = t.pacienteId ? pacientesArr.filter(function (p) { return p && p.id === t.pacienteId; })[0] : null;
+                const email = pac && pac.email;
+                if (!email) { omitidosSinEmail++; continue; }
+
+                const linkConfirmar = (process.env.BACKEND_PUBLIC_URL && t.tokenConfirmacion)
+                    ? (process.env.BACKEND_PUBLIC_URL.replace(/\/$/, '') + '/turnos/confirmar?empresa=' + encodeURIComponent(empresaId) + '&proyecto=' + encodeURIComponent(proyectoId) + '&id=' + encodeURIComponent(t.id) + '&token=' + encodeURIComponent(t.tokenConfirmacion))
+                    : null;
+
+                const texto = 'Hola' + (pac.nombre ? ' ' + pac.nombre : '') + ',\n\n'
+                    + 'Te recordamos tu turno para mañana ' + t.fecha + ' a las ' + t.hora + (t.motivo ? (' (' + t.motivo + ')') : '') + '.\n\n'
+                    + (linkConfirmar ? ('Por favor confirmá tu asistencia acá: ' + linkConfirmar + '\n\n') : '')
+                    + 'Si necesitás cambiarlo, respondé este mail o comunicate con el consultorio.\n\n— CISEB';
+
+                try {
+                    await _enviarEmailSimple(email, 'Recordatorio de tu turno de mañana', texto);
+                    t.recordatorio24hEnviadoEn = ahora;
+                    cambio = true;
+                    enviados++;
+                } catch (e) {
+                    console.error('[recordatorios] Error enviando a', email, ':', e.message);
+                }
+            }
+            if (cambio) await admin.database().ref(base + '/turnos').set(turnos);
+        }
+    }
+    return { revisados, enviados, omitidosSinEmail };
+}
+
+// Diagnóstico
+app.get('/turnos/diag', (req, res) => {
+    res.json({
+        ok: true,
+        firebaseAdminListo: !!admin.apps.length,
+        mailUserCargado: !!process.env.MAIL_BOT_USER,
+        mailAppPasswordCargada: !!process.env.MAIL_BOT_APP_PASSWORD,
+        backendPublicUrlCargada: !!process.env.BACKEND_PUBLIC_URL,
+        listoParaUsar: !!admin.apps.length && _recordatoriosConfigurado()
+    });
+});
+
+// Disparo manual (además del automático por intervalo).
+app.get('/turnos/recordatorios', async (req, res) => {
+    try {
+        const r = await turnosRevisarRecordatorios();
+        res.json(Object.assign({ ok: true }, r));
+    } catch (e) {
+        res.status(e.faltanCreds ? 400 : 500).json({ error: e.message, faltanCreds: !!e.faltanCreds });
+    }
+});
+
+// Link público del mail de recordatorio (SIN X-App-Token: la autenticación acá es
+// el `tokenConfirmacion` propio del turno, generado al azar por la app al crearlo).
+app.get('/turnos/confirmar', async (req, res) => {
+    try {
+        const empresa = req.query.empresa, proyecto = req.query.proyecto, id = req.query.id, token = req.query.token;
+        if (!empresa || !proyecto || !id || !token) return res.status(400).send('Falta información en el link.');
+        if (!admin.apps.length) return res.status(500).send('El servidor no está configurado (Firebase Admin).');
+        const base = 'empresas/' + empresa + '/proyectos/' + proyecto;
+        const snap = await admin.database().ref(base + '/turnos').once('value');
+        let turnos = snap.val();
+        if (!turnos) return res.status(404).send('Turno no encontrado.');
+        turnos = Array.isArray(turnos) ? turnos : Object.values(turnos);
+        const idx = turnos.findIndex(function (t) { return t && t.id === id; });
+        if (idx === -1) return res.status(404).send('Turno no encontrado.');
+        const t = turnos[idx];
+        if (!t.tokenConfirmacion || t.tokenConfirmacion !== token) return res.status(403).send('Link inválido o vencido.');
+        if (t.estado !== 'Cancelado' && t.estado !== 'Atendido') {
+            t.estado = 'Confirmado';
+            t.confirmadoEn = Date.now();
+            t.canalConfirmacion = 'email';
+            await admin.database().ref(base + '/turnos').set(turnos);
+        }
+        res.send('<html><body style="font-family:sans-serif;text-align:center;padding:60px;">'
+            + '<h2>✅ ¡Turno confirmado!</h2><p>Te esperamos el ' + (t.fecha || '') + ' a las ' + (t.hora || '') + '.</p></body></html>');
+    } catch (e) {
+        res.status(500).send('Error: ' + (e.message || e));
+    }
+});
+
+// Revisión automática cada 30 minutos (solo si está configurado).
+if (mailBotConfigurado()) {
+    setInterval(function () {
+        turnosRevisarRecordatorios().then(function (r) {
+            if (r && r.enviados) console.log('[Recordatorios] enviados ' + r.enviados + ' recordatorio(s) de turno.');
+        }).catch(function (e) {
+            console.error('[Recordatorios] error:', e.message);
+        });
+    }, 30 * 60 * 1000);
+    console.log('[Recordatorios] activo: revisando turnos cada 30 minutos.');
+}
+
+// ═══════════════════════════════════════════════════════════════════
 //  USUARIOS — Gestión de usuarios de Firebase Auth desde la app
 //  Requiere Firebase Admin SDK (FIREBASE_SERVICE_ACCOUNT_BASE64 en Railway).
 // ═══════════════════════════════════════════════════════════════════
@@ -1094,4 +1261,4 @@ app.post('/usuarios/reset-password', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`CISEB Backend (AFIP + Belvo + Prometeo + WhatsApp + MailBot) corriendo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`CISEB Backend (AFIP + Belvo + Prometeo + WhatsApp + MailBot + Recordatorios) corriendo en puerto ${PORT}`));

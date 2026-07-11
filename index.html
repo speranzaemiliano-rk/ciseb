@@ -16283,15 +16283,26 @@
     var _turIdsMigracionIntentada = false;
     var _turUltimoLiberado = null;
 
-    // Migración única por sesión: turnos viejos no tenían `id` (necesario para
-    // sincronización con Google Calendar y recordatorios). Se backfillea en memoria
-    // y se persiste una sola vez si hizo falta.
+    // Token no adivinable para el link de confirmación por mail (recordatorio 24h).
+    function _generarTokenAleatorio() {
+        if (window.crypto && window.crypto.getRandomValues) {
+            var arr = new Uint8Array(16);
+            window.crypto.getRandomValues(arr);
+            return Array.prototype.map.call(arr, function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+        }
+        return Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    }
+
+    // Migración única por sesión: turnos viejos no tenían `id`/`tokenConfirmacion`
+    // (necesarios para recordatorios y sync con Google Calendar). Se backfillea en
+    // memoria y se persiste una sola vez si hizo falta.
     function _turMigrarIds() {
         if (_turIdsMigracionIntentada) return;
         _turIdsMigracionIntentada = true;
         var cambio = false;
         turnos.forEach(function(t, i) {
             if (!t.id) { t.id = 'turno_' + Date.now() + '_' + i; cambio = true; }
+            if (!t.tokenConfirmacion) { t.tokenConfirmacion = _generarTokenAleatorio(); cambio = true; }
         });
         if (cambio) persistirTurnos();
     }
@@ -16441,7 +16452,8 @@
 
         var prev = editandoTurIdx >= 0 ? turnos[editandoTurIdx] : null;
         var t = {
-            id:            (prev && prev.id) ? prev.id : ('turno_' + Date.now()),
+            id:               (prev && prev.id) ? prev.id : ('turno_' + Date.now()),
+            tokenConfirmacion: (prev && prev.tokenConfirmacion) ? prev.tokenConfirmacion : _generarTokenAleatorio(),
             fecha:         fecha,
             hora:          hora,
             duracionMin:   duracionMin,
@@ -16516,7 +16528,7 @@
                             ['Pendiente','Confirmado','Atendido','Cancelado','Ausente'].map(function(e) {
                                 return '<option value="' + e + '"' + (t.estado === e ? ' selected' : '') + '>' + e + '</option>';
                             }).join('') +
-                        '</select></td>' +
+                        '</select>' + (t.recordatorio24hEnviadoEn ? ' <span title="Recordatorio de 24h ya enviado por mail">✉️</span>' : '') + (t.canalConfirmacion === 'email' ? ' <span title="Confirmado por el paciente vía mail">✅</span>' : '') + '</td>' +
                         '<td><div class="action-btns">' +
                             '<button class="btn btn-outline btn-sm" onclick="abrirModalTurno(' + idx + ')" title="Editar">✏</button>' +
                             (typeof btnElim === 'function' ? btnElim('turno', idx) : '<button class="btn btn-danger-sm" onclick="eliminarTurno(' + idx + ')">✕</button>') +
