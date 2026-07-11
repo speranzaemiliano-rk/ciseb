@@ -27,17 +27,17 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+    <!-- Infra como código: la config de esta instancia (Firebase + admin email)
+         vive en config.js, NO acá — así el mismo index.html sirve para
+         cualquier instalación nueva. Ver config.example.js y docs/INSTALL.md. -->
+    <script src="config.js"></script>
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCKadOev2-P1VE-TtS0w99yEjfZlOFaX_Y",
-            authDomain: "rkseguimientode-pagos.firebaseapp.com",
-            databaseURL: "https://rkseguimientode-pagos-default-rtdb.firebaseio.com",
-            projectId: "rkseguimientode-pagos",
-            storageBucket: "rkseguimientode-pagos.firebasestorage.app",
-            messagingSenderId: "757720795463",
-            appId: "1:757720795463:web:5d5bb3c269aad01a48e462"
+        const _cisebCfg = window.CISEB_CONFIG || {};
+        const firebaseConfig = _cisebCfg.firebase || {
+            apiKey: "PEGAR-API-KEY", authDomain: "PEGAR.firebaseapp.com", databaseURL: "https://PEGAR-default-rtdb.firebaseio.com",
+            projectId: "PEGAR", storageBucket: "PEGAR.firebasestorage.app", messagingSenderId: "PEGAR", appId: "PEGAR"
         };
-        const ADMIN_EMAIL = "speranzaemiliano@gmail.com";
+        const ADMIN_EMAIL = _cisebCfg.adminEmail || "PEGAR-tu-email@dominio.com";
 
         let auth, db, storage, REF_DATOS, REF_TC, REF_ROLES, REF_USUARIOS, REF_PROV, REF_GRUPOS, REF_CAC, REF_DOCS, REF_EMPRESAS, REF_FACTURAS, REF_CAJA, REF_INGRESOS, REF_BANCO, REF_SOLICITUDES;
         let FIREBASE_OK = false;

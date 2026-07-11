@@ -6,13 +6,20 @@ const admin   = require('firebase-admin');
 
 // Firebase Admin — se inicializa con service account (base64 del JSON) o con las
 // variables individuales FIREBASE_PROJECT_ID + FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY.
+//
+// Infra como código: FIREBASE_DATABASE_URL es la URL de ESTA instalación. Antes
+// estaba hardcodeada al proyecto original — cualquier instancia nueva con su
+// propio service account terminaba apuntando (y fallando) contra la base de
+// otro proyecto. El default de acá abajo es solo para no romper el despliegue
+// actual mientras no se cargue la variable en Railway.
+var FIREBASE_DATABASE_URL = process.env.FIREBASE_DATABASE_URL || 'https://rkseguimientode-pagos-default-rtdb.firebaseio.com';
 (function initFirebaseAdmin() {
     try {
         if (admin.apps.length) return;
         var sa64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
         if (sa64) {
             var sa = JSON.parse(Buffer.from(sa64, 'base64').toString('utf8'));
-            admin.initializeApp({ credential: admin.credential.cert(sa), databaseURL: 'https://rkseguimientode-pagos-default-rtdb.firebaseio.com' });
+            admin.initializeApp({ credential: admin.credential.cert(sa), databaseURL: FIREBASE_DATABASE_URL });
         } else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
             admin.initializeApp({
                 credential: admin.credential.cert({
@@ -20,7 +27,7 @@ const admin   = require('firebase-admin');
                     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
                     privateKey: leerPem(process.env.FIREBASE_PRIVATE_KEY)
                 }),
-                databaseURL: 'https://rkseguimientode-pagos-default-rtdb.firebaseio.com'
+                databaseURL: FIREBASE_DATABASE_URL
             });
         } else {
             console.warn('[Firebase Admin] No se configuró service account — los endpoints /usuarios/* no van a funcionar. Cargá FIREBASE_SERVICE_ACCOUNT_BASE64 en Railway.');

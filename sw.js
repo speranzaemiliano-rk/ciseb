@@ -1,11 +1,12 @@
 // Service Worker — CISEB Gestión PWA
-const CACHE = 'ciseb-v2';
+const CACHE = 'ciseb-v3';
 const BASE  = '/ciseb/';
 
 // Archivos que se cachean al instalar (shell de la app)
 const SHELL = [
   BASE,
   BASE + 'index.html',
+  BASE + 'config.js',
   BASE + 'manifest.json',
   BASE + 'icons/icon-192.png',
   BASE + 'icons/icon-512.png'

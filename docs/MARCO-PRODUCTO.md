@@ -93,7 +93,7 @@ Entidades objetivo (resumen del relevamiento §6):
 | Interfaz | App web propia con RBAC real | `index.html` único, JS vanilla sin build, hospedado en GitHub Pages |
 | IA administrativa | Gemini de Workspace | — (no aplica al modo actual) |
 | IA clínica | Asistente por API, solo lectura, con logging de cada consulta | Asistente Gemini con *context injection* de los datos de la app **sin** el scoping de permisos ni el logging clínico que exige el SGIA |
-| Backend | Infra como código, un código base / N configuraciones | Backend Express en Railway (ARCA, Belvo/Prometeo, WhatsApp, mail bot); instancia única, no parametrizada por centro |
+| Backend | Infra como código, un código base / N configuraciones | Backend Express en Railway (ARCA, Belvo/Prometeo, WhatsApp, mail bot); config por env vars (`FIREBASE_DATABASE_URL`, `FIREBASE_STORAGE_BUCKET`, etc.) — el código ya es el mismo para cualquier instalación, falta automatizar la creación de los recursos de nube en sí |
 
 > **Nota:** Firebase *es* parte de GCP. La distancia real no es de proveedor sino
 > de piezas: Realtime DB → Firestore, subida directa → portal de signed URLs,
@@ -121,7 +121,7 @@ Leyenda: ✅ construido · 🟡 parcial · ⬜ no existe todavía.
 | **Asistente clínico** (solo lectura + logging) | 🟡 | Ahora **registra toda consulta** (quién, cuándo, rol, qué preguntó) con visor de auditoría para admin/superadmin, y se cerró el único punto donde escribía sin confirmación (adjuntar estudios). El contexto sigue sin filtrar por rol — deliberado: espeja los mismos permisos de lectura que ya tiene cualquier usuario en la UI, no un gap nuevo. Falta: separar dominio clínico de administrativo en el contexto inyectado (hoy no aplica porque el núcleo clínico estructurado —evoluciones, diagnósticos— todavía no se inyecta). |
 | **Bot de WhatsApp** de turnos | 🟡 | Backend preparado; falta cuenta de Meta + credenciales + alcance cerrado documentado. |
 | **RBAC efectivo / SSO Workspace** | ⬜ | Roles solo en cliente; las reglas de Firebase son la única defensa real. |
-| **Infra como código** (instalador) | ⬜ | Instancia única, no replicable por script todavía. |
+| **Infra como código** (instalador) | 🟡 | `index.html`/`functions/server.js` ya son el mismo código para cualquier instalación: la config del frontend se extrajo a `config.js` (no versionado como secreto, plantilla en `config.example.js`) y el backend ya toma todo por env vars (se corrigió un `databaseURL` que estaba hardcodeado). Guía paso a paso en `docs/INSTALL.md`. Falta: automatizar la creación de los recursos de nube (proyecto Firebase, proyecto Railway) — requiere las cuentas propias de cada centro, no es scripteable sin ellas. |
 
 **Lectura de una línea:** CISEB ya cierra las **Fases 3 y 4 del roadmap**, la
 **Fase 2 (Agenda)** salvo la vía inversa de Calendar, y el **portal de signed
@@ -131,10 +131,13 @@ con aceptación del paciente → consentimientos con evidencia → lista de espe
 → confirmación automática 24h → sync con Calendar → carga externa de estudios
 — funcionando de punta a punta y probado en cada pieza. Lo que falta ya no es
 "más módulos clínicos": es la **capa de infraestructura y cumplimiento** que
-convierte esto en el ecosistema llave en mano del documento — RBAC/SSO real
-con Google Workspace y el instalador infraestructura-como-código. Los
-controles del SGIA para el asistente (Fase 5) ya tienen su primera vuelta:
-logging de auditoría y cierre del único gap de escritura sin confirmación.
+convierte esto en el ecosistema llave en mano del documento. Ya tienen su
+primera vuelta: los controles del SGIA para el asistente (Fase 5) —logging de
+auditoría y cierre del único gap de escritura sin confirmación— y la
+**infra como código** (config del frontend extraída a `config.js`, backend ya
+parametrizado por env vars, guía de instalación en `docs/INSTALL.md`). Lo que
+queda es RBAC/SSO real con Google Workspace y automatizar la creación de los
+recursos de nube en sí (requiere las cuentas propias de cada centro).
 
 ## 7. Roadmap del relevamiento (§8) y dónde estamos parados
 

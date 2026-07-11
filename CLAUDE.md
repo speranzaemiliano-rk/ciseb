@@ -178,19 +178,35 @@ usuario autenticado lee/escribe) pero **no está deployado ni conectado en
 antes de desplegarlo. El portal de carga externa no depende de estas reglas
 (usa signed URLs, autorizadas por firma criptográfica, no por `storage.rules`).
 
-## Config del entorno del centro (a completar en cada instalación)
+## Infra como código / config del entorno del centro
 
-- `firebaseConfig` en `index.html` (bloque cerca del `<head>`): apunta al proyecto
-  Firebase del centro. Placeholder de arranque usa el string `PEGAR` para
-  disparar el aviso "Falta configurar Firebase".
-- `.firebaserc` / `functions/server.js`: `databaseURL` y projectId del centro.
-- **Firebase Storage** debe habilitarse en la consola del proyecto + cargar reglas
-  de Storage para que la subida de estudios funcione (el código tolera que no esté
-  habilitado: avisa sin romper).
+Guía completa paso a paso para levantar una instancia nueva: **`docs/INSTALL.md`**.
+Resumen de qué cambia por instalación (nada de esto toca `index.html` ni
+`functions/server.js`):
+
+- **`config.js`** (no `index.html`): `firebaseConfig` + `adminEmail` de esa
+  instalación. `index.html` carga `<script src="config.js">` y lee de
+  `window.CISEB_CONFIG` — es el **único** archivo del frontend que cambia
+  entre instalaciones. Plantilla en `config.example.js`. El placeholder
+  `PEGAR` en cualquier valor dispara el aviso "Falta configurar Firebase".
+- **Firebase Storage** debe habilitarse en la consola del proyecto + revisar/
+  deployar `storage.rules` (borrador en el repo, no conectado a `firebase.json`
+  todavía — ver el propio archivo).
 - Backend en Railway con sus env vars (`AFIP_*`, `BELVO_*`, `PROMETEO_*`,
-  `WHATSAPP_*`, `GEMINI_API_KEY`, `MAIL_BOT_*`, `PORT`, `BACKEND_PUBLIC_URL`
-  opcional — URL pública del backend, para armar el link de confirmación de
-  turno en el mail de recordatorio; sin esto el mail sale sin ese link).
+  `WHATSAPP_*`, `GEMINI_API_KEY`, `MAIL_BOT_*`, `PORT`, `BACKEND_PUBLIC_URL`,
+  `FIREBASE_DATABASE_URL`, `FIREBASE_STORAGE_BUCKET`, `FIREBASE_SERVICE_ACCOUNT_BASE64`
+  — tabla completa con qué es obligatoria para qué en `docs/INSTALL.md`).
+  ⚠️ `FIREBASE_DATABASE_URL` es nueva: antes el backend tenía la URL de RTDB
+  **hardcodeada** al proyecto original — una instalación nueva con su propio
+  service account fallaba silenciosamente contra la base equivocada. Ahora
+  cae a esa misma URL solo si la variable no está cargada (compat con el
+  despliegue actual).
+- Branding (nombre "CISEB", isotipo, colores) es identidad visual específica
+  de esta marca, no se genera desde `config.js` — un centro con marca propia
+  reemplaza los íconos y hace un buscar-y-reemplazar manual (ver §6 de
+  `docs/INSTALL.md`). No hay (todavía) automatización para crear los recursos
+  de nube en sí (proyecto de Firebase, proyecto de Railway) — requiere las
+  cuentas propias de cada centro.
 
 ## PWA / Despliegue
 
