@@ -46,8 +46,10 @@ app.use(express.json({ limit: '20mb' }));
 // puede mandar nuestro header) y ya se valida con WHATSAPP_VERIFY_TOKEN aparte.
 // /turnos/confirmar queda afuera porque lo abre el paciente desde el mail de
 // recordatorio (no puede mandar nuestro header) — se autentica solo con el
-// `tokenConfirmacion` propio de ese turno, que va en la URL.
-const _RUTAS_SIN_TOKEN = ['/', '/whatsapp/webhook', '/turnos/confirmar'];
+// `tokenConfirmacion` propio de ese turno, que va en la URL. Mismo criterio
+// para /estudios/*: las abre un externo (radiólogo, laboratorio) sin ninguna
+// credencial del sistema — se autentican con el token propio de la solicitud.
+const _RUTAS_SIN_TOKEN = ['/', '/whatsapp/webhook', '/turnos/confirmar', '/estudios/subir', '/estudios/solicitar-url', '/estudios/confirmar-subida'];
 app.use(function(req, res, next) {
     if (_RUTAS_SIN_TOKEN.indexOf(req.path) !== -1) return next();
     const esperado = process.env.APP_API_TOKEN;
@@ -1124,6 +1126,144 @@ if (mailBotConfigurado()) {
     }, 30 * 60 * 1000);
     console.log('[Recordatorios] activo: revisando turnos cada 30 minutos.');
 }
+
+// ═══════════════════════════════════════════════════════════════════
+//  PORTAL DE CARGA EXTERNA DE ESTUDIOS — signed URLs (Fase 1 — Núcleo clínico)
+//  Permite que un externo (radiólogo, laboratorio) suba un estudio de un
+//  paciente puntual sin ninguna credencial del sistema. El link lo genera el
+//  consultorio desde la ficha del paciente (token aleatorio + vencimiento,
+//  ver `solicitudesEstudio` en cada proyecto). Mismo patrón que la
+//  confirmación de turnos por mail: rutas públicas validadas por el token
+//  propio del registro — nunca por X-App-Token — que autorizan una escritura
+//  server-side vía Admin SDK (que se salta las reglas de cliente).
+//  Variables de entorno adicionales:
+//    FIREBASE_STORAGE_BUCKET → nombre del bucket de Storage (default: el
+//                              mismo bucket que usa index.html).
+// ═══════════════════════════════════════════════════════════════════
+
+const STORAGE_BUCKET = process.env.FIREBASE_STORAGE_BUCKET || 'rkseguimientode-pagos.firebasestorage.app';
+
+async function _estValidarSolicitud(empresa, proyecto, id, token) {
+    if (!admin.apps.length) return { error: 'El servidor no está configurado (Firebase Admin).' };
+    if (!empresa || !proyecto || !id || !token) return { error: 'Falta información en el link.' };
+    const base = 'empresas/' + empresa + '/proyectos/' + proyecto;
+    const snap = await admin.database().ref(base + '/solicitudesEstudio').once('value');
+    let lista = snap.val();
+    if (!lista) return { error: 'Link no encontrado.' };
+    lista = Array.isArray(lista) ? lista : Object.values(lista);
+    const s = lista.filter(function (x) { return x && x.id === id; })[0];
+    if (!s) return { error: 'Link no encontrado.' };
+    if (!s.token || s.token !== token) return { error: 'Link inválido.' };
+    if (!s.expiraEn || s.expiraEn < Date.now()) return { error: 'Este link venció. Pedile al consultorio que genere uno nuevo.' };
+    return { solicitud: s, base: base };
+}
+
+app.get('/estudios/diag', (req, res) => {
+    res.json({ ok: true, firebaseAdminListo: !!admin.apps.length, bucket: STORAGE_BUCKET });
+});
+
+// Página pública de carga (HTML embebido, sin login ni X-App-Token — la
+// autenticación acá es el token propio de la solicitud, en la URL).
+app.get('/estudios/subir', async (req, res) => {
+    try {
+        const empresa = req.query.empresa, proyecto = req.query.proyecto, id = req.query.id, token = req.query.token;
+        const r = await _estValidarSolicitud(empresa, proyecto, id, token);
+        if (r.error) {
+            return res.send('<html><body style="font-family:sans-serif;text-align:center;padding:60px;"><h2>⚠️ ' + r.error + '</h2></body></html>');
+        }
+        const pacienteNombre = String(r.solicitud.pacienteNombre || 'el paciente').replace(/</g, '&lt;');
+        res.send('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+            + '<title>CISEB — Subir estudio</title><style>'
+            + 'body{font-family:sans-serif;max-width:480px;margin:40px auto;padding:0 16px;color:#222}'
+            + 'h2{margin-bottom:4px}.hint{color:#777;font-size:13px;margin-bottom:20px}'
+            + 'input[type=file]{display:block;margin:16px 0}'
+            + 'button{background:#2D6CA6;color:#fff;border:none;padding:10px 20px;border-radius:6px;font-size:15px;cursor:pointer}'
+            + '#status{margin-top:14px;font-size:14px}.ok{color:#1E8E3E}.err{color:#D93025}'
+            + '</style></head><body>'
+            + '<h2>📎 Subir estudio</h2>'
+            + '<div class="hint">Paciente: <strong>' + pacienteNombre + '</strong> — este link es temporal y personal, no lo compartas.</div>'
+            + '<input type="file" id="f" accept="application/pdf,image/*">'
+            + '<button onclick="subir()">Subir estudio</button>'
+            + '<div id="status"></div>'
+            + '<script>'
+            + 'var _q = ' + JSON.stringify({ empresa: empresa, proyecto: proyecto, id: id, token: token }) + ';'
+            + 'function subir(){'
+            + 'var f=document.getElementById("f").files[0];var st=document.getElementById("status");'
+            + 'if(!f){st.textContent="Elegí un archivo primero.";st.className="err";return;}'
+            + 'if(f.size>20*1024*1024){st.textContent="El archivo pesa más de 20 MB.";st.className="err";return;}'
+            + 'st.textContent="Subiendo...";st.className="";'
+            + 'fetch("/estudios/solicitar-url",{method:"POST",headers:{"Content-Type":"application/json"},'
+            + 'body:JSON.stringify(Object.assign({},_q,{nombreArchivo:f.name,contentType:f.type||"application/octet-stream"}))})'
+            + '.then(function(r){return r.json();}).then(function(d){'
+            + 'if(d.error)throw new Error(d.error);'
+            + 'return fetch(d.url,{method:"PUT",headers:{"Content-Type":f.type||"application/octet-stream"},body:f}).then(function(){return d;});'
+            + '}).then(function(d){'
+            + 'return fetch("/estudios/confirmar-subida",{method:"POST",headers:{"Content-Type":"application/json"},'
+            + 'body:JSON.stringify(Object.assign({},_q,{path:d.path,nombreArchivo:f.name}))});'
+            + '}).then(function(r){return r.json();}).then(function(d){'
+            + 'if(d.error)throw new Error(d.error);'
+            + 'st.textContent="✅ ¡Estudio subido correctamente! Ya está en la ficha del paciente.";st.className="ok";'
+            + '}).catch(function(e){st.textContent="❌ "+e.message;st.className="err";});'
+            + '}'
+            + '</script></body></html>');
+    } catch (e) {
+        res.status(500).send('Error: ' + (e.message || e));
+    }
+});
+
+app.post('/estudios/solicitar-url', async (req, res) => {
+    try {
+        const b = req.body || {};
+        const r = await _estValidarSolicitud(b.empresa, b.proyecto, b.id, b.token);
+        if (r.error) return res.status(400).json({ error: r.error });
+        const nombreSan = (b.nombreArchivo || 'estudio').replace(/[^a-zA-Z0-9._-]/g, '_');
+        const path = r.base + '/estudios/' + r.solicitud.pacienteId + '/' + Date.now() + '_' + nombreSan;
+        const bucket = admin.storage().bucket(STORAGE_BUCKET);
+        const [url] = await bucket.file(path).getSignedUrl({
+            version: 'v4',
+            action: 'write',
+            expires: Date.now() + 15 * 60 * 1000,
+            contentType: b.contentType || 'application/octet-stream'
+        });
+        res.json({ ok: true, url: url, path: path });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/estudios/confirmar-subida', async (req, res) => {
+    try {
+        const b = req.body || {};
+        const r = await _estValidarSolicitud(b.empresa, b.proyecto, b.id, b.token);
+        if (r.error) return res.status(400).json({ error: r.error });
+        if (!b.path) return res.status(400).json({ error: 'Falta el path del archivo.' });
+
+        const bucket = admin.storage().bucket(STORAGE_BUCKET);
+        const file = bucket.file(b.path);
+        const downloadToken = crypto.randomUUID();
+        await file.setMetadata({ metadata: { firebaseStorageDownloadTokens: downloadToken } });
+        const url = 'https://firebasestorage.googleapis.com/v0/b/' + STORAGE_BUCKET + '/o/' + encodeURIComponent(b.path) + '?alt=media&token=' + downloadToken;
+
+        const pacientesSnap = await admin.database().ref(r.base + '/pacientes').once('value');
+        let pacientes = pacientesSnap.val();
+        if (!pacientes) return res.status(404).json({ error: 'Paciente no encontrado.' });
+        pacientes = Array.isArray(pacientes) ? pacientes : Object.values(pacientes);
+        const idx = pacientes.findIndex(function (p) { return p && p.id === r.solicitud.pacienteId; });
+        if (idx === -1) return res.status(404).json({ error: 'Paciente no encontrado.' });
+        if (!pacientes[idx].estudios) pacientes[idx].estudios = [];
+        pacientes[idx].estudios.push({
+            nombre: (b.nombreArchivo || 'Estudio'),
+            url: url,
+            path: b.path,
+            fecha: new Date().toISOString().slice(0, 10),
+            subidoPor: 'Portal externo (link temporal)'
+        });
+        await admin.database().ref(r.base + '/pacientes').set(pacientes);
+        res.json({ ok: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
 
 // ═══════════════════════════════════════════════════════════════════
 //  USUARIOS — Gestión de usuarios de Firebase Auth desde la app

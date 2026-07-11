@@ -63,8 +63,12 @@ administrativa madura con módulos clínicos incipientes (ver el §6 del marco).
 Ruta base por proyecto activo: `getBasePath()` → `empresas/<empresaId>/proyectos/<proyectoId>`.
 
 **Clínico/consultorio** (por proyecto): `/pacientes`, `/turnos`, `/listaEspera`,
-`/profesionales`, `/servicios` (catálogo de "Tratamientos"), `/estudios/<pacienteId>/...`
-(en Storage).
+`/solicitudesEstudio`, `/profesionales`, `/servicios` (catálogo de "Tratamientos"),
+`/estudios/<pacienteId>/...` (en Storage).
+- **SolicitudEstudio** (portal de carga externa): `id`, `pacienteId`, `pacienteNombre`,
+  `token` (aleatorio, `_generarTokenAleatorio()`), `creadaEn`, `creadaPor`, `expiraEn`.
+  Se genera desde la ficha del paciente (🔗 en la sección Estudios) y arma un link
+  público a `GET /estudios/subir` — ver "Portal de carga externa" más abajo.
 - **Paciente**: nombre, dni, fechaNacimiento, telefono, email, obraSocial,
   nroAfiliado, direccion, notas, `profesionalId`, `estudios[]`, `id`.
 - **Profesional**: `id`, nombre, especialidad, matricula, contacto, `comisionGeneral`
@@ -131,6 +135,27 @@ Al guardar/editar/borrar un turno, crea/actualiza/borra el evento correspondient
 en `primary` calendar del usuario conectado (`turno.googleEventId` guarda el
 mapeo). Es **best-effort**: cualquier falla se loguea en consola y nunca
 interrumpe el guardado del turno.
+
+**Portal de carga externa de estudios (Fase 1 — Núcleo clínico):** permite que un
+externo (radiólogo, laboratorio) suba un estudio de un paciente puntual sin
+ninguna credencial del sistema. Desde la ficha del paciente se genera un link
+temporal (`solicitudesEstudio`, token + `expiraEn`); ese link abre
+`GET /estudios/subir` (página HTML pública embebida en `server.js`, exenta de
+`X-App-Token`) que pide una **signed URL V4 de escritura** a Cloud Storage
+(`POST /estudios/solicitar-url`, 15 min de validez) vía `admin.storage()`, y al
+terminar avisa al backend (`POST /estudios/confirmar-subida`) para que setee un
+`firebaseStorageDownloadTokens` en el archivo (mismo mecanismo que usa
+`getDownloadURL()` del cliente) y agregue el registro a `paciente.estudios[]`
+por Admin SDK. Autenticación: el `token` propio de la solicitud, no `X-App-Token`
+(ver `_RUTAS_SIN_TOKEN`). Diagnóstico: `GET /estudios/diag`. Env var adicional:
+`FIREBASE_STORAGE_BUCKET` (default: el mismo bucket que `index.html`).
+
+⚠️ **`storage.rules` no existía en el repo** — se agregó un borrador
+(`storage.rules`, espeja la postura de `database.rules.json`: cualquier
+usuario autenticado lee/escribe) pero **no está deployado ni conectado en
+`firebase.json`** — revisar las reglas activas hoy en la consola de Firebase
+antes de desplegarlo. El portal de carga externa no depende de estas reglas
+(usa signed URLs, autorizadas por firma criptográfica, no por `storage.rules`).
 
 ## Config del entorno del centro (a completar en cada instalación)
 

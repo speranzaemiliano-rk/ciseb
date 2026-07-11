@@ -13830,6 +13830,9 @@
     let REF_LISTA_ESPERA = null;
     let listaEspera = [];
     var editandoEsperaIdx = -1;
+    // Portal de carga externa de estudios (signed URLs): links temporales por paciente.
+    let REF_SOLICITUDES_ESTUDIO = null;
+    let solicitudesEstudio = [];
 
     // Se llama desde actualizarRefs()
     function actualizarRefsIngresos() {
@@ -13849,6 +13852,7 @@
         REF_PLANES_TRAT   = db.ref(base + '/planesTrat');
         REF_CONSENTIMIENTOS = db.ref(base + '/consentimientos');
         REF_LISTA_ESPERA  = db.ref(base + '/listaEspera');
+        REF_SOLICITUDES_ESTUDIO = db.ref(base + '/solicitudesEstudio');
     }
 
     // Helper: carga con listener .on() reactivo
@@ -13879,6 +13883,7 @@
         _cargarConListener(REF_PLANES_TRAT, function(v) { planesTrat = v; if (typeof _fichaClinicaPacIdx !== 'undefined' && _fichaClinicaPacIdx >= 0 && typeof _renderFichaClinicaPlanes==='function') _renderFichaClinicaPlanes(_fichaClinicaPacIdx); });
         _cargarConListener(REF_CONSENTIMIENTOS, function(v) { consentimientos = v; if (typeof _fichaClinicaPacIdx !== 'undefined' && _fichaClinicaPacIdx >= 0 && typeof _renderFichaClinicaConsentimientos==='function') _renderFichaClinicaConsentimientos(_fichaClinicaPacIdx); });
         _cargarConListener(REF_LISTA_ESPERA, function(v) { listaEspera = v; if (typeof renderListaEspera==='function') renderListaEspera(); });
+        _cargarConListener(REF_SOLICITUDES_ESTUDIO, function(v) { solicitudesEstudio = v; if (typeof renderEstudiosPaciente==='function' && editandoPacIdx >= 0) renderEstudiosPaciente(); });
         if (REF_PLAN) {
             REF_PLAN.on('value', function(snap) {
                 var val = snap.val();
@@ -13905,6 +13910,12 @@
         if (!REF_LISTA_ESPERA) return;
         REF_LISTA_ESPERA.set(listaEspera)
             .catch(function(e) { console.error('Error guardando lista de espera:', e); alert('Error al guardar. Revisá la conexión.'); });
+    }
+
+    function persistirSolicitudesEstudio() {
+        if (!REF_SOLICITUDES_ESTUDIO) return;
+        REF_SOLICITUDES_ESTUDIO.set(solicitudesEstudio)
+            .catch(function(e) { console.error('Error guardando solicitudes de estudio:', e); alert('Error al guardar. Revisá la conexión.'); });
     }
 
     function persistirProfesionales() {
@@ -14207,6 +14218,77 @@
                 '<button type="button" class="btn btn-danger-sm" onclick="eliminarEstudioPaciente(' + i + ')" title="Borrar">✕</button>';
             cont.appendChild(fila);
         });
+        _estRenderSolicitudes();
+    }
+
+    // Genera un link temporal (token aleatorio) para que un externo suba un
+    // estudio de este paciente sin tener acceso al sistema. El link apunta al
+    // backend (GET /estudios/subir), que valida el token contra este registro
+    // y emite una signed URL de Cloud Storage — el mismo patrón que usa la
+    // confirmación de turnos por mail (ver _generarTokenAleatorio / tokenConfirmacion).
+    function _estGenerarSolicitud() {
+        var p = editandoPacIdx >= 0 ? pacientes[editandoPacIdx] : null;
+        if (!p) { alert('Guardá el paciente primero.'); return; }
+        var dias = parseInt(document.getElementById('pacEstLinkDias').value, 10) || 7;
+        var s = {
+            id:             'solest_' + Date.now(),
+            pacienteId:     p.id,
+            pacienteNombre: p.nombre || '',
+            token:          _generarTokenAleatorio(),
+            creadaEn:       Date.now(),
+            creadaPor:      (auth && auth.currentUser) ? auth.currentUser.email : '',
+            expiraEn:       Date.now() + dias * 24 * 60 * 60 * 1000
+        };
+        solicitudesEstudio.push(s);
+        persistirSolicitudesEstudio();
+        _estRenderSolicitudes();
+    }
+
+    function _estRevocarSolicitud(idx) {
+        var s = solicitudesEstudio[idx]; if (!s) return;
+        if (!confirm('¿Revocar este link? Deja de funcionar de inmediato.')) return;
+        s.expiraEn = Date.now() - 1;
+        persistirSolicitudesEstudio();
+        _estRenderSolicitudes();
+    }
+
+    function _estCopiarLink(idx) {
+        var s = solicitudesEstudio[idx]; if (!s) return;
+        var link = _estLinkDeSolicitud(s);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(link).then(function() { alert('Link copiado al portapapeles.'); });
+        } else {
+            prompt('Copiá este link:', link);
+        }
+    }
+
+    function _estLinkDeSolicitud(s) {
+        var base = (typeof _backendUrl === 'function') ? _backendUrl() : '';
+        return base + '/estudios/subir?empresa=' + encodeURIComponent(empresaActual ? empresaActual.id : '')
+            + '&proyecto=' + encodeURIComponent(proyectoActual ? proyectoActual.id : '')
+            + '&id=' + encodeURIComponent(s.id) + '&token=' + encodeURIComponent(s.token);
+    }
+
+    // Lista los links activos/vencidos generados para el paciente en edición.
+    function _estRenderSolicitudes() {
+        var cont = document.getElementById('pacEstSolicitudesLista');
+        if (!cont) return;
+        var p = editandoPacIdx >= 0 ? pacientes[editandoPacIdx] : null;
+        if (!p) { cont.innerHTML = ''; return; }
+        var ahora = Date.now();
+        var propias = solicitudesEstudio.map(function(s, i) { return { s: s, i: i }; })
+            .filter(function(x) { return x.s.pacienteId === p.id; })
+            .sort(function(a, b) { return b.s.creadaEn - a.s.creadaEn; });
+        if (!propias.length) { cont.innerHTML = ''; return; }
+        cont.innerHTML = propias.map(function(x) {
+            var s = x.s, vencido = s.expiraEn < ahora;
+            var estadoTxt = vencido ? '<span style="color:var(--text-3);">vencido</span>' : ('vence ' + formatearFecha(new Date(s.expiraEn).toISOString().slice(0,10)));
+            return '<div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:3px 0;">' +
+                '<span style="flex:1;color:var(--text-3);">Link ' + estadoTxt + '</span>' +
+                (vencido ? '' : '<button type="button" class="btn btn-outline btn-sm" onclick="_estCopiarLink(' + x.i + ')">📋 Copiar</button>' +
+                    '<button type="button" class="btn btn-danger-sm" onclick="_estRevocarSolicitud(' + x.i + ')">Revocar</button>') +
+                '</div>';
+        }).join('');
     }
 
     // Sube el archivo seleccionado en el input del modal al paciente en edición.
@@ -14250,6 +14332,7 @@
     function subirEstudioPaciente(pacienteIdx, file, descripcion) {
         return new Promise(function(resolve, reject) {
             if (!storage) { alert('Firebase Storage no está habilitado. Activalo en la consola de Firebase.'); reject(new Error('Storage no habilitado')); return; }
+            if (file.size > 20 * 1024 * 1024) { alert('El archivo pesa más de 20 MB. Subí un archivo más liviano.'); reject(new Error('Archivo demasiado pesado')); return; }
             var p = pacientes[pacienteIdx];
             if (!p) { reject(new Error('Paciente no encontrado')); return; }
             if (!p.id) { p.id = 'pac_' + Date.now(); persistirPacientes(); }
@@ -16882,7 +16965,7 @@
 
     // Limpiar al cambiar empresa/proyecto
     function limpiarIngresos() {
-        servicios = []; ingGeneral = []; pacientes = []; turnos = []; listaEspera = [];
+        servicios = []; ingGeneral = []; pacientes = []; turnos = []; listaEspera = []; solicitudesEstudio = [];
         renderServicios(); renderIngGeneral();
         if (typeof renderPacientes === 'function') renderPacientes();
         if (typeof renderTurnos === 'function') renderTurnos();
@@ -22090,6 +22173,15 @@
             <button type="button" class="btn btn-outline btn-sm" onclick="pacSubirEstudioDesdeModal()">⬆ Subir</button>
           </div>
           <div id="pacEstudiosLista"></div>
+          <div style="border-top:1px solid var(--border-soft);margin-top:10px;padding-top:10px;">
+            <div style="font-size:11px;color:var(--text-3);margin-bottom:6px;">🔗 Link para que un externo (radiólogo, laboratorio) suba un estudio sin acceso al sistema:</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <label style="font-size:11px;color:var(--text-3);">Vigencia (días)</label>
+              <input type="number" id="pacEstLinkDias" value="7" min="1" max="30" style="width:56px;">
+              <button type="button" class="btn btn-outline btn-sm" onclick="_estGenerarSolicitud()">🔗 Generar link</button>
+            </div>
+            <div id="pacEstSolicitudesLista" style="margin-top:8px;"></div>
+          </div>
         </div>
       </div>
       <div class="modal-footer">

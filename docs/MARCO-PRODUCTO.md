@@ -115,7 +115,7 @@ Leyenda: ✅ construido · 🟡 parcial · ⬜ no existe todavía.
 | **Plan de tratamiento / presupuesto por etapas** | ✅ | Prestaciones agrupadas por etapas con precio, vinculadas opcionalmente a piezas/caras del odontograma (activa la capa `planificado`). Documento imprimible, aceptación del paciente con firma en pantalla, y auto-completado de etapas cuando una Evolución coincide con lo planificado. |
 | **Esquemas de pago** (sesión/cuota/adelantado/libre) | ✅ | Las 4 variantes del documento. Cobros imputables a un plan desde la Evolución, o vía **Registrar Pago** directo (desacoplado de la visita — ej. cobrar una cuota sin cargar una evolución clínica ese día). Ficha del paciente muestra cobrado/saldo/% de avance por plan. |
 | **Cobro → liquidación** desde la evolución | ✅ | Cada cobro reparte `montoConsultorio` entre beneficiarios (`participaciones[]`, normalizado y redondeado sin diferencia de centavos). Reporte **Liquidación** por rango de fechas: totales por beneficiario y por profesional, con total general para reconciliar. Falta: corte configurable más allá del rango manual (diario/semanal/mensual automático) y exportación. |
-| **Estudios/imágenes** vinculados a paciente | ✅ | PDFs/imágenes por paciente en Firebase Storage. Falta el **portal de signed URLs** y el vínculo a la evolución. |
+| **Estudios/imágenes** vinculados a paciente | ✅ | PDFs/imágenes por paciente en Firebase Storage, ahora con **portal de carga externa por signed URLs** (radiólogo/laboratorio sube sin credenciales del sistema, link temporal generado desde la ficha). Falta el vínculo a la evolución y desplegar/revisar `storage.rules` (recién agregado al repo, no deployado). |
 | **Consentimiento electrónico con evidencia** | ✅ | Firma en pantalla (canvas) + nombre del firmante + checkbox, con evidencia (texto exacto firmado, dispositivo, fecha). **Bloqueo real**: una evolución de una prestación que requiere consentimiento no se guarda sin uno vigente. Texto base configurable, con default marcado explícitamente como MODELO — falta la validación legal real con abogado antes de vender el feature. |
 | **Lista de espera** estructurada | ✅ | Entidad propia (`listaEspera`): paciente, profesional/prestación preferidos (opcionales), disponibilidad, prioridad (Normal/Urgente), estado. Al cancelar un turno, el sistema sugiere candidatos compatibles (mismo profesional o sin preferencia) y permite agendarlos en un clic — el humano decide y confirma. |
 | **Asistente clínico** (solo lectura + logging) | 🟡 | Hay asistente Gemini útil, pero **sin** el scoping por permisos ni el registro de consultas que pide el SGIA. |
@@ -123,23 +123,24 @@ Leyenda: ✅ construido · 🟡 parcial · ⬜ no existe todavía.
 | **RBAC efectivo / SSO Workspace** | ⬜ | Roles solo en cliente; las reglas de Firebase son la única defensa real. |
 | **Infra como código** (instalador) | ⬜ | Instancia única, no replicable por script todavía. |
 
-**Lectura de una línea:** CISEB ya cierra las **Fases 3 y 4 del roadmap** —
-evolución estructurada → odontograma (3 capas) → cobro → liquidación con
-beneficiarios múltiples → esquemas de pago → **planes por etapas con
-aceptación del paciente → consentimientos con evidencia** — funcionando
-de punta a punta y probado en cada pieza. Lo que falta ya no es "más
-módulos clínicos": es la **capa de infraestructura y cumplimiento** que
-convierte esto en el ecosistema llave en mano del documento — RBAC/SSO
-real con Google Workspace, sincronización de agenda con Calendar (Fase 2),
-el portal de signed URLs, los controles del SGIA para el asistente
-(Fase 5), y el instalador infraestructura-como-código.
+**Lectura de una línea:** CISEB ya cierra las **Fases 3 y 4 del roadmap**, la
+**Fase 2 (Agenda)** salvo la vía inversa de Calendar, y el **portal de signed
+URLs** de la Fase 1 — evolución estructurada → odontograma (3 capas) → cobro →
+liquidación con beneficiarios múltiples → esquemas de pago → planes por etapas
+con aceptación del paciente → consentimientos con evidencia → lista de espera
+→ confirmación automática 24h → sync con Calendar → carga externa de estudios
+— funcionando de punta a punta y probado en cada pieza. Lo que falta ya no es
+"más módulos clínicos": es la **capa de infraestructura y cumplimiento** que
+convierte esto en el ecosistema llave en mano del documento — RBAC/SSO real
+con Google Workspace, los controles del SGIA para el asistente (Fase 5), y el
+instalador infraestructura-como-código.
 
 ## 7. Roadmap del relevamiento (§8) y dónde estamos parados
 
 | Fase | Contenido | Dónde estamos |
 |---|---|---|
 | **0 — Definición** | Modelo de datos clínico, pantalla de evolución, mapa de riesgos, diseño del paquete llave en mano, consulta legal de consentimientos | En curso (este documento es insumo) |
-| **1 — Núcleo clínico** | Login+RBAC, ficha, historia clínica, **evolución→odontograma** (FDI, 3 capas, por cara), adjuntos y portal de signed URLs | 🟡 ficha, adjuntos y **evolución→odontograma sí** (2 de 3 capas); falta RBAC efectivo y portal de signed URLs |
+| **1 — Núcleo clínico** | Login+RBAC, ficha, historia clínica, **evolución→odontograma** (FDI, 3 capas, por cara), adjuntos y portal de signed URLs | 🟡 ficha, adjuntos, **evolución→odontograma** (2 de 3 capas) y **portal de signed URLs** ya cerrados; falta RBAC efectivo |
 | **2 — Agenda** | Catálogo con duraciones, sync Calendar, confirmación 24 h, notas de preferencia, lista de espera | 🟡 turno vinculado a duración/prestación con detección de solapamiento, **lista de espera con sugerencia automática al cancelar**, **confirmación automática 24h por mail** y **sync app→Calendar** ya cerrados; falta la vía inversa (Calendar→app) y notas de preferencia estructuradas |
 | **3 — Finanzas** | Cobros desde la evolución, motor de beneficiarios, liquidación configurable, esquemas de pago, reporte por profesional/beneficiario | ✅ **Fase 3 cerrada.** Cobros desde la evolución, motor de beneficiarios múltiples, reporte por profesional/beneficiario, y esquemas de pago (sesión/cuota/adelantado/libre) imputados a un plan liviano — todo probado de punta a punta. **Fin del MVP comercializable según la regla del documento.** |
 | **4 — Planes y consentimientos** | Presupuestos por etapas, aceptación, consentimiento con firma+evidencia, bloqueo de evolución sin consentimiento | ✅ **Fase 4 cerrada.** Presupuestos por etapas con documento imprimible y aceptación firmada, consentimiento con firma+evidencia y bloqueo real de evolución sin consentimiento — todo probado de punta a punta, incluida la capa `planificado` del odontograma. |
