@@ -4174,6 +4174,21 @@
                     <div id="cfgGoogleClientIdStatus" style="font-size:12px;margin-top:8px;color:var(--text-3);"></div>
                   </div>
 
+                  <div style="border-top:1px solid var(--border);padding-top:20px;margin-top:4px;">
+                    <h4 style="font-size:13px;font-weight:700;color:var(--text-1);margin-bottom:4px;">📋 Consentimiento informado — texto base</h4>
+                    <p style="font-size:12px;color:var(--text-3);margin-bottom:12px;line-height:1.6;">
+                      Texto que se muestra al paciente al firmar un consentimiento (Ley 25.506: firma electrónica con rastro de evidencia —
+                      quién, cuándo, dispositivo y versión del texto). Usá estos placeholders, se reemplazan automáticamente:
+                      <code>{{paciente}}</code> · <code>{{prestacion}}</code> · <code>{{fecha}}</code> · <code>{{profesional}}</code>.<br>
+                      ⚠️ El texto por defecto es un <strong>modelo</strong>, no fue validado por un abogado especializado en salud. Reemplazalo acá antes de usar el sistema en producción.
+                    </p>
+                    <div class="form-group" style="margin-bottom:8px;">
+                      <textarea id="cfgConsentimientoTexto" rows="8" style="font-size:13px;width:100%;"></textarea>
+                    </div>
+                    <button class="btn btn-gold btn-sm" onclick="guardarConsentimientoTextoBase()">💾 Guardar texto</button>
+                    <div id="cfgConsentimientoTextoStatus" style="font-size:12px;margin-top:8px;color:var(--text-3);"></div>
+                  </div>
+
                 </div>
 
                   <!-- ── Gestión de Usuarios (solo superadmin) ── -->
@@ -6008,6 +6023,7 @@
         }); activeListeners.push({ref:l9, event:'value'});
 
         cargarDatosIngresos();
+        cargarConsentimientoTextoBase();
     }
 
     function persistir() { REF_DATOS.set(datos); }
@@ -13613,6 +13629,9 @@
     let planesTrat = [];
     var editandoPlanTratIdx = -1;
     var _planTratPacienteCtx = null;
+    // Consentimiento electrónico con evidencia (Fase 4): registros firmados por paciente+prestación.
+    let REF_CONSENTIMIENTOS = null;
+    let consentimientos = [];
 
     // Se llama desde actualizarRefs()
     function actualizarRefsIngresos() {
@@ -13630,6 +13649,7 @@
         REF_COBROS        = db.ref(base + '/cobros');
         REF_BENEFICIARIOS = db.ref(base + '/beneficiarios');
         REF_PLANES_TRAT   = db.ref(base + '/planesTrat');
+        REF_CONSENTIMIENTOS = db.ref(base + '/consentimientos');
     }
 
     // Helper: carga con listener .on() reactivo
@@ -13658,6 +13678,7 @@
         _cargarConListener(REF_COBROS, function(v) { cobros = v; if (typeof renderCobros==='function') renderCobros(); });
         _cargarConListener(REF_BENEFICIARIOS, function(v) { beneficiarios = v; if (typeof renderBeneficiarios==='function') renderBeneficiarios(); });
         _cargarConListener(REF_PLANES_TRAT, function(v) { planesTrat = v; if (typeof _fichaClinicaPacIdx !== 'undefined' && _fichaClinicaPacIdx >= 0 && typeof _renderFichaClinicaPlanes==='function') _renderFichaClinicaPlanes(_fichaClinicaPacIdx); });
+        _cargarConListener(REF_CONSENTIMIENTOS, function(v) { consentimientos = v; if (typeof _fichaClinicaPacIdx !== 'undefined' && _fichaClinicaPacIdx >= 0 && typeof _renderFichaClinicaConsentimientos==='function') _renderFichaClinicaConsentimientos(_fichaClinicaPacIdx); });
         if (REF_PLAN) {
             REF_PLAN.on('value', function(snap) {
                 var val = snap.val();
@@ -13714,6 +13735,203 @@
         if (!REF_PLANES_TRAT) return;
         REF_PLANES_TRAT.set(planesTrat)
             .catch(function(e) { console.error('Error guardando planes de tratamiento:', e); alert('Error al guardar. Revisá la conexión.'); });
+    }
+
+    function persistirConsentimientos() {
+        if (!REF_CONSENTIMIENTOS) return;
+        REF_CONSENTIMIENTOS.set(consentimientos)
+            .catch(function(e) { console.error('Error guardando consentimientos:', e); alert('Error al guardar. Revisá la conexión.'); });
+    }
+
+    // Consentimiento electrónico con evidencia (Ley 25.506: firma electrónica con rastro de
+    // evidencia — quién, cuándo, dispositivo, versión del texto). Busca un registro vigente
+    // (no revocado) para ese paciente+prestación. Devuelve el objeto encontrado o null.
+    function _consentimientoVigente(pacienteId, prestacionId) {
+        if (!pacienteId || !prestacionId) return null;
+        var encontrado = consentimientos.filter(function(c) {
+            return c.pacienteId === pacienteId && c.prestacionId === prestacionId && c.revocado !== true;
+        })[0];
+        return encontrado || null;
+    }
+
+    // ── Texto base del consentimiento (configurable, por proyecto) ──────────
+    // NO es un texto legal validado — es un MODELO a reemplazar en Configuración
+    // antes de usar el sistema en producción (ver aviso dentro del texto).
+    var CONSENTIMIENTO_TEXTO_DEFAULT = "MODELO — este texto NO fue validado por un abogado especializado en salud. Reemplazalo en Configuración antes de usar el sistema en producción.\n\nCONSENTIMIENTO INFORMADO\n\nYo, {{paciente}}, declaro haber sido informado/a por {{profesional}} sobre el procedimiento «{{prestacion}}», sus alcances, riesgos y alternativas, y presto mi conformidad para su realización.\n\nFecha: {{fecha}}";
+    let consentimientoTextoBase = '';
+
+    function cargarConsentimientoTextoBase() {
+        db.ref(getBasePath() + '/config/consentimientoTexto').once('value').then(function(snap) {
+            consentimientoTextoBase = snap.val() || '';
+            var ta = document.getElementById('cfgConsentimientoTexto');
+            if (ta) ta.value = consentimientoTextoBase || CONSENTIMIENTO_TEXTO_DEFAULT;
+        }).catch(function() {});
+    }
+
+    function guardarConsentimientoTextoBase() {
+        var ta = document.getElementById('cfgConsentimientoTexto');
+        if (!ta) return;
+        var val = (ta.value || '').trim();
+        db.ref(getBasePath() + '/config/consentimientoTexto').set(val).then(function() {
+            consentimientoTextoBase = val;
+            var st = document.getElementById('cfgConsentimientoTextoStatus');
+            if (st) st.textContent = '✅ Texto de consentimiento guardado.';
+        }).catch(function(e) {
+            var st = document.getElementById('cfgConsentimientoTextoStatus');
+            if (st) st.textContent = '❌ Error al guardar: ' + e.message;
+        });
+    }
+
+    // Reemplaza los placeholders literales del texto base por los datos concretos de esta
+    // firma. El resultado es la "versión del texto" que exige la Ley 25.506 como evidencia —
+    // se guarda tal cual (textoFirmado) junto al registro de consentimientos.
+    function _consentimientoRenderizarTexto(pacienteNombre, prestacionNombre, profesionalNombre) {
+        var base = consentimientoTextoBase || CONSENTIMIENTO_TEXTO_DEFAULT;
+        var fecha = formatearFecha(new Date().toISOString().slice(0, 10));
+        return base
+            .split('{{paciente}}').join(pacienteNombre || '')
+            .split('{{prestacion}}').join(prestacionNombre || '')
+            .split('{{fecha}}').join(fecha)
+            .split('{{profesional}}').join(profesionalNombre || '');
+    }
+
+    // ── Modal de firma (canvas de firma manuscrita en pantalla) ─────────────
+    var _consentPacIdx = -1;
+    var _consentPrestId = '';
+    var _consentPendienteCallback = null;
+    var _consentCtx = null;
+    var _consentDibujando = false;
+    var _consentCanvasTieneTrazo = false;
+    var _consentCanvasInit = false;
+
+    function _consentPosicionEnCanvas(canvas, e) {
+        var rect = canvas.getBoundingClientRect();
+        var clientX, clientY;
+        if (e.touches && e.touches.length) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; }
+        else { clientX = e.clientX; clientY = e.clientY; }
+        return {
+            x: (clientX - rect.left) * (canvas.width / rect.width),
+            y: (clientY - rect.top) * (canvas.height / rect.height)
+        };
+    }
+
+    function _consentInicializarCanvas() {
+        if (_consentCanvasInit) return;
+        var canvas = document.getElementById('consentCanvasFirma');
+        if (!canvas) return;
+        _consentCtx = canvas.getContext('2d');
+        _consentCtx.strokeStyle = '#1a1a1a';
+        _consentCtx.lineWidth = 2;
+        _consentCtx.lineCap = 'round';
+        function iniciar(e) {
+            e.preventDefault();
+            _consentDibujando = true;
+            _consentCanvasTieneTrazo = true;
+            var p = _consentPosicionEnCanvas(canvas, e);
+            _consentCtx.beginPath();
+            _consentCtx.moveTo(p.x, p.y);
+        }
+        function mover(e) {
+            if (!_consentDibujando) return;
+            e.preventDefault();
+            var p = _consentPosicionEnCanvas(canvas, e);
+            _consentCtx.lineTo(p.x, p.y);
+            _consentCtx.stroke();
+        }
+        function terminar() { _consentDibujando = false; }
+        canvas.addEventListener('mousedown', iniciar);
+        canvas.addEventListener('mousemove', mover);
+        canvas.addEventListener('mouseup', terminar);
+        canvas.addEventListener('mouseleave', terminar);
+        canvas.addEventListener('touchstart', iniciar);
+        canvas.addEventListener('touchmove', mover);
+        canvas.addEventListener('touchend', terminar);
+        _consentCanvasInit = true;
+    }
+
+    function _consentLimpiarFirma() {
+        var canvas = document.getElementById('consentCanvasFirma');
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        _consentCanvasTieneTrazo = false;
+    }
+
+    // Abre el modal de firma para pacienteIdx (índice en pacientes[]) + prestacionId. Se abre
+    // tanto desde el bloqueo dentro de modalEvolucion (el botón "Firmar consentimiento ahora"
+    // del aviso rojo) como, opcionalmente, desde cualquier otro lugar (ej. Ficha Clínica). Si
+    // modalEvolucion está abierto en ese momento, queda seteado el callback que reintenta
+    // guardarEvolucion() automáticamente al firmar, para no obligar al usuario a tocar
+    // "Guardar" dos veces.
+    function abrirModalConsentimiento(pacienteIdx, prestacionId) {
+        var p = pacientes[pacienteIdx];
+        var prest = prestaciones.filter(function(pr) { return pr.id === prestacionId; })[0];
+        if (!p || !prest) { alert('Paciente o prestación no encontrados.'); return; }
+        _consentPacIdx = pacienteIdx;
+        _consentPrestId = prestacionId;
+        var modalEvo = document.getElementById('modalEvolucion');
+        _consentPendienteCallback = (modalEvo && modalEvo.classList.contains('active')) ? guardarEvolucion : null;
+
+        var profNombre = '';
+        var profSel = document.getElementById('evoProfesional');
+        if (profSel && profSel.value) {
+            var prof = profesionales.filter(function(pr) { return pr.id === profSel.value; })[0];
+            profNombre = prof ? (prof.nombre || '') : '';
+        }
+        var textoRenderizado = _consentimientoRenderizarTexto(p.nombre || '', prest.nombre || '', profNombre);
+        var docEl = document.getElementById('consentTextoDoc');
+        if (docEl) docEl.textContent = textoRenderizado;
+        var firmanteEl = document.getElementById('consentFirmante');
+        if (firmanteEl) firmanteEl.value = '';
+        var aceptoEl = document.getElementById('consentAcepto');
+        if (aceptoEl) aceptoEl.checked = false;
+        _consentInicializarCanvas();
+        _consentLimpiarFirma();
+        document.getElementById('modalConsentimiento').classList.add('active');
+    }
+
+    function cerrarModalConsentimiento() {
+        document.getElementById('modalConsentimiento').classList.remove('active');
+    }
+
+    function guardarConsentimiento() {
+        var p = pacientes[_consentPacIdx];
+        var prest = prestaciones.filter(function(pr) { return pr.id === _consentPrestId; })[0];
+        if (!p || !prest) { alert('Paciente o prestación no encontrados.'); return; }
+        var firmante = (document.getElementById('consentFirmante').value || '').trim();
+        if (!firmante) { alert('Ingresá el nombre completo de quien firma.'); return; }
+        if (!_consentCanvasTieneTrazo) { alert('Falta dibujar la firma en el recuadro.'); return; }
+        if (!document.getElementById('consentAcepto').checked) { alert('Tenés que confirmar que leíste y aceptás el texto de arriba.'); return; }
+
+        var canvas = document.getElementById('consentCanvasFirma');
+        var docEl = document.getElementById('consentTextoDoc');
+        var registro = {
+            id:                 'consent_' + Date.now(),
+            pacienteId:         p.id,
+            prestacionId:       prest.id,
+            prestacionNombre:   prest.nombre || '',
+            textoFirmado:       docEl ? docEl.textContent : '',
+            firmante:           firmante,
+            firmaImagenDataUrl: canvas.toDataURL('image/png'),
+            dispositivo:        navigator.userAgent,
+            fecha:              new Date().toISOString().slice(0, 10),
+            creadoEn:           Date.now(),
+            revocado:           false
+        };
+        consentimientos.push(registro);
+        persistirConsentimientos();
+        cerrarModalConsentimiento();
+
+        if (typeof _fichaClinicaPacIdx !== 'undefined' && _fichaClinicaPacIdx >= 0 && typeof _renderFichaClinicaConsentimientos === 'function') {
+            _renderFichaClinicaConsentimientos(_fichaClinicaPacIdx);
+        }
+        // Refresca el aviso de evolución (verde/rojo) si el modal sigue abierto.
+        if (typeof _evoAlCambiarPrestacion === 'function' && document.getElementById('modalEvolucion') && document.getElementById('modalEvolucion').classList.contains('active')) {
+            _evoAlCambiarPrestacion();
+        }
+        var cb = _consentPendienteCallback;
+        _consentPendienteCallback = null;
+        if (cb) cb(); else alert('✓ Consentimiento firmado y guardado.');
     }
 
     // ══════════════════════════════════════════════════════════
@@ -14590,6 +14808,7 @@
         renderOdontograma(idx, 'fichaClinicaOdontograma', false);
         _renderFichaClinicaPlanes(idx);
         _renderEvolucionesFicha(idx);
+        _renderFichaClinicaConsentimientos(idx);
         document.getElementById('modalHistoriaClinica').classList.add('active');
     }
 
@@ -14624,6 +14843,55 @@
     function abrirModalEvolucionDesdeFicha() {
         if (_fichaClinicaPacIdx < 0) { alert('Abrí primero la ficha de un paciente.'); return; }
         abrirModalEvolucion(_fichaClinicaPacIdx);
+    }
+
+    // Feature 5 (consentimientos, solo lectura): lista los consentimientos firmados de este
+    // paciente dentro de la Ficha Clínica. "Ver" abre el documento completo en una ventana
+    // nueva (texto + firma dibujada + metadata de evidencia), mismo patrón que los demás
+    // documentos imprimibles del sistema (_rCSS()).
+    function _renderFichaClinicaConsentimientos(pacienteIdx) {
+        var p = pacientes[pacienteIdx];
+        var cont = document.getElementById('fichaClinicaConsentimientos');
+        if (!p || !cont) return;
+        var lista = consentimientos.filter(function(c) { return c.pacienteId === p.id; })
+            .slice().sort(function(a, b) { return (b.creadoEn || 0) - (a.creadoEn || 0); });
+        if (!lista.length) { cont.innerHTML = '<div class="empty-msg" style="padding:14px;">Sin consentimientos firmados todavía.</div>'; return; }
+        cont.innerHTML = lista.map(function(c) {
+            return '<div style="padding:10px 16px;border-bottom:1px solid var(--border,#eee);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">' +
+                '<div>' +
+                    '<strong>' + escHtml(c.prestacionNombre || '—') + '</strong>' +
+                    (c.revocado ? ' · <span style="color:var(--danger);">Revocado</span>' : '') +
+                    '<div style="font-size:12px;color:var(--text-3);margin-top:2px;">Firmado por ' + escHtml(c.firmante || '—') + ' el ' + (c.fecha ? formatearFecha(c.fecha) : '—') + '</div>' +
+                '</div>' +
+                '<button type="button" class="btn btn-outline btn-sm" onclick="verConsentimiento(\'' + c.id + '\')">👁️ Ver</button>' +
+            '</div>';
+        }).join('');
+    }
+
+    // Abre en una ventana nueva el documento completo del consentimiento: texto firmado
+    // (snapshot exacto, no el texto base actual), firma dibujada, y metadata de evidencia
+    // (quién, cuándo, dispositivo) — lo que exige la Ley 25.506 para la firma electrónica.
+    function verConsentimiento(consentId) {
+        var c = consentimientos.filter(function(x) { return x.id === consentId; })[0];
+        if (!c) { alert('Consentimiento no encontrado.'); return; }
+        var emp = (typeof getEmpresaParaRecibo === 'function') ? getEmpresaParaRecibo() : { nombre: '' };
+        var html = '<html><head><meta charset="UTF-8"><title>Consentimiento informado</title>' + _rCSS() + '</head><body><div class="pg">' +
+            '<div class="cab-titulo">Consentimiento informado' + (c.revocado ? ' — REVOCADO' : '') + '</div>' +
+            '<div style="white-space:pre-wrap;font-size:13px;line-height:1.6;padding:16px 0;border-bottom:1px solid var(--line);margin-bottom:16px;">' + escHtml(c.textoFirmado || '') + '</div>' +
+            '<div style="margin-bottom:16px;"><strong>Firma:</strong><br>' +
+            (c.firmaImagenDataUrl ? ('<img src="' + c.firmaImagenDataUrl + '" style="border:1px solid var(--line);border-radius:6px;max-width:400px;">') : '<em>Sin imagen de firma.</em>') +
+            '</div>' +
+            '<div style="font-size:12px;color:var(--muted);line-height:1.9;">' +
+                '<div><strong>Firmante:</strong> ' + escHtml(c.firmante || '—') + '</div>' +
+                '<div><strong>Fecha:</strong> ' + (c.fecha ? formatearFecha(c.fecha) : '—') + '</div>' +
+                '<div><strong>Dispositivo:</strong> ' + escHtml(c.dispositivo || '—') + '</div>' +
+                '<div><strong>Registrado:</strong> ' + (c.creadoEn ? new Date(c.creadoEn).toLocaleString('es-AR') : '—') + '</div>' +
+            '</div>' +
+            '<div class="pie">' + escHtml(emp.nombre || '') + '</div>' +
+            '</div></body></html>';
+        var w = window.open('', '_blank', 'width=780,height=950');
+        if (!w) { alert('Permití las ventanas emergentes.'); return; }
+        w.document.write(html); w.document.close();
     }
 
     // ══════════════════════════════════════════════════════════
@@ -14676,8 +14944,9 @@
         _odoCerrarPopup();
     }
 
-    // Al elegir prestación: precarga el monto de referencia y avisa si requiere consentimiento.
-    // TODO Fase 4: bloquear guardado real hasta que exista consentimiento firmado (hoy es solo aviso).
+    // Al elegir prestación: precarga el monto de referencia y, si la prestación requiere
+    // consentimiento, muestra si YA hay uno firmado (verde, informativo) o si FALTA (rojo,
+    // con botón para firmar sin salir del flujo). El bloqueo REAL está en guardarEvolucion().
     function _evoAlCambiarPrestacion() {
         var selPrest = document.getElementById('evoPrestacion');
         var prest = prestaciones.filter(function(p) { return p.id === selPrest.value; })[0];
@@ -14685,7 +14954,25 @@
         var aviso = document.getElementById('evoAvisoConsentimiento');
         if (prest) {
             if (montoEl && (montoEl.value === '' || montoEl.value === '0')) montoEl.value = prest.precioReferencia || '';
-            aviso.style.display = prest.requiereConsentimiento ? '' : 'none';
+            if (prest.requiereConsentimiento) {
+                var pac = pacientes[_evoPacienteIdx];
+                var consent = pac ? _consentimientoVigente(pac.id, prest.id) : null;
+                aviso.style.display = '';
+                if (consent) {
+                    aviso.style.background = 'var(--success-bg)';
+                    aviso.style.borderColor = 'var(--success)';
+                    aviso.style.color = 'var(--success)';
+                    aviso.innerHTML = '✓ Consentimiento firmado por ' + escHtml(consent.firmante || '—') + ' el ' + (consent.fecha ? formatearFecha(consent.fecha) : '—') + '.';
+                } else {
+                    aviso.style.background = 'var(--danger-bg)';
+                    aviso.style.borderColor = 'var(--danger)';
+                    aviso.style.color = 'var(--danger)';
+                    aviso.innerHTML = '⚠️ Esta prestación requiere consentimiento firmado y todavía no existe uno para este paciente. ' +
+                        '<button type="button" class="btn btn-gold btn-sm" style="margin-left:6px;" onclick="abrirModalConsentimiento(_evoPacienteIdx, \'' + prest.id + '\')">✍️ Firmar consentimiento ahora</button>';
+                }
+            } else {
+                aviso.style.display = 'none';
+            }
         } else {
             aviso.style.display = 'none';
         }
@@ -14753,6 +15040,14 @@
         var prof  = profesionales.filter(function(pr) { return pr.id === profId; })[0];
         var prest = prestaciones.filter(function(pr) { return pr.id === prestId; })[0];
         if (!prof || !prest) { alert('Profesional o prestación no encontrados.'); return; }
+
+        // Consentimiento electrónico con evidencia (Fase 4): bloqueo REAL, no solo visual.
+        // Si la prestación requiere consentimiento y no hay uno vigente para este
+        // paciente+prestación, se cancela el guardado (return) antes de tocar nada más.
+        if (prest.requiereConsentimiento && !_consentimientoVigente(p.id, prest.id)) {
+            alert('Esta prestación requiere consentimiento informado firmado. Firmalo antes de guardar la evolución (usá el botón "Firmar consentimiento ahora" que aparece arriba, en el aviso rojo).');
+            return;
+        }
 
         var piezasSel = (_odoObtenerSeleccion() || []).map(function(s) { return { pieza: s.pieza, cara: s.cara || null }; });
         var estadoRegistrado = document.getElementById('evoEstadoRegistrado').value || null;
@@ -20871,6 +21166,12 @@
         </div>
         <div id="fichaClinicaEvoluciones"></div>
       </div>
+      <div class="table-card" style="margin-top:18px;">
+        <div class="table-card-head">
+          <h3>📋 Consentimientos firmados</h3>
+        </div>
+        <div id="fichaClinicaConsentimientos"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -20897,9 +21198,7 @@
           <select id="evoPrestacion" onchange="_evoAlCambiarPrestacion()"><option value="">— Elegir —</option></select>
         </div>
       </div>
-      <div id="evoAvisoConsentimiento" style="display:none; background:#FFF3CD; border:1px solid #FFC107; color:#7a5b00; padding:8px 12px; border-radius:6px; font-size:12.5px; margin-bottom:10px;">
-        ⚠️ Esta prestación requiere consentimiento firmado. (Módulo de consentimientos: pendiente — Fase 4)
-      </div>
+      <div id="evoAvisoConsentimiento" style="display:none; border:1px solid; padding:8px 12px; border-radius:6px; font-size:12.5px; margin-bottom:10px;"></div>
       <div class="form-group">
         <label>Odontograma — marcá las piezas/caras de esta evolución (opcional)</label>
         <div id="evoModoSeleccionOdontograma"></div>
@@ -20944,6 +21243,42 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" onclick="cerrarModalEvolucion()">Cancelar</button>
         <button type="button" class="btn btn-gold" onclick="guardarEvolucion()">💾 Guardar Evolución</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL: CONSENTIMIENTO INFORMADO (firma con evidencia) ═══════════════ -->
+<div class="modal" id="modalConsentimiento">
+  <div class="modal-box" style="max-width:640px;max-height:94vh;">
+    <div class="modal-head">
+      <h2>✍️ Firmar consentimiento informado</h2>
+      <button class="modal-close" onclick="cerrarModalConsentimiento()">✕</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto; max-height:calc(94vh - 90px);">
+      <div class="form-group">
+        <label>Texto del consentimiento</label>
+        <div id="consentTextoDoc" style="background:#fff; border:1px solid var(--border); border-radius:6px; padding:14px 16px; white-space:pre-wrap; max-height:260px; overflow-y:auto; font-size:13px; color:#1a1a1a; line-height:1.6;"></div>
+      </div>
+      <div class="form-group">
+        <label>Nombre completo de quien firma *</label>
+        <input type="text" id="consentFirmante" placeholder="Nombre y apellido (paciente o representante)">
+      </div>
+      <div class="form-group">
+        <label>Firma</label>
+        <div>
+          <canvas id="consentCanvasFirma" width="500" height="150" style="border:1px solid var(--border); border-radius:6px; touch-action:none; cursor:crosshair; background:#fff; max-width:100%;"></canvas>
+        </div>
+        <button type="button" class="btn btn-outline btn-sm" style="margin-top:6px;" onclick="_consentLimpiarFirma()">🗑️ Limpiar firma</button>
+      </div>
+      <div class="form-group">
+        <label style="display:flex; align-items:center; gap:8px; font-weight:400;">
+          <input type="checkbox" id="consentAcepto"> Confirmo que leí y acepto el texto de arriba.
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="cerrarModalConsentimiento()">Cancelar</button>
+        <button type="button" class="btn btn-gold" onclick="guardarConsentimiento()">✍️ Firmar y confirmar</button>
       </div>
     </div>
   </div>
