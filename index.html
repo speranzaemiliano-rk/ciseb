@@ -2230,6 +2230,7 @@
         .odo-cara.odo-v { grid-area: v; } .odo-cara.odo-p { grid-area: p; } .odo-cara.odo-m { grid-area: m; } .odo-cara.odo-d { grid-area: d; } .odo-cara.odo-o { grid-area: o; }
         .odo-cara.odo-disabled { cursor: default; background: repeating-linear-gradient(45deg, #eee, #eee 2px, #f7f7f7 2px, #f7f7f7 4px); }
         .odo-real-dot { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: #222; border: 1px solid #fff; top: -3px; right: -3px; z-index: 2; }
+        .odo-plan-mark { position: absolute; width: 7px; height: 7px; border: 2px dashed var(--gold); background: transparent; top: -3px; left: -3px; z-index: 2; box-sizing: border-box; transform: rotate(45deg); pointer-events: none; }
         .odo-ausente-x { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; color: rgba(120,10,10,.55); font-weight: 700; pointer-events: none; }
         .odo-leyenda { display: flex; flex-wrap: wrap; gap: 10px; font-size: 10.5px; color: var(--text-3, #777); justify-content: center; }
         .odo-leyenda .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 3px; vertical-align: middle; border: 1px solid rgba(0,0,0,.15); }
@@ -14544,13 +14545,13 @@
 
     function _odoEstadoVacio() {
         return {
-            piezaEstado: { inicial: null, realizado: null },
+            piezaEstado: { inicial: null, realizado: null, planificado: null },
             caras: {
-                V: { inicial: null, realizado: null },
-                P: { inicial: null, realizado: null },
-                M: { inicial: null, realizado: null },
-                D: { inicial: null, realizado: null },
-                O: { inicial: null, realizado: null }
+                V: { inicial: null, realizado: null, planificado: null },
+                P: { inicial: null, realizado: null, planificado: null },
+                M: { inicial: null, realizado: null, planificado: null },
+                D: { inicial: null, realizado: null, planificado: null },
+                O: { inicial: null, realizado: null, planificado: null }
             }
         };
     }
@@ -14581,6 +14582,26 @@
         } else {
             if (!p.odontograma[pieza].piezaEstado) p.odontograma[pieza].piezaEstado = { inicial: null, realizado: null };
             p.odontograma[pieza].piezaEstado.inicial = estado || null;
+        }
+        persistirPacientes();
+    }
+
+    // Capa 'planificado' (Fase 4, Planes de Tratamiento — aditivo). Análoga a _odoSetInicial
+    // pero standalone y reutilizable: la usa abrirModalEtapasPlan/_etapaMarcarPlanificado al
+    // "activar" la planificación de una etapa, volcando al odontograma qué se va a hacer en
+    // cada pieza/cara según lo cargado en el plan. cara=null → aplica a piezaEstado completa.
+    // NUNCA toca 'inicial' ni 'realizado'.
+    function _odoSetPlanificado(pacienteIdx, pieza, cara, estado) {
+        var p = pacientes[pacienteIdx];
+        if (!p) return;
+        if (!p.odontograma) p.odontograma = {};
+        if (!p.odontograma[pieza]) p.odontograma[pieza] = _odoEstadoVacio();
+        if (cara) {
+            if (!p.odontograma[pieza].caras[cara]) p.odontograma[pieza].caras[cara] = { inicial: null, realizado: null, planificado: null };
+            p.odontograma[pieza].caras[cara].planificado = estado || null;
+        } else {
+            if (!p.odontograma[pieza].piezaEstado) p.odontograma[pieza].piezaEstado = { inicial: null, realizado: null, planificado: null };
+            p.odontograma[pieza].piezaEstado.planificado = estado || null;
         }
         persistirPacientes();
     }
@@ -14633,6 +14654,7 @@
             '<span><span class="sw" style="background:#E67E22;border-style:dashed;"></span>Indic. extracción</span>' +
             '<span><span class="sw" style="background:repeating-linear-gradient(45deg,#999,#999 2px,#eee 2px,#eee 4px);"></span>Ausente</span>' +
             '<span>● negro = registrado por Evolución (solo lectura)</span>' +
+            '<span>◇ dorado punteado = planificado (plan de tratamiento)</span>' +
             (modoSel ? '<span style="color:var(--gold-light);font-weight:600;">Click para seleccionar piezas/caras de esta evolución</span>' : '') +
             '</div>';
         html += '</div>';
@@ -14668,22 +14690,29 @@
                 carasHtml += '<div class="odo-cara odo-o odo-disabled" title="No aplica en esta pieza"></div>';
                 return;
             }
-            var cd = datosPieza.caras[cara] || { inicial: null, realizado: null };
+            var cd = datosPieza.caras[cara] || { inicial: null, realizado: null, planificado: null };
             var color = cd.inicial ? ODO_COLOR_CARA[cd.inicial] : 'transparent';
             var seleccionadaCara = modoSeleccionMultiple && _odoEstaSeleccionado(pieza, cara);
             var dot = cd.realizado ? '<span class="odo-real-dot" title="Realizado (evolución): ' + (ODO_LABEL_CARA[cd.realizado] || cd.realizado) + '"></span>' : '';
+            // Capa 'planificado' (Fase 4, aditivo): marca aparte, no pisa el punto de 'realizado'
+            // (van en esquinas distintas — ver .odo-plan-mark / .odo-real-dot — para que ambas
+            // se puedan ver a la vez si una cara tiene planificado Y realizado).
+            var planMark = cd.planificado ? '<span class="odo-plan-mark" title="Planificado: ' + (ODO_LABEL_CARA[cd.planificado] || ODO_LABEL_PIEZA[cd.planificado] || cd.planificado) + '"></span>' : '';
             var cls = 'odo-cara odo-' + cara.toLowerCase() + (seleccionadaCara ? ' odo-selected' : '');
             var tt = pieza + ' — ' + cara + (cd.inicial ? (': ' + (ODO_LABEL_CARA[cd.inicial] || cd.inicial)) : ': sano');
             carasHtml += '<div class="' + cls + '" style="background:' + color + ';" title="' + escHtml(tt) + '" ' +
-                'onclick="_odoClickCara(this,\'' + containerId + '\',\'' + pieza + '\',\'' + cara + '\')">' + dot + '</div>';
+                'onclick="_odoClickCara(this,\'' + containerId + '\',\'' + pieza + '\',\'' + cara + '\')">' + dot + planMark + '</div>';
         });
 
         var ausenteMark = (pe.inicial === 'ausente') ? '<div class="odo-ausente-x">✕</div>' : '';
         var realizadoPiezaDot = pe.realizado ? '<span class="odo-real-dot" style="top:auto;bottom:-3px;left:-3px;right:auto;" title="Realizado (evolución): ' + (ODO_LABEL_PIEZA[pe.realizado] || pe.realizado) + '"></span>' : '';
+        // Capa 'planificado' a nivel pieza completa: esquina opuesta a la del dot de 'realizado'
+        // de pieza (bottom-left), así conviven las dos si hace falta.
+        var planMarkPieza = pe.planificado ? '<span class="odo-plan-mark" style="top:auto;right:-3px;bottom:-3px;left:auto;" title="Planificado: ' + (ODO_LABEL_PIEZA[pe.planificado] || ODO_LABEL_CARA[pe.planificado] || pe.planificado) + '"></span>' : '';
 
         return '<div class="odo-pieza">' +
             '<div class="' + wrapClass + '">' +
-                '<div class="odo-pieza-grid">' + carasHtml + ausenteMark + realizadoPiezaDot + '</div>' +
+                '<div class="odo-pieza-grid">' + carasHtml + ausenteMark + realizadoPiezaDot + planMarkPieza + '</div>' +
             '</div>' +
             '<div class="odo-pieza-num" title="' + escHtml(pieza + (pe.inicial ? (' — ' + (ODO_LABEL_PIEZA[pe.inicial] || pe.inicial)) : '')) + '" ' +
                 'onclick="_odoClickPieza(this,\'' + containerId + '\',\'' + pieza + '\')">' + pieza + '</div>' +
@@ -15137,6 +15166,38 @@
         // en la ficha clínica (si sigue abierta).
         if (evo.planTratId && typeof _renderFichaClinicaPlanes === 'function') _renderFichaClinicaPlanes(_evoPacienteIdx);
         if (typeof renderCobros === 'function') renderCobros();
+
+        // Fase 4 (mejora opcional, aditiva): si la evolución se imputó a un plan por etapas y
+        // las piezas marcadas coinciden EXACTO con las de alguna prestación planificada de ese
+        // plan, se marca esa prestación (y, si con eso quedan todas hechas, la etapa entera)
+        // como completada automáticamente. Solo mejora la experiencia — si no matchea nada, no
+        // hace nada; nunca puede romper el guardado de la evolución (try/catch propio).
+        if (evo.planTratId && piezasSel.length) {
+            try {
+                var planIdxAuto = planesTrat.findIndex(function(pl) { return pl.id === evo.planTratId; });
+                if (planIdxAuto >= 0 && planesTrat[planIdxAuto].etapas && planesTrat[planIdxAuto].etapas.length) {
+                    var huboCambios = false;
+                    var claveSel = piezasSel.map(function(s) { return s.pieza + '|' + (s.cara || ''); }).sort().join(',');
+                    planesTrat[planIdxAuto].etapas.forEach(function(et) {
+                        (et.prestaciones || []).forEach(function(pr) {
+                            if (pr.completada || !(pr.piezas || []).length) return;
+                            var clavePr = pr.piezas.map(function(s) { return s.pieza + '|' + (s.cara || ''); }).sort().join(',');
+                            if (clavePr === claveSel) { pr.completada = true; huboCambios = true; }
+                        });
+                        if (et.prestaciones && et.prestaciones.length && et.prestaciones.every(function(pr) { return pr.completada; }) && !et.completada) {
+                            et.completada = true; huboCambios = true;
+                        }
+                    });
+                    if (huboCambios) {
+                        persistirPlanesTrat();
+                        if (typeof _renderFichaClinicaPlanes === 'function') _renderFichaClinicaPlanes(_evoPacienteIdx);
+                    }
+                }
+            } catch (eAutoCompletarEtapa) {
+                console.error('Auto-completar etapa desde evolución (mejora opcional) falló:', eAutoCompletarEtapa);
+            }
+        }
+
         alert('✓ Evolución guardada. Odontograma y cobro actualizados.');
     }
 
@@ -15342,7 +15403,11 @@
             cuotaMonto:    cuotaStr === '' ? null : (parseFloat(cuotaStr) || null),
             fechaInicio:   document.getElementById('planTratFechaInicio').value || new Date().toISOString().slice(0, 10),
             estado:        prev ? (prev.estado || 'activo') : 'activo',
-            notas:         (document.getElementById('planTratNotas').value || '').trim()
+            notas:         (document.getElementById('planTratNotas').value || '').trim(),
+            // Fase 4 (aditivo): plan de tratamiento por etapas. Si el plan es nuevo o nunca tuvo
+            // etapas cargadas, queda [] — el plan se comporta EXACTO igual que antes (monto total
+            // fijo + esquema de pago). Se edita desde abrirModalEtapasPlan/guardarEtapasPlan.
+            etapas:        prev ? (prev.etapas || []) : []
         };
         if (editandoPlanTratIdx >= 0) planesTrat[editandoPlanTratIdx] = plan; else planesTrat.push(plan);
         persistirPlanesTrat();
@@ -15410,12 +15475,524 @@
                 '<div style="font-size:11px;color:var(--text-3);margin-top:2px;">' + avance + '% cobrado</div>' +
                 '<div class="action-btns" style="margin-top:8px;">' +
                     '<button class="btn btn-gold btn-sm" onclick="abrirModalRegistrarPago(' + idx + ')">💰 Registrar Pago</button>' +
+                    '<button class="btn btn-outline btn-sm" onclick="abrirModalEtapasPlan(' + idx + ')" title="Etapas del plan">📋 Etapas' + ((pl.etapas && pl.etapas.length) ? ' (' + pl.etapas.length + ')' : '') + '</button>' +
                     '<button class="btn btn-outline btn-sm" onclick="editarPlanTrat(' + idx + ')" title="Editar">✏</button>' +
                     '<button class="btn btn-outline btn-sm" onclick="toggleEstadoPlanTrat(' + idx + ')" title="Cambiar estado">' + (pl.estado === 'activo' ? '🔒 Cerrar' : '🔓 Reabrir') + '</button>' +
                     (typeof btnElim === 'function' ? btnElim('plantrat', idx) : '<button class="btn btn-danger-sm" onclick="eliminarPlanTrat(' + idx + ')">✕</button>') +
                 '</div>' +
             '</div>';
         }).join('');
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // ETAPAS DEL PLAN DE TRATAMIENTO — Fase 4 (aditivo sobre planesTrat)
+    // ══════════════════════════════════════════════════════════
+    // Un plan SIN etapas (plan.etapas vacío o inexistente) sigue comportándose EXACTO igual que
+    // antes: monto total fijo + esquema de pago + Registrar Pago. Esto agrega, por encima, un
+    // desglose opcional en etapas → prestaciones → piezas/caras, con documento imprimible y
+    // aceptación firmada por el paciente. Nada de lo de arriba (_planTratTotalCobrado,
+    // _renderFichaClinicaPlanes, guardarPlanTrat sin etapas) cambia su comportamiento.
+    //
+    // Estructura de plan.etapas:
+    //   [{ id, nombre, completada, prestaciones: [{ prestacionId, prestacionNombre, precio,
+    //      piezas:[{pieza,cara}], estadoAplicar, completada }] }]
+    //
+    // Patrón de filas dinámicas: igual que _empConceptoHTML/profAgregarBeneficiarioFila — se
+    // arma HTML con insertAdjacentHTML, se guarda leyendo document.querySelectorAll al final
+    // (guardarEtapasPlan), no hay un "estado en memoria" paralelo al DOM.
+    var _etapasPlanIdx = -1;
+    var _etapasPacienteId = null;
+
+    // Mismas 8 opciones de estado que usa Evolución (evoEstadoRegistrado) — ver ODO_LABEL_CARA /
+    // ODO_LABEL_PIEZA. Es el estado que se aplica a la capa 'planificado' del odontograma cuando
+    // se activa la planificación de una etapa.
+    var ETAPA_ESTADO_APLICAR_OPCIONES = [
+        { v: 'caries',                label: 'Caries' },
+        { v: 'obturado',              label: 'Obturado' },
+        { v: 'sellante',              label: 'Sellante' },
+        { v: 'endodoncia',            label: 'Endodoncia' },
+        { v: 'ausente',               label: 'Ausente (pieza completa)' },
+        { v: 'corona',                label: 'Corona (pieza completa)' },
+        { v: 'implante',              label: 'Implante (pieza completa)' },
+        { v: 'indicacion_extraccion', label: 'Indicación de extracción (pieza completa)' }
+    ];
+
+    function _etapaPiezasChipTexto(piezas) {
+        piezas = piezas || [];
+        if (!piezas.length) return 'Sin piezas asociadas';
+        return piezas.map(function(s) { return s.pieza + (s.cara ? ('-' + s.cara) : ''); }).join(', ');
+    }
+
+    // Arma el HTML de una fila de prestación dentro de una etapa (patrón _empConceptoHTML).
+    function _etapaPrestFilaHTML(pr) {
+        pr = pr || {};
+        var rowId = pr._rowId || ('etapaprest_' + Date.now() + '_' + Math.floor(Math.random() * 100000));
+        var opcionesPrest = '<option value="">— Elegir prestación —</option>' + prestaciones.map(function(p) {
+            return '<option value="' + escHtml(p.id || '') + '"' + (p.id === pr.prestacionId ? ' selected' : '') + '>' + escHtml(p.nombre || '(sin nombre)') + '</option>';
+        }).join('');
+        var opcionesEstado = ETAPA_ESTADO_APLICAR_OPCIONES.map(function(o) {
+            return '<option value="' + o.v + '"' + (o.v === pr.estadoAplicar ? ' selected' : '') + '>' + escHtml(o.label) + '</option>';
+        }).join('');
+        var piezasJson = JSON.stringify(pr.piezas || []).replace(/'/g, '&#39;');
+        return '<div class="etapa-prest-fila" data-row-id="' + rowId + '" data-piezas=\'' + piezasJson + '\' ' +
+            'style="display:grid;grid-template-columns:1.6fr 100px 1.4fr auto auto auto;gap:6px;align-items:center;margin-bottom:6px;">' +
+            '<select class="etapa-prest-select" onchange="_etapaPrestAlCambiarPrestacion(this)">' + opcionesPrest + '</select>' +
+            '<input type="number" class="etapa-prest-precio" min="0" step="0.01" placeholder="$" value="' + (pr.precio !== null && pr.precio !== undefined && pr.precio !== '' ? pr.precio : '') + '" oninput="_etapaRecalcularTotal()">' +
+            '<select class="etapa-prest-estado" title="Estado a aplicar en el odontograma al planificar">' + opcionesEstado + '</select>' +
+            '<label style="display:flex;align-items:center;gap:3px;font-size:11px;font-weight:400;white-space:nowrap;"><input type="checkbox" class="etapa-prest-completada"' + (pr.completada ? ' checked' : '') + '> Hecha</label>' +
+            '<button type="button" class="btn btn-outline btn-sm" onclick="_etapaPrestTogglePiezas(this)" title="Elegir piezas/caras">🦷 Piezas</button>' +
+            '<button type="button" class="btn btn-danger-sm" onclick="this.closest(\'.etapa-prest-fila\').remove();_etapaRecalcularTotal();" title="Quitar prestación">✕</button>' +
+            '<div class="etapa-prest-piezas-chip" style="grid-column:1/-1;font-size:11px;color:var(--text-3);">' + escHtml(_etapaPiezasChipTexto(pr.piezas)) + '</div>' +
+            '<div class="etapa-prest-odo-panel" id="etapaOdoPanel_' + rowId + '" style="grid-column:1/-1;display:none;border-top:1px dashed var(--border,#ddd);padding-top:8px;margin-top:2px;"></div>' +
+        '</div>';
+    }
+
+    // Arma el HTML de una card de etapa (con sus filas de prestación adentro).
+    function _etapaCardHTML(etapa) {
+        etapa = etapa || {};
+        var prestHtml = (etapa.prestaciones || []).map(function(pr) { return _etapaPrestFilaHTML(pr); }).join('');
+        return '<div class="etapa-card" data-etapa-id="' + (etapa.id || ('etapa_' + Date.now() + '_' + Math.floor(Math.random() * 100000))) + '" ' +
+            'style="border:1px solid var(--border,#eee);border-radius:8px;padding:12px 14px;margin-bottom:14px;background:var(--bg-2,#fafafa);">' +
+            '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">' +
+                '<input type="text" class="etapa-nombre" value="' + escHtml(etapa.nombre || '') + '" placeholder="Nombre de la etapa" style="flex:1;min-width:160px;font-weight:600;">' +
+                '<label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:400;white-space:nowrap;"><input type="checkbox" class="etapa-completada"' + (etapa.completada ? ' checked' : '') + '> Completada</label>' +
+                '<button type="button" class="btn btn-outline btn-sm" onclick="_etapaMarcarPlanificado(this)" title="Vuelca las piezas de esta etapa a la capa planificado del odontograma">📌 Marcar como planificado</button>' +
+                '<button type="button" class="btn btn-danger-sm" onclick="_etapaEliminarCard(this)" title="Eliminar etapa">🗑</button>' +
+            '</div>' +
+            '<div class="etapa-prestaciones-lista">' + prestHtml + '</div>' +
+            '<button type="button" class="btn btn-outline btn-sm" onclick="_etapaAgregarPrestacion(this)">+ Agregar prestación</button>' +
+        '</div>';
+    }
+
+    function abrirModalEtapasPlan(planIdx) {
+        var plan = planesTrat[planIdx];
+        if (!plan) { alert('Plan no encontrado.'); return; }
+        var pac = pacientes.filter(function(p) { return p.id === plan.pacienteId; })[0];
+        _etapasPlanIdx = planIdx;
+        _etapasPacienteId = plan.pacienteId;
+        document.getElementById('etapasPlanHeaderDesc').textContent = plan.descripcion || '(sin descripción)';
+        document.getElementById('etapasPlanHeaderPaciente').textContent = pac ? ('Paciente: ' + (pac.nombre || '(sin nombre)')) : '(paciente no encontrado)';
+        var lista = document.getElementById('etapasPlanLista');
+        lista.innerHTML = (plan.etapas || []).map(function(et) { return _etapaCardHTML(et); }).join('');
+        _etapaRecalcularTotal();
+        _etapaRenderAceptacion();
+        document.getElementById('modalEtapasPlan').classList.add('active');
+    }
+
+    function cerrarModalEtapasPlan() {
+        document.getElementById('modalEtapasPlan').classList.remove('active');
+    }
+
+    function _etapaAgregarEtapa() {
+        var lista = document.getElementById('etapasPlanLista');
+        if (!lista) return;
+        var n = lista.querySelectorAll('.etapa-card').length + 1;
+        var etapa = { id: 'etapa_' + Date.now() + '_' + Math.floor(Math.random() * 100000), nombre: 'Etapa ' + n, completada: false, prestaciones: [] };
+        lista.insertAdjacentHTML('beforeend', _etapaCardHTML(etapa));
+    }
+
+    function _etapaEliminarCard(btn) {
+        if (!confirm('¿Eliminar esta etapa y sus prestaciones? Esto no afecta piezas ya marcadas en el odontograma, solo el plan.')) return;
+        var card = btn.closest('.etapa-card');
+        if (card) card.remove();
+        _etapaRecalcularTotal();
+    }
+
+    function _etapaAgregarPrestacion(btn) {
+        var card = btn.closest('.etapa-card');
+        if (!card) return;
+        var lista = card.querySelector('.etapa-prestaciones-lista');
+        lista.insertAdjacentHTML('beforeend', _etapaPrestFilaHTML({}));
+    }
+
+    function _etapaPrestAlCambiarPrestacion(sel) {
+        var fila = sel.closest('.etapa-prest-fila');
+        var prest = prestaciones.filter(function(p) { return p.id === sel.value; })[0];
+        var precioInput = fila ? fila.querySelector('.etapa-prest-precio') : null;
+        if (prest && precioInput && (precioInput.value === '' || precioInput.value === '0')) {
+            precioInput.value = prest.precioReferencia || '';
+        }
+        _etapaRecalcularTotal();
+    }
+
+    // Total en vivo, informativo — nunca sobrescribe plan.montoTotal salvo que se clickee
+    // explícitamente "Usar este total" (_etapaUsarTotalComoMonto).
+    function _etapaRecalcularTotal() {
+        var total = 0;
+        document.querySelectorAll('#etapasPlanLista .etapa-prest-precio').forEach(function(inp) {
+            total += parseFloat(inp.value) || 0;
+        });
+        var el = document.getElementById('etapasPlanTotalCalc');
+        if (el) el.textContent = '$' + Math.round(total).toLocaleString('es-AR');
+        return total;
+    }
+
+    function _etapaUsarTotalComoMonto() {
+        var plan = planesTrat[_etapasPlanIdx];
+        if (!plan) { alert('Plan no encontrado.'); return; }
+        var total = _etapaRecalcularTotal();
+        if (!total) { alert('El total según etapas es $0 — no hay nada para usar todavía.'); return; }
+        if (!confirm('¿Reemplazar el monto total del plan ($' + Math.round(plan.montoTotal || 0).toLocaleString('es-AR') + ') por $' + Math.round(total).toLocaleString('es-AR') + ' (suma de las etapas)?')) return;
+        plan.montoTotal = total;
+        persistirPlanesTrat();
+        var pacIdx = pacientes.findIndex(function(p) { return p.id === plan.pacienteId; });
+        if (pacIdx >= 0 && typeof _renderFichaClinicaPlanes === 'function') _renderFichaClinicaPlanes(pacIdx);
+        alert('✓ Monto total del plan actualizado.');
+    }
+
+    // "Elegir piezas" de una prestación de etapa: abre el odontograma en modo selección múltiple
+    // (mismo patrón que usa Evolución — window._odoSeleccionActual/_odoObtenerSeleccion), pero
+    // dentro de un panel propio de la fila para no chocar con otras filas. Solo un panel puede
+    // estar abierto a la vez (comparten el mismo array global de selección del odontograma).
+    function _etapaPrestTogglePiezas(btn) {
+        var fila = btn.closest('.etapa-prest-fila');
+        if (!fila) return;
+        var panel = fila.querySelector('.etapa-prest-odo-panel');
+        if (!panel) return;
+        var estabaAbierto = panel.style.display !== 'none' && panel.innerHTML !== '';
+        // Cierra cualquier otro panel abierto (evita que dos odontogramas compartan la selección
+        // global _odoSeleccionActual al mismo tiempo).
+        document.querySelectorAll('#etapasPlanLista .etapa-prest-odo-panel').forEach(function(p) {
+            if (p !== panel) { p.style.display = 'none'; p.innerHTML = ''; }
+        });
+        if (estabaAbierto) {
+            panel.style.display = 'none';
+            panel.innerHTML = '';
+            _odoLimpiarSeleccion();
+            return;
+        }
+        var pacIdx = pacientes.findIndex(function(p) { return p.id === _etapasPacienteId; });
+        if (pacIdx < 0) { alert('Paciente no encontrado.'); return; }
+        var piezasActuales = [];
+        try { piezasActuales = JSON.parse(fila.getAttribute('data-piezas') || '[]'); } catch (e) { piezasActuales = []; }
+        window._odoSeleccionActual = piezasActuales.slice();
+        var panelOdoId = panel.id + '_odo';
+        panel.style.display = '';
+        panel.innerHTML = '<div id="' + panelOdoId + '"></div>' +
+            '<div style="margin-top:6px;">' +
+                '<button type="button" class="btn btn-gold btn-sm" onclick="_etapaPrestConfirmarPiezas(this)">✅ Confirmar piezas</button> ' +
+                '<button type="button" class="btn btn-outline btn-sm" onclick="_etapaPrestTogglePiezas(this)">Cancelar</button>' +
+            '</div>';
+        renderOdontograma(pacIdx, panelOdoId, true);
+    }
+
+    function _etapaPrestConfirmarPiezas(btn) {
+        var fila = btn.closest('.etapa-prest-fila');
+        if (!fila) return;
+        var panel = fila.querySelector('.etapa-prest-odo-panel');
+        var seleccion = (_odoObtenerSeleccion() || []).map(function(s) { return { pieza: s.pieza, cara: s.cara || null }; });
+        fila.setAttribute('data-piezas', JSON.stringify(seleccion));
+        var chip = fila.querySelector('.etapa-prest-piezas-chip');
+        if (chip) chip.textContent = _etapaPiezasChipTexto(seleccion);
+        if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
+        _odoLimpiarSeleccion();
+        if (typeof _odoCerrarPopup === 'function') _odoCerrarPopup();
+    }
+
+    // Lee todas las etapas/prestaciones armadas en el DOM (patrón _empLeerConceptos) y las
+    // guarda en planesTrat[idx].etapas.
+    function guardarEtapasPlan() {
+        var plan = planesTrat[_etapasPlanIdx];
+        if (!plan) { alert('Plan no encontrado.'); return; }
+        var etapas = [];
+        document.querySelectorAll('#etapasPlanLista .etapa-card').forEach(function(card) {
+            var etapaId = card.getAttribute('data-etapa-id') || ('etapa_' + Date.now() + '_' + Math.floor(Math.random() * 100000));
+            var nombre = ((card.querySelector('.etapa-nombre') || {}).value || '').trim();
+            var completadaManual = !!(card.querySelector('.etapa-completada') || {}).checked;
+            var prestacionesEtapa = [];
+            card.querySelectorAll('.etapa-prest-fila').forEach(function(fila) {
+                var selPrest = fila.querySelector('.etapa-prest-select');
+                var prestId = selPrest ? selPrest.value : '';
+                if (!prestId) return; // fila vacía sin prestación elegida: se descarta al guardar
+                var prestObj = prestaciones.filter(function(p) { return p.id === prestId; })[0];
+                var precio = parseFloat((fila.querySelector('.etapa-prest-precio') || {}).value) || 0;
+                var estadoAplicar = (fila.querySelector('.etapa-prest-estado') || {}).value || 'caries';
+                var completada = !!(fila.querySelector('.etapa-prest-completada') || {}).checked;
+                var piezas = [];
+                try { piezas = JSON.parse(fila.getAttribute('data-piezas') || '[]'); } catch (e) { piezas = []; }
+                prestacionesEtapa.push({
+                    prestacionId:     prestId,
+                    prestacionNombre: prestObj ? (prestObj.nombre || '') : '',
+                    precio:           precio,
+                    piezas:           piezas,
+                    estadoAplicar:    estadoAplicar,
+                    completada:       completada
+                });
+            });
+            var todasCompletadas = prestacionesEtapa.length > 0 && prestacionesEtapa.every(function(p) { return p.completada; });
+            etapas.push({
+                id:           etapaId,
+                nombre:       nombre || 'Etapa',
+                prestaciones: prestacionesEtapa,
+                completada:   completadaManual || todasCompletadas
+            });
+        });
+        plan.etapas = etapas;
+        persistirPlanesTrat();
+        var pacIdx = pacientes.findIndex(function(p) { return p.id === plan.pacienteId; });
+        if (pacIdx >= 0 && typeof _renderFichaClinicaPlanes === 'function') _renderFichaClinicaPlanes(pacIdx);
+        cerrarModalEtapasPlan();
+        alert('✓ Etapas guardadas.');
+    }
+
+    // "Activar planificación" de una etapa: recorre TODAS las piezas/caras de TODAS sus
+    // prestaciones y llama _odoSetPlanificado con el estado elegido en el <select> de cada
+    // prestación. Lee directo del DOM (no hace falta guardar antes), para que el profesional
+    // pueda probar la planificación antes de decidir si guarda el resto de la etapa.
+    function _etapaMarcarPlanificado(btn) {
+        var card = btn.closest('.etapa-card');
+        if (!card) return;
+        var pacIdx = pacientes.findIndex(function(p) { return p.id === _etapasPacienteId; });
+        if (pacIdx < 0) { alert('Paciente no encontrado.'); return; }
+        var totalAplicadas = 0;
+        card.querySelectorAll('.etapa-prest-fila').forEach(function(fila) {
+            var estado = (fila.querySelector('.etapa-prest-estado') || {}).value || 'caries';
+            var piezas = [];
+            try { piezas = JSON.parse(fila.getAttribute('data-piezas') || '[]'); } catch (e) { piezas = []; }
+            piezas.forEach(function(s) {
+                _odoSetPlanificado(pacIdx, s.pieza, s.cara || null, estado);
+                totalAplicadas++;
+            });
+        });
+        if (!totalAplicadas) {
+            alert('Esta etapa no tiene piezas asociadas todavía. Elegí piezas en al menos una prestación (botón "🦷 Piezas") para poder planificar en el odontograma.');
+            return;
+        }
+        if (document.getElementById('fichaClinicaOdontograma') && typeof renderOdontograma === 'function') {
+            renderOdontograma(pacIdx, 'fichaClinicaOdontograma', false);
+        }
+        alert('✓ Planificación aplicada al odontograma en ' + totalAplicadas + ' pieza(s)/cara(s) de esta etapa.');
+    }
+
+    // Arma, para el documento imprimible (presupuesto), la tabla de etapas + total.
+    function _planArmarTablaEtapasHTML(plan) {
+        var etapas = (plan && plan.etapas) || [];
+        var filas = '';
+        var total = 0;
+        etapas.forEach(function(et) {
+            var prests = et.prestaciones || [];
+            if (!prests.length) {
+                filas += '<tr><td><strong>' + escHtml(et.nombre || 'Etapa') + '</strong>' + (et.completada ? ' ✓' : '') + '<br><span style="font-size:10px;color:var(--muted);">(sin prestaciones cargadas)</span></td><td class="tr">—</td></tr>';
+                return;
+            }
+            prests.forEach(function(pr, i) {
+                var piezasTxt = _etapaPiezasChipTexto(pr.piezas);
+                filas += '<tr><td>' +
+                    (i === 0 ? ('<strong>' + escHtml(et.nombre || 'Etapa') + (et.completada ? ' ✓' : '') + '</strong><br>') : '') +
+                    escHtml(pr.prestacionNombre || '—') +
+                    (pr.piezas && pr.piezas.length ? ('<br><span style="font-size:10px;color:var(--muted);">Piezas: ' + escHtml(piezasTxt) + '</span>') : '') +
+                    (pr.completada ? ' <span style="color:#0f7e5e;">✓ realizada</span>' : '') +
+                    '</td><td class="tr">$' + Math.round(pr.precio || 0).toLocaleString('es-AR') + '</td></tr>';
+                total += (parseFloat(pr.precio) || 0);
+            });
+        });
+        return { filas: filas, total: total };
+    }
+
+    // Documento imprimible (presupuesto por etapas) — mismo patrón que verConsentimiento /
+    // imprimirComprobanteEmitido: _rCSS() + buildReciboHeader() + window.open().
+    function generarDocumentoPlan(planIdx) {
+        var plan = planesTrat[planIdx];
+        if (!plan) { alert('Plan no encontrado.'); return; }
+        var pac = pacientes.filter(function(p) { return p.id === plan.pacienteId; })[0];
+        var emp = getEmpresaParaRecibo();
+        var emision = new Date().toLocaleDateString('es-AR');
+        var _rh = buildReciboHeader('Presupuesto — Plan de Tratamiento', null, emision, {
+            label: 'Paciente', nombre: pac ? (pac.nombre || '—') : '—', detalle: pac && pac.dni ? ('DNI ' + pac.dni) : ''
+        });
+        var tbl = _planArmarTablaEtapasHTML(plan);
+        var html = '<html><head><meta charset="UTF-8"><title>Plan de tratamiento — ' + escHtml(plan.descripcion || '') + '</title>' + _rCSS() + '</head><body><div class="pg">' + _rh +
+            '<div style="margin-bottom:14px;font-size:14px;"><strong>' + escHtml(plan.descripcion || '(sin descripción)') + '</strong></div>' +
+            '<table class="tbl"><thead><tr><th>Etapa / Prestación</th><th class="tr">Precio</th></tr></thead><tbody>' +
+            (tbl.filas || '<tr><td colspan="2">Sin etapas cargadas todavía. Monto total del plan: $' + Math.round(plan.montoTotal || 0).toLocaleString('es-AR') + '</td></tr>') +
+            '</tbody><tfoot><tr><td>Total' + (tbl.total ? '' : ' (según monto del plan)') + '</td><td class="tr">$' + Math.round(tbl.total || plan.montoTotal || 0).toLocaleString('es-AR') + '</td></tr></tfoot></table>' +
+            (plan.notas ? ('<div class="bottom"><div class="instrucciones"><div class="instr-titulo">Notas</div><div class="instr-body">' + escHtml(plan.notas) + '</div></div></div>') : '') +
+            '<div class="pie">Presupuesto generado el ' + emision + ' · ' + escHtml(emp.nombre || '') + ' · Documento no fiscal.</div>' +
+            '</div><scr' + 'ipt>window.onload=function(){window.print();}</scr' + 'ipt></body></html>';
+        var w = window.open('', '_blank', 'width=780,height=950');
+        if (!w) { alert('Permití las ventanas emergentes.'); return; }
+        w.document.write(html); w.document.close();
+    }
+
+    // ── Aceptación del paciente (Fase 4) — canvas de firma PROPIO, replica el patrón de
+    // _consentInicializarCanvas/_consentLimpiarFirma/_consentPosicionEnCanvas con nombres
+    // nuevos. NO reutiliza ni modifica el consentimiento existente. ──
+    var _planAceptPlanIdx = -1;
+    var _planAceptCtx = null;
+    var _planAceptDibujando = false;
+    var _planAceptCanvasTieneTrazo = false;
+    var _planAceptCanvasInit = false;
+
+    function _planAceptPosicionEnCanvas(canvas, e) {
+        var rect = canvas.getBoundingClientRect();
+        var clientX, clientY;
+        if (e.touches && e.touches.length) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; }
+        else { clientX = e.clientX; clientY = e.clientY; }
+        return {
+            x: (clientX - rect.left) * (canvas.width / rect.width),
+            y: (clientY - rect.top) * (canvas.height / rect.height)
+        };
+    }
+
+    function _planAceptInicializarCanvas() {
+        if (_planAceptCanvasInit) return;
+        var canvas = document.getElementById('planAceptCanvasFirma');
+        if (!canvas) return;
+        _planAceptCtx = canvas.getContext('2d');
+        _planAceptCtx.strokeStyle = '#1a1a1a';
+        _planAceptCtx.lineWidth = 2;
+        _planAceptCtx.lineCap = 'round';
+        function iniciar(e) {
+            e.preventDefault();
+            _planAceptDibujando = true;
+            _planAceptCanvasTieneTrazo = true;
+            var p = _planAceptPosicionEnCanvas(canvas, e);
+            _planAceptCtx.beginPath();
+            _planAceptCtx.moveTo(p.x, p.y);
+        }
+        function mover(e) {
+            if (!_planAceptDibujando) return;
+            e.preventDefault();
+            var p = _planAceptPosicionEnCanvas(canvas, e);
+            _planAceptCtx.lineTo(p.x, p.y);
+            _planAceptCtx.stroke();
+        }
+        function terminar() { _planAceptDibujando = false; }
+        canvas.addEventListener('mousedown', iniciar);
+        canvas.addEventListener('mousemove', mover);
+        canvas.addEventListener('mouseup', terminar);
+        canvas.addEventListener('mouseleave', terminar);
+        canvas.addEventListener('touchstart', iniciar);
+        canvas.addEventListener('touchmove', mover);
+        canvas.addEventListener('touchend', terminar);
+        _planAceptCanvasInit = true;
+    }
+
+    function _planAceptLimpiarFirma() {
+        var canvas = document.getElementById('planAceptCanvasFirma');
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        _planAceptCanvasTieneTrazo = false;
+    }
+
+    // Texto plano del plan (mismo criterio que consentTextoDoc: se asigna con .textContent, no
+    // con innerHTML, para no depender de escapar nada a mano).
+    function _planAceptArmarTextoDocumento(plan, pac) {
+        var lineas = [];
+        lineas.push('PLAN DE TRATAMIENTO');
+        lineas.push('Paciente: ' + (pac ? (pac.nombre || '—') : '—'));
+        lineas.push('Descripción: ' + (plan.descripcion || '(sin descripción)'));
+        lineas.push('');
+        var etapas = plan.etapas || [];
+        if (!etapas.length) {
+            lineas.push('(Sin etapas cargadas todavía.)');
+            lineas.push('Monto total del plan: $' + Math.round(plan.montoTotal || 0).toLocaleString('es-AR'));
+        } else {
+            var total = 0;
+            etapas.forEach(function(et, i) {
+                lineas.push((i + 1) + '. ' + (et.nombre || 'Etapa') + (et.completada ? ' (completada)' : ''));
+                (et.prestaciones || []).forEach(function(pr) {
+                    var piezasTxt = (pr.piezas || []).length ? (' [' + _etapaPiezasChipTexto(pr.piezas) + ']') : '';
+                    lineas.push('   - ' + (pr.prestacionNombre || '—') + piezasTxt + ' — $' + Math.round(pr.precio || 0).toLocaleString('es-AR'));
+                    total += (parseFloat(pr.precio) || 0);
+                });
+            });
+            lineas.push('');
+            lineas.push('TOTAL: $' + Math.round(total).toLocaleString('es-AR'));
+        }
+        lineas.push('');
+        lineas.push('Fecha: ' + formatearFecha(new Date().toISOString().slice(0, 10)));
+        return lineas.join('\n');
+    }
+
+    function _etapaRenderAceptacion() {
+        var plan = planesTrat[_etapasPlanIdx];
+        var cont = document.getElementById('etapasPlanAceptacionCont');
+        if (!plan || !cont) return;
+        if (plan.aceptacion) {
+            cont.innerHTML = '<div style="padding:4px 0;color:var(--success);">✓ Aceptado por <strong>' + escHtml(plan.aceptacion.firmante || '—') + '</strong> el ' + (plan.aceptacion.fecha ? formatearFecha(plan.aceptacion.fecha) : '—') + '.</div>' +
+                '<button type="button" class="btn btn-outline btn-sm" onclick="verAceptacionPlan(' + _etapasPlanIdx + ')">👁️ Ver</button>';
+        } else {
+            cont.innerHTML = '<button type="button" class="btn btn-gold btn-sm" onclick="abrirModalAceptacionPlan(' + _etapasPlanIdx + ')">✍️ Registrar aceptación del paciente</button>';
+        }
+    }
+
+    function abrirModalAceptacionPlan(planIdx) {
+        var plan = planesTrat[planIdx];
+        if (!plan) { alert('Plan no encontrado.'); return; }
+        var pac = pacientes.filter(function(p) { return p.id === plan.pacienteId; })[0];
+        _planAceptPlanIdx = planIdx;
+        var docEl = document.getElementById('planAceptTextoDoc');
+        if (docEl) docEl.textContent = _planAceptArmarTextoDocumento(plan, pac);
+        var firmanteEl = document.getElementById('planAceptFirmante');
+        if (firmanteEl) firmanteEl.value = '';
+        var confEl = document.getElementById('planAceptConforme');
+        if (confEl) confEl.checked = false;
+        _planAceptInicializarCanvas();
+        _planAceptLimpiarFirma();
+        document.getElementById('modalAceptacionPlan').classList.add('active');
+    }
+
+    function cerrarModalAceptacionPlan() {
+        document.getElementById('modalAceptacionPlan').classList.remove('active');
+    }
+
+    function guardarAceptacionPlan(planIdx) {
+        var idx = (typeof planIdx === 'number') ? planIdx : _planAceptPlanIdx;
+        var plan = planesTrat[idx];
+        if (!plan) { alert('Plan no encontrado.'); return; }
+        var firmante = (document.getElementById('planAceptFirmante').value || '').trim();
+        if (!firmante) { alert('Ingresá el nombre completo de quien firma.'); return; }
+        if (!_planAceptCanvasTieneTrazo) { alert('Falta dibujar la firma en el recuadro.'); return; }
+        if (!document.getElementById('planAceptConforme').checked) { alert('Tenés que confirmar que leíste y aceptás el plan de tratamiento.'); return; }
+        var canvas = document.getElementById('planAceptCanvasFirma');
+        plan.aceptacion = {
+            firmante:           firmante,
+            firmaImagenDataUrl: canvas.toDataURL('image/png'),
+            fecha:              new Date().toISOString().slice(0, 10),
+            dispositivo:        navigator.userAgent,
+            creadoEn:           Date.now()
+        };
+        persistirPlanesTrat();
+        cerrarModalAceptacionPlan();
+        _etapaRenderAceptacion();
+        var pacIdx = pacientes.findIndex(function(p) { return p.id === plan.pacienteId; });
+        if (pacIdx >= 0 && typeof _renderFichaClinicaPlanes === 'function') _renderFichaClinicaPlanes(pacIdx);
+        alert('✓ Aceptación del plan registrada.');
+    }
+
+    // Abre en ventana nueva el documento completo con la firma (mismo patrón que
+    // verConsentimiento): tabla de etapas + imagen de firma + metadata de evidencia.
+    function verAceptacionPlan(planIdx) {
+        var plan = planesTrat[planIdx];
+        if (!plan || !plan.aceptacion) { alert('Este plan todavía no tiene una aceptación registrada.'); return; }
+        var pac = pacientes.filter(function(p) { return p.id === plan.pacienteId; })[0];
+        var emp = getEmpresaParaRecibo();
+        var ac = plan.aceptacion;
+        var _rh = buildReciboHeader('Plan de tratamiento — Aceptación', null, ac.fecha ? formatearFecha(ac.fecha) : new Date().toLocaleDateString('es-AR'), {
+            label: 'Paciente', nombre: pac ? (pac.nombre || '—') : '—', detalle: pac && pac.dni ? ('DNI ' + pac.dni) : ''
+        });
+        var tbl = _planArmarTablaEtapasHTML(plan);
+        var html = '<html><head><meta charset="UTF-8"><title>Aceptación — ' + escHtml(plan.descripcion || '') + '</title>' + _rCSS() + '</head><body><div class="pg">' + _rh +
+            '<div style="margin-bottom:14px;font-size:14px;"><strong>' + escHtml(plan.descripcion || '(sin descripción)') + '</strong></div>' +
+            '<table class="tbl"><thead><tr><th>Etapa / Prestación</th><th class="tr">Precio</th></tr></thead><tbody>' +
+            (tbl.filas || '<tr><td colspan="2">Sin etapas cargadas. Monto total del plan: $' + Math.round(plan.montoTotal || 0).toLocaleString('es-AR') + '</td></tr>') +
+            '</tbody><tfoot><tr><td>Total</td><td class="tr">$' + Math.round(tbl.total || plan.montoTotal || 0).toLocaleString('es-AR') + '</td></tr></tfoot></table>' +
+            '<div style="margin:20px 0;"><strong>Firma del paciente / responsable:</strong><br>' +
+            (ac.firmaImagenDataUrl ? ('<img src="' + ac.firmaImagenDataUrl + '" style="border:1px solid var(--line);border-radius:6px;max-width:400px;">') : '<em>Sin imagen de firma.</em>') +
+            '</div>' +
+            '<div style="font-size:12px;color:var(--muted);line-height:1.9;">' +
+                '<div><strong>Firmante:</strong> ' + escHtml(ac.firmante || '—') + '</div>' +
+                '<div><strong>Fecha:</strong> ' + (ac.fecha ? formatearFecha(ac.fecha) : '—') + '</div>' +
+                '<div><strong>Dispositivo:</strong> ' + escHtml(ac.dispositivo || '—') + '</div>' +
+                '<div><strong>Registrado:</strong> ' + (ac.creadoEn ? new Date(ac.creadoEn).toLocaleString('es-AR') : '—') + '</div>' +
+            '</div>' +
+            '<div class="pie">' + escHtml(emp.nombre || '') + '</div>' +
+            '</div></body></html>';
+        var w = window.open('', '_blank', 'width=780,height=950');
+        if (!w) { alert('Permití las ventanas emergentes.'); return; }
+        w.document.write(html); w.document.close();
     }
 
     // ══════════════════════════════════════════════════════════
@@ -21395,6 +21972,73 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" onclick="cerrarModalRegistrarPago()">Cancelar</button>
         <button type="button" class="btn btn-gold" onclick="guardarPagoDirecto()">💾 Registrar Pago</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL: ETAPAS DEL PLAN DE TRATAMIENTO (Fase 4, aditivo sobre planesTrat) ═══════════════ -->
+<div class="modal" id="modalEtapasPlan">
+  <div class="modal-box modal-box-wide" style="max-width:900px;max-height:94vh;">
+    <div class="modal-head">
+      <h2>📋 Etapas del Plan de Tratamiento</h2>
+      <button class="modal-close" onclick="cerrarModalEtapasPlan()">✕</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto; max-height:calc(94vh - 90px);">
+      <div class="form-group">
+        <div id="etapasPlanHeaderDesc" style="font-weight:600;font-size:15px;"></div>
+        <div id="etapasPlanHeaderPaciente" style="font-size:12px;color:var(--text-3);"></div>
+      </div>
+      <div id="etapasPlanLista"></div>
+      <button type="button" class="btn btn-outline btn-sm" onclick="_etapaAgregarEtapa()">+ Agregar etapa</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:12px;border-top:1px solid var(--border,#eee);">
+        <div style="font-size:14px;">Total según etapas: <strong id="etapasPlanTotalCalc">$0</strong></div>
+        <button type="button" class="btn btn-outline btn-sm" onclick="_etapaUsarTotalComoMonto()">Usar este total como monto del plan</button>
+      </div>
+      <div class="modal-footer" style="margin-top:14px;">
+        <button type="button" class="btn btn-outline" onclick="generarDocumentoPlan(_etapasPlanIdx)">🖨️ Generar documento</button>
+        <button type="button" class="btn btn-gold" onclick="guardarEtapasPlan()">💾 Guardar Etapas</button>
+      </div>
+      <div class="table-card" style="margin-top:18px;">
+        <div class="table-card-head"><h3>✍️ Aceptación del paciente</h3></div>
+        <div id="etapasPlanAceptacionCont" style="padding:12px 16px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL: ACEPTACIÓN DEL PLAN (canvas de firma propio — NO reutiliza el
+     modal/funciones de consentimiento existente) ═══════════════ -->
+<div class="modal" id="modalAceptacionPlan">
+  <div class="modal-box" style="max-width:640px;max-height:94vh;">
+    <div class="modal-head">
+      <h2>✍️ Registrar aceptación del plan</h2>
+      <button class="modal-close" onclick="cerrarModalAceptacionPlan()">✕</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto; max-height:calc(94vh - 90px);">
+      <div class="form-group">
+        <label>Plan de tratamiento</label>
+        <div id="planAceptTextoDoc" style="background:#fff; border:1px solid var(--border); border-radius:6px; padding:14px 16px; white-space:pre-wrap; max-height:260px; overflow-y:auto; font-size:13px; color:#1a1a1a; line-height:1.6;"></div>
+      </div>
+      <div class="form-group">
+        <label>Nombre completo de quien firma *</label>
+        <input type="text" id="planAceptFirmante" placeholder="Nombre y apellido (paciente o responsable)">
+      </div>
+      <div class="form-group">
+        <label>Firma</label>
+        <div>
+          <canvas id="planAceptCanvasFirma" width="500" height="150" style="border:1px solid var(--border); border-radius:6px; touch-action:none; cursor:crosshair; background:#fff; max-width:100%;"></canvas>
+        </div>
+        <button type="button" class="btn btn-outline btn-sm" style="margin-top:6px;" onclick="_planAceptLimpiarFirma()">🗑️ Limpiar firma</button>
+      </div>
+      <div class="form-group">
+        <label style="display:flex; align-items:center; gap:8px; font-weight:400;">
+          <input type="checkbox" id="planAceptConforme"> Confirmo que leí y acepto el plan de tratamiento y su presupuesto.
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="cerrarModalAceptacionPlan()">Cancelar</button>
+        <button type="button" class="btn btn-gold" onclick="guardarAceptacionPlan()">✍️ Confirmar aceptación</button>
       </div>
     </div>
   </div>
