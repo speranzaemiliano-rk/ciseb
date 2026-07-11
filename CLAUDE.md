@@ -121,6 +121,17 @@ un link de confirmación de un solo uso (`GET /turnos/confirmar`, protegido por 
 `_RUTAS_SIN_TOKEN`). Requiere Firebase Admin activo (`FIREBASE_SERVICE_ACCOUNT_BASE64`)
 y que el paciente tenga `email` cargado. Diagnóstico: `GET /turnos/diag`.
 
+**Sync con Google Calendar (Fase 2 — Agenda):** de una sola vía, **app → Calendar**
+(falta la vía inversa: webhook/polling desde Calendar). Reusa el mismo Client ID
+de Google que ya se usa para leer Gmail (`getGoogleClientId()`), pidiendo el
+scope `calendar.events` vía Google Identity Services (`google.accounts.oauth2`).
+Se activa por usuario desde ⚙️ Ajustes → "Sincronización con Google Calendar"
+(checkbox `ciseb_calendar_sync_on` en `localStorage` + botón "Conectar cuenta").
+Al guardar/editar/borrar un turno, crea/actualiza/borra el evento correspondiente
+en `primary` calendar del usuario conectado (`turno.googleEventId` guarda el
+mapeo). Es **best-effort**: cualquier falla se loguea en consola y nunca
+interrumpe el guardado del turno.
+
 ## Config del entorno del centro (a completar en cada instalación)
 
 - `firebaseConfig` en `index.html` (bloque cerca del `<head>`): apunta al proyecto

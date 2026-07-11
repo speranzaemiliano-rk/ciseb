@@ -4164,6 +4164,22 @@
                   </div>
 
                   <div style="border-top:1px solid var(--border);padding-top:20px;margin-top:4px;">
+                    <h4 style="font-size:13px;font-weight:700;color:var(--text-1);margin-bottom:4px;">📅 Sincronización con Google Calendar</h4>
+                    <p style="font-size:12px;color:var(--text-3);margin-bottom:12px;line-height:1.6;">
+                      Crea/actualiza un evento en tu Google Calendar por cada turno que cargues en CISEB (usa el mismo
+                      <strong>ID de cliente de Google</strong> configurado arriba). Es de una sola vía — <strong>de la app hacia Calendar</strong>:
+                      si editás o borrás un evento directamente en Google Calendar, ese cambio no vuelve a la app.
+                    </p>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:10px;">
+                      <input type="checkbox" id="cfgCalendarSyncOn" onchange="_calGuardarPreferencia()" style="width:auto;"> Sincronizar turnos automáticamente
+                    </label>
+                    <div style="display:flex;gap:8px;">
+                      <button class="btn btn-gold btn-sm" onclick="_calConectar()">🔗 Conectar cuenta de Google</button>
+                    </div>
+                    <div id="cfgCalendarSyncStatus" style="font-size:12px;margin-top:8px;color:var(--text-3);"></div>
+                  </div>
+
+                  <div style="border-top:1px solid var(--border);padding-top:20px;margin-top:4px;">
                     <h4 style="font-size:13px;font-weight:700;color:var(--text-1);margin-bottom:4px;">📋 Consentimiento informado — texto base</h4>
                     <p style="font-size:12px;color:var(--text-3);margin-bottom:12px;line-height:1.6;">
                       Texto que se muestra al paciente al firmar un consentimiento (Ley 25.506: firma electrónica con rastro de evidencia —
@@ -8385,7 +8401,7 @@
         // Config
         const cfgBtn = document.getElementById('tabBtnConfig');
         if (cfgBtn) cfgBtn.classList.toggle('active', nombre === 'Config');
-        if (nombre === 'Config') { setTimeout(cargarApiKeyUI, 50); }
+        if (nombre === 'Config') { setTimeout(cargarApiKeyUI, 50); setTimeout(_calCargarPreferenciaUI, 50); }
 
         // Tesorería
         const tesBtn = document.getElementById('tabBtnTesoreria');
@@ -16465,6 +16481,7 @@
             profesionalId: prof ? prof.id : '',
             prestacionId:  document.getElementById('turPrestacionId').value || '',
             estado:        document.getElementById('turEstado').value || 'Pendiente',
+            googleEventId: (prev && prev.googleEventId) ? prev.googleEventId : '',
             creadoEn:      (prev && prev.creadoEn) ? prev.creadoEn : Date.now(),
             actualizadoEn: Date.now()
         };
@@ -16472,6 +16489,7 @@
         persistirTurnos();
         cerrarModalTurno();
         renderTurnos();
+        _calSincronizarTurno(t);
     }
 
     function cambiarEstadoTurno(idx, estado) {
@@ -16480,14 +16498,17 @@
         t.estado = estado;
         persistirTurnos();
         renderTurnos();
+        _calSincronizarTurno(t);
         if (eraCancelable) _turSugerirListaEspera(t);
     }
 
     function eliminarTurno(idx) {
         if (!confirm('¿Eliminar este turno? Esta acción no se puede deshacer.')) return;
+        var t = turnos[idx];
         turnos.splice(idx, 1);
         persistirTurnos();
         renderTurnos();
+        _calEliminarEventoTurno(t);
     }
 
     function renderTurnos() {
@@ -16553,6 +16574,114 @@
                 ? (deHoy.length + ' turno' + (deHoy.length !== 1 ? 's' : '') + ' hoy')
                 : 'Sin turnos para hoy';
         }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // SYNC CON GOOGLE CALENDAR (Fase 2 — Agenda)
+    // De una sola vía: app → Calendar. Reusa el mismo Client ID de Google que
+    // ya se usa para leer Gmail (getGoogleClientId()), pidiendo el scope
+    // calendar.events. Es best-effort: si falla (sin conexión, el usuario
+    // cierra el picker de cuenta, token vencido, etc.) NUNCA interrumpe el
+    // guardado del turno — solo se loguea en consola.
+    // ══════════════════════════════════════════════════════════
+    var _calAccessToken = null;
+    var _calTokenExpiraEn = 0; // epoch ms
+
+    function _calSyncActivo() { return localStorage.getItem('ciseb_calendar_sync_on') === '1'; }
+
+    function _calGuardarPreferencia() {
+        var el = document.getElementById('cfgCalendarSyncOn');
+        localStorage.setItem('ciseb_calendar_sync_on', (el && el.checked) ? '1' : '0');
+    }
+
+    function _calCargarPreferenciaUI() {
+        var el = document.getElementById('cfgCalendarSyncOn');
+        if (el) el.checked = _calSyncActivo();
+    }
+
+    // Pide un token de acceso (abre el selector de cuenta de Google si hace falta).
+    function _calPedirToken(callback) {
+        var clientId = (typeof getGoogleClientId === 'function') ? getGoogleClientId() : '';
+        if (!clientId) { callback(new Error('Falta el ID de cliente de Google. Configuralo en ⚙️ Ajustes.')); return; }
+        if (!window.google || !google.accounts || !google.accounts.oauth2) { callback(new Error('La librería de Google todavía no cargó. Esperá unos segundos y volvé a intentar.')); return; }
+        try {
+            var tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: clientId,
+                scope: 'https://www.googleapis.com/auth/calendar.events',
+                callback: function (resp) {
+                    if (!resp || resp.error) { callback(new Error(resp && resp.error ? resp.error : 'Autorización rechazada o cancelada.')); return; }
+                    _calAccessToken = resp.access_token;
+                    _calTokenExpiraEn = Date.now() + ((resp.expires_in || 3500) * 1000);
+                    callback(null, _calAccessToken);
+                }
+            });
+            tokenClient.requestAccessToken({ prompt: '' });
+        } catch (e) {
+            callback(e);
+        }
+    }
+
+    function _calConectar() {
+        var st = document.getElementById('cfgCalendarSyncStatus');
+        if (st) st.textContent = 'Esperando autorización de Google…';
+        _calPedirToken(function (err) {
+            if (!st) return;
+            if (err) { st.textContent = '❌ ' + (err.message || err); return; }
+            st.textContent = '✅ Conectado. Los turnos que guardes de acá en más se sincronizan con tu Google Calendar.';
+            var chk = document.getElementById('cfgCalendarSyncOn');
+            if (chk) chk.checked = true;
+            _calGuardarPreferencia();
+        });
+    }
+
+    // Reusa el token cacheado si todavía no venció (con 30s de margen); si no, pide uno nuevo.
+    function _calConToken(fn) {
+        if (_calAccessToken && Date.now() < _calTokenExpiraEn - 30000) { fn(null, _calAccessToken); return; }
+        _calPedirToken(fn);
+    }
+
+    function _calEventoDesdeTurno(t) {
+        var inicio = t.fecha + 'T' + (t.hora || '00:00') + ':00-03:00';
+        var fin    = t.fecha + 'T' + (t.horaFin || t.hora || '00:00') + ':00-03:00';
+        return {
+            summary:     (t.paciente || 'Turno') + (t.motivo ? (' — ' + t.motivo) : ''),
+            description: 'Profesional: ' + (t.profesional || '—') + '\nEstado: ' + (t.estado || '') + '\n\nCreado desde CISEB.',
+            start: { dateTime: inicio, timeZone: 'America/Argentina/Buenos_Aires' },
+            end:   { dateTime: fin,   timeZone: 'America/Argentina/Buenos_Aires' }
+        };
+    }
+
+    function _calSincronizarTurno(t) {
+        if (!_calSyncActivo() || !t) return;
+        _calConToken(function (err, token) {
+            if (err) { console.warn('[Calendar] no se pudo sincronizar el turno:', err.message || err); return; }
+            var esNuevo = !t.googleEventId;
+            var url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events' + (esNuevo ? '' : ('/' + t.googleEventId));
+            fetch(url, {
+                method: esNuevo ? 'POST' : 'PATCH',
+                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                body: JSON.stringify(_calEventoDesdeTurno(t))
+            }).then(function (resp) {
+                if (!resp.ok) return resp.json().then(function (e) { throw new Error((e.error && e.error.message) || String(resp.status)); });
+                return resp.json();
+            }).then(function (evento) {
+                if (esNuevo && evento && evento.id) {
+                    t.googleEventId = evento.id;
+                    persistirTurnos();
+                }
+            }).catch(function (e) { console.warn('[Calendar] error al sincronizar turno:', e.message || e); });
+        });
+    }
+
+    function _calEliminarEventoTurno(t) {
+        if (!_calSyncActivo() || !t || !t.googleEventId) return;
+        _calConToken(function (err, token) {
+            if (err) { console.warn('[Calendar] no se pudo borrar el evento:', err.message || err); return; }
+            fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events/' + t.googleEventId, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + token }
+            }).catch(function (e) { console.warn('[Calendar] error al borrar el evento:', e.message || e); });
+        });
     }
 
     // ══════════════════════════════════════════════════════════
