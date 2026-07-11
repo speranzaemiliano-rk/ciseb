@@ -354,6 +354,26 @@
         .nav-block.sortable-ghost, .sub-block.sortable-ghost, .nav-sub.sortable-ghost { opacity: .3; }
         .nav-block.sortable-chosen, .sub-block.sortable-chosen, .nav-sub.sortable-chosen { box-shadow: 0 6px 18px rgba(0,0,0,.45); }
 
+        /* ── Visibilidad de ítems del menú: SOLO el Super Administrador ve el
+           ícono 👁️ (junto al handle de arrastre) cuando activa el "modo ocultar
+           ítems del menú". Sirve para configurar, por ítem, si queda oculto para
+           todos los usuarios o solo para algunos. El resto de los usuarios nunca
+           ve este ícono ni el modo edición. ── */
+        .nav-hide-toggle {
+            display: none; align-items: center; justify-content: center;
+            flex-shrink: 0; width: 16px; text-align: center;
+            color: rgba(255,255,255,.35); cursor: pointer;
+            transition: color .15s; font-size: 11px;
+        }
+        .sidebar-nav.superadmin-hide-edit .nav-hide-toggle { display: inline-flex; }
+        .nav-block:hover .nav-hide-toggle,
+        .sub-block:hover > .nav-item .nav-hide-toggle,
+        .nav-sub:hover .nav-hide-toggle { color: rgba(255,255,255,.7); }
+        /* Mientras el modo edición está activo, el superadmin ve atenuado (en vez
+           de oculto de verdad) lo que quedaría oculto para otros/para sí mismo,
+           para poder seguir gestionándolo. */
+        .nav-oculto-preview { opacity: .35; }
+
         .sidebar-footer {
             padding: 14px 12px;
             border-top: 1px solid rgba(255,255,255,.12);
@@ -1972,8 +1992,6 @@
         .hp-m-sub .up{color:var(--success)}.hp-m-sub .dn{color:var(--danger)}
         .hp-m-div{height:1px;background:var(--border-soft);margin:10px 0}
         .hp-m-val{font-family:var(--font-sans,'Raleway',sans-serif);font-size:18px;font-weight:600;color:var(--text-1);line-height:1}
-        .hp-m-pct{font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;margin-top:3px}
-        .hp-m-pct.up{color:var(--success)}.hp-m-pct.dn{color:var(--danger)}
         /* dólares — acento lateral */
         .hpw-dol{padding:16px 18px;border-top:none;border-left:3px solid var(--border)}
         .hpw-dol.gr{border-left-color:#1A9B63}
@@ -2039,28 +2057,6 @@
         .ta-actions{display:flex;gap:4px;flex-shrink:0}
         #panelHome .ta-actions .btn-sm{color:var(--text-3)}
         #panelHome .ta-actions .btn-sm:hover{color:var(--text-1)}
-        .hpw-bolsas{padding:0;overflow:auto;resize:both;min-height:120px;min-width:120px;height:440px}
-        .hpw-noticias-int{padding:0;overflow:auto;resize:both;min-height:120px;min-width:120px;max-height:none;height:320px}
-        .hp-b-hdr{padding:13px 18px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between}
-        .hp-b-ttl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:var(--text-3)}
-        .hp-b-tabs{display:flex;gap:4px}
-        .hp-b-tab{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text-3);cursor:pointer;transition:all .2s}
-        .hp-b-tab.active{background:var(--gold);color:#fff;border-color:var(--gold);font-weight:600}
-        .hp-b-tab:hover:not(.active){background:var(--surface-2);color:var(--text-1)}
-        .hp-b-upd{font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;color:var(--text-3)}
-        .hp-b-region{display:none}.hp-b-region.active{display:block}
-        /* noticias internacionales */
-        .hp-ni-hdr{padding:13px 18px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between}
-        .hp-ni-ttl{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:var(--text-3)}
-        .hp-ni-src{font-family:var(--font-mono,'DM Mono',monospace);font-size:9px;color:var(--gold)}
-        .hp-ni-list{max-height:280px;overflow-y:auto}
-        .hp-ni-item{padding:10px 18px;border-bottom:1px solid var(--border-soft);cursor:pointer;transition:background .15s;display:flex;gap:10px;align-items:flex-start}
-        .hp-ni-item:hover{background:var(--surface-2)}
-        .hp-ni-flag{font-size:15px;flex-shrink:0;margin-top:1px}
-        .hp-ni-body{flex:1;min-width:0}
-        .hp-ni-cat{font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:#7C3AED;margin-bottom:2px}
-        .hp-ni-title{font-family:var(--font-sans,'Raleway',sans-serif);font-size:12px;color:var(--text-1);font-weight:400;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-        .hp-ni-time{font-family:var(--font-mono,'DM Mono',monospace);font-size:10px;color:var(--text-3);margin-top:2px}
         /* ══ PANEL ECONOMÍA ARGENTINA ══ */
         .hpw-eco{padding:0;overflow:auto;resize:both;min-height:120px;min-width:120px;height:300px;display:flex;flex-direction:column}
         .hp-eco-hdr{padding:12px 18px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px;flex-shrink:0;background:var(--surface);position:sticky;top:0;z-index:1}
@@ -2121,13 +2117,8 @@
             .hpw-dol{padding:12px 14px}
             .hp-d-v{font-size:18px}
             .hp-tbl{font-size:11px;min-width:300px}
-            .hpw-acc,.hpw-bolsas,.hpw-noticias-int{overflow-x:auto}
+            .hpw-acc{overflow-x:auto}
             .hp-n-list{max-height:200px}
-            .hp-ni-list{max-height:200px}
-            .hp-ni-title{font-size:11px}
-            .hp-b-hdr{flex-wrap:wrap;gap:6px}
-            .hp-b-tabs{overflow-x:auto;display:flex;gap:4px;width:100%}
-            .hp-b-tab{font-size:10px;padding:4px 10px;white-space:nowrap;flex-shrink:0}
         }
         /* ── HOME MOBILE CHICO (≤480px) ── */
         @media(max-width:480px){
@@ -2580,36 +2571,36 @@
             <!-- ── INICIO ── -->
             <div class="nav-block" data-navkey="home">
             <button class="nav-item nav-group-header active" id="tabBtnHome" onclick="mostrarTab('Home')" title="Inicio">
-                <span class="nav-drag-handle">⠿</span><span class="nav-icon">home</span> Inicio
+                <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="home" onclick="event.stopPropagation();abrirModalVisibilidadItem('home')" title="Configurar visibilidad">👁️</span><span class="nav-icon">home</span> Inicio
             </button>
             </div>
 
             <div class="nav-block" data-navkey="consultorio">
             <!-- ── GRUPO: CONSULTORIO (Pacientes y Turnos) ── -->
             <button class="nav-item nav-group-header" id="tabBtnConsultorioMenu" onclick="toggleConsultorioMenu()" title="Pacientes y Turnos">
-                <span class="nav-drag-handle">⠿</span><span class="nav-icon">medical_services</span> Consultorio <span id="consultorioMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▾</span>
+                <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="consultorio" onclick="event.stopPropagation();abrirModalVisibilidadItem('consultorio')" title="Configurar visibilidad">👁️</span><span class="nav-icon">medical_services</span> Consultorio <span id="consultorioMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▾</span>
             </button>
             <div id="consultorioSubmenu" class="nav-submenu" data-subkey="consultorio">
                 <button class="nav-item nav-sub" id="tabBtnPacientes" data-navkey="pacientes" onclick="mostrarTab('Pacientes')" title="Ficha de pacientes">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">groups</span> Pacientes
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="pacientes" onclick="event.stopPropagation();abrirModalVisibilidadItem('pacientes')" title="Configurar visibilidad">👁️</span><span class="nav-icon">groups</span> Pacientes
                 </button>
                 <button class="nav-item nav-sub" id="tabBtnTurnos" data-navkey="turnos" onclick="mostrarTab('Turnos')" title="Agenda de turnos">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">event</span> Turnos
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="turnos" onclick="event.stopPropagation();abrirModalVisibilidadItem('turnos')" title="Configurar visibilidad">👁️</span><span class="nav-icon">event</span> Turnos
                 </button>
                 <button class="nav-item nav-sub" id="tabBtnProfesionales" data-navkey="profesionales" onclick="mostrarTab('Profesionales')" title="Profesionales del consultorio">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">badge</span> Profesionales
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="profesionales" onclick="event.stopPropagation();abrirModalVisibilidadItem('profesionales')" title="Configurar visibilidad">👁️</span><span class="nav-icon">badge</span> Profesionales
                 </button>
                 <button class="nav-item nav-sub" id="tabBtnPrestaciones" data-navkey="prestaciones" onclick="mostrarTab('Prestaciones')" title="Catálogo de prestaciones">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">medical_information</span> Prestaciones
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="prestaciones" onclick="event.stopPropagation();abrirModalVisibilidadItem('prestaciones')" title="Configurar visibilidad">👁️</span><span class="nav-icon">medical_information</span> Prestaciones
                 </button>
                 <button class="nav-item nav-sub" id="tabBtnCobros" data-navkey="cobros" onclick="mostrarTab('Cobros')" title="Cobros generados desde Evoluciones">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">payments</span> Cobros
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="cobros" onclick="event.stopPropagation();abrirModalVisibilidadItem('cobros')" title="Configurar visibilidad">👁️</span><span class="nav-icon">payments</span> Cobros
                 </button>
                 <button class="nav-item nav-sub" id="tabBtnBeneficiarios" data-navkey="beneficiarios" onclick="mostrarTab('Beneficiarios')" title="Beneficiarios del reparto (socios y fondo común)">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">account_balance</span> Beneficiarios
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="beneficiarios" onclick="event.stopPropagation();abrirModalVisibilidadItem('beneficiarios')" title="Configurar visibilidad">👁️</span><span class="nav-icon">account_balance</span> Beneficiarios
                 </button>
                 <button class="nav-item nav-sub" id="tabBtnLiquidacion" data-navkey="liquidacion" onclick="mostrarTab('Liquidacion')" title="Liquidación por período">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">receipt_long</span> Liquidación
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="liquidacion" onclick="event.stopPropagation();abrirModalVisibilidadItem('liquidacion')" title="Configurar visibilidad">👁️</span><span class="nav-icon">receipt_long</span> Liquidación
                 </button>
             </div>
             </div>
@@ -2617,20 +2608,20 @@
             <div class="nav-block" data-navkey="caja">
             <!-- ── GRUPO: PRINCIPAL (Caja y Bancos) ── -->
             <button class="nav-item nav-group-header" id="tabBtnPrincipalMenu" onclick="togglePrincipalMenu()" title="Caja y Bancos">
-                <span class="nav-drag-handle">⠿</span><span class="nav-icon">account_balance</span> Caja y Bancos <span id="principalMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▾</span>
+                <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="caja" onclick="event.stopPropagation();abrirModalVisibilidadItem('caja')" title="Configurar visibilidad">👁️</span><span class="nav-icon">account_balance</span> Caja y Bancos <span id="principalMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▾</span>
             </button>
             <div id="principalSubmenu" class="nav-submenu" data-subkey="principal">
                 <button class="nav-item nav-sub" id="tabBtnCajaGeneral" data-navkey="cajageneral" onclick="mostrarTab('CajaGeneral')" title="Libro de caja completo: ingresos y egresos">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">book_2</span> Caja General
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="cajageneral" onclick="event.stopPropagation();abrirModalVisibilidadItem('cajageneral')" title="Configurar visibilidad">👁️</span><span class="nav-icon">book_2</span> Caja General
                 </button>
                 <button class="nav-item nav-sub" id="tabBtnEfectivoPesos" data-navkey="efectivopesos" onclick="mostrarTab('EfectivoPesos')" title="Movimientos en efectivo en pesos">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">payments</span> Efectivo en Pesos
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="efectivopesos" onclick="event.stopPropagation();abrirModalVisibilidadItem('efectivopesos')" title="Configurar visibilidad">👁️</span><span class="nav-icon">payments</span> Efectivo en Pesos
                 </button>
                 <button class="nav-item nav-sub" id="tabBtnEfectivoUSD" data-navkey="efectivousd" onclick="mostrarTab('EfectivoUSD')" title="Movimientos en efectivo en dólares">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">attach_money</span> Efectivo en Dólares
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="efectivousd" onclick="event.stopPropagation();abrirModalVisibilidadItem('efectivousd')" title="Configurar visibilidad">👁️</span><span class="nav-icon">attach_money</span> Efectivo en Dólares
                 </button>
                 <button class="nav-item nav-sub" id="tabBtnCuentasBancarias" data-navkey="banco" onclick="mostrarTab('CuentasBancarias')" title="Cuentas corrientes y bancarias">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">account_balance_wallet</span> Banco
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="banco" onclick="event.stopPropagation();abrirModalVisibilidadItem('banco')" title="Configurar visibilidad">👁️</span><span class="nav-icon">account_balance_wallet</span> Banco
                 </button>
             </div>
             </div>
@@ -2638,46 +2629,46 @@
             <div class="nav-block" data-navkey="ingresos">
             <!-- INGRESOS -->
             <button class="nav-item nav-group-header" id="tabBtnIngresosMenu" onclick="toggleIngresosMenu()" title="Ingresos del proyecto">
-                <span class="nav-drag-handle">⠿</span><span class="nav-icon">trending_up</span> Ingresos
+                <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="ingresos" onclick="event.stopPropagation();abrirModalVisibilidadItem('ingresos')" title="Configurar visibilidad">👁️</span><span class="nav-icon">trending_up</span> Ingresos
                 <span class="chevron" id="ingresosMenuChevron" style="margin-left:auto;">▾</span>
             </button>
             <div class="nav-submenu" id="ingresosSubmenu" data-subkey="ingresos">
                 <!-- Facturas ARCA subtree -->
                 <div class="sub-block" data-navkey="comprobantes">
                 <button class="nav-item nav-sub nav-group-header" id="tabBtnFacturasMenu" onclick="toggleFacturasMenu()" title="Emisión de Comprobantes ARCA">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">receipt_long</span> Comprobantes <span id="facturasMenuChevron" style="margin-left:auto;font-size:11px;transition:transform .2s;">▸</span>
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="comprobantes" onclick="event.stopPropagation();abrirModalVisibilidadItem('comprobantes')" title="Configurar visibilidad">👁️</span><span class="nav-icon">receipt_long</span> Comprobantes <span id="facturasMenuChevron" style="margin-left:auto;font-size:11px;transition:transform .2s;">▸</span>
                 </button>
                 <div id="facturasSubmenu" class="nav-submenu collapsed">
                     <button class="nav-item nav-sub" onclick="abrirEmitirFacturaAFIP()" title="Emitir comprobante electrónico ARCA"><span class="nav-icon">add_circle</span> Emitir Comprobante</button>
                     <button class="nav-item nav-sub" onclick="abrirFacturasARCA()" title="Ver comprobantes emitidos"><span class="nav-icon">list_alt</span> Comprobantes Emitidos</button>
                 </div>
                 </div>
-                <button class="nav-item nav-sub" id="tabBtnServicios" data-navkey="tratamientos" onclick="mostrarTab('Servicios')"><span class="nav-drag-handle">⠿</span><span class="nav-icon">design_services</span> Tratamientos</button>
-                <button class="nav-item nav-sub" id="tabBtnIngGeneral" data-navkey="inggeneral" onclick="mostrarTab('IngGeneral')"><span class="nav-drag-handle">⠿</span><span class="nav-icon">account_balance_wallet</span> Ingresos Generales</button>
-                <button class="nav-item nav-sub" id="tabBtnResumenIngresos" data-navkey="resumeningresos" onclick="mostrarTab('ResumenIngresos')" title="Resumen de todos los ingresos"><span class="nav-drag-handle">⠿</span><span class="nav-icon">bar_chart</span> Resumen Ingresos</button>
+                <button class="nav-item nav-sub" id="tabBtnServicios" data-navkey="tratamientos" onclick="mostrarTab('Servicios')"><span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="tratamientos" onclick="event.stopPropagation();abrirModalVisibilidadItem('tratamientos')" title="Configurar visibilidad">👁️</span><span class="nav-icon">design_services</span> Tratamientos</button>
+                <button class="nav-item nav-sub" id="tabBtnIngGeneral" data-navkey="inggeneral" onclick="mostrarTab('IngGeneral')"><span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="inggeneral" onclick="event.stopPropagation();abrirModalVisibilidadItem('inggeneral')" title="Configurar visibilidad">👁️</span><span class="nav-icon">account_balance_wallet</span> Ingresos Generales</button>
+                <button class="nav-item nav-sub" id="tabBtnResumenIngresos" data-navkey="resumeningresos" onclick="mostrarTab('ResumenIngresos')" title="Resumen de todos los ingresos"><span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="resumeningresos" onclick="event.stopPropagation();abrirModalVisibilidadItem('resumeningresos')" title="Configurar visibilidad">👁️</span><span class="nav-icon">bar_chart</span> Resumen Ingresos</button>
             </div>
             </div>
 
             <div class="nav-block" data-navkey="egresos">
             <!-- ── GRUPO: EGRESOS (contiene Resumen + Proveedores anidado) ── -->
             <button class="nav-item nav-group-header active" id="tabBtnEgresosMenu" onclick="toggleEgresosMenu()" title="Egresos del proyecto">
-                <span class="nav-drag-handle">⠿</span><span class="nav-icon">trending_down</span> Egresos <span id="egresosMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▾</span>
+                <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="egresos" onclick="event.stopPropagation();abrirModalVisibilidadItem('egresos')" title="Configurar visibilidad">👁️</span><span class="nav-icon">trending_down</span> Egresos <span id="egresosMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▾</span>
             </button>
             <div id="egresosSubmenu" class="nav-submenu" data-subkey="egresos">
                 <!-- ── GRUPO: PROVEEDORES (anidado dentro de Egresos) ── -->
                 <div class="sub-block" data-navkey="proveedores">
                 <button class="nav-item nav-sub nav-group-header" id="tabBtnProvMenu" onclick="toggleProvMenu()" title="Proveedores">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">storefront</span> Proveedores <span id="provMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▾</span>
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="proveedores" onclick="event.stopPropagation();abrirModalVisibilidadItem('proveedores')" title="Configurar visibilidad">👁️</span><span class="nav-icon">storefront</span> Proveedores <span id="provMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▾</span>
                 </button>
                 <div id="provSubmenu" class="nav-submenu" data-subkey="prov">
                     <button class="nav-item nav-sub" id="tabBtnProveedores" data-navkey="datosprov" onclick="mostrarTab('Proveedores')" title="Datos de proveedores">
-                        <span class="nav-drag-handle">⠿</span><span class="nav-icon">contacts</span> Datos de Proveedores
+                        <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="datosprov" onclick="event.stopPropagation();abrirModalVisibilidadItem('datosprov')" title="Configurar visibilidad">👁️</span><span class="nav-icon">contacts</span> Datos de Proveedores
                     </button>
 
                     <!-- Presupuestos: mini-menú Nuevo / Editar existente -->
                     <div class="sub-block" data-navkey="presupuestos">
                     <button class="nav-item nav-sub nav-group-header" id="tabBtnPresupuestos" onclick="togglePresupuestosMenu()" title="Presupuestos">
-                        <span class="nav-drag-handle">⠿</span><span class="nav-icon">request_quote</span> Presupuestos <span id="presupuestosMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▸</span>
+                        <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="presupuestos" onclick="event.stopPropagation();abrirModalVisibilidadItem('presupuestos')" title="Configurar visibilidad">👁️</span><span class="nav-icon">request_quote</span> Presupuestos <span id="presupuestosMenuChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▸</span>
                     </button>
                     <div id="presupuestosSubmenu" class="nav-submenu collapsed">
                         <button class="nav-item nav-sub" id="btnAgregar" onclick="agregarFila()" title="Crear un presupuesto nuevo" style="color:rgba(217,169,50,.85);">
@@ -2690,25 +2681,25 @@
                     </div>
 
                     <button class="nav-item nav-sub" id="tabBtnFacturas" data-navkey="facturasprov" onclick="mostrarTab('Facturas')" title="Facturas de proveedores">
-                        <span class="nav-drag-handle">⠿</span><span class="nav-icon">receipt_long</span> Facturas
+                        <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="facturasprov" onclick="event.stopPropagation();abrirModalVisibilidadItem('facturasprov')" title="Configurar visibilidad">👁️</span><span class="nav-icon">receipt_long</span> Facturas
                     </button>
                     <button class="nav-item nav-sub" id="tabBtnDocumentos" data-navkey="documentos" onclick="mostrarTab('Documentos')" title="Comprobantes sin factura (pagos B)">
-                        <span class="nav-drag-handle">⠿</span><span class="nav-icon">folder_open</span> Documentos
+                        <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="documentos" onclick="event.stopPropagation();abrirModalVisibilidadItem('documentos')" title="Configurar visibilidad">👁️</span><span class="nav-icon">folder_open</span> Documentos
                     </button>
                     <div style="height:1px;background:rgba(255,255,255,.08);margin:4px 12px;"></div>
                     <button class="nav-item nav-sub" id="tabBtnPagos" data-navkey="pagosprov" onclick="mostrarTab('Pagos')" title="Todos los pagos a proveedores">
-                        <span class="nav-drag-handle">⠿</span><span class="nav-icon">credit_card</span> Pagos a Proveedores
+                        <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="pagosprov" onclick="event.stopPropagation();abrirModalVisibilidadItem('pagosprov')" title="Configurar visibilidad">👁️</span><span class="nav-icon">credit_card</span> Pagos a Proveedores
                     </button>
                     <button class="nav-item nav-sub" id="btnPagar" data-navkey="registrarpago" onclick="abrirPagoFD()" title="Registrar pago de factura o comprobante">
-                        <span class="nav-drag-handle">⠿</span><span class="nav-icon">add_card</span> Registrar Pago
+                        <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="registrarpago" onclick="event.stopPropagation();abrirModalVisibilidadItem('registrarpago')" title="Configurar visibilidad">👁️</span><span class="nav-icon">add_card</span> Registrar Pago
                     </button>
                 </div>
                 </div>
                 <button class="nav-item nav-sub" id="tabBtnEgresos" data-navkey="resumenegresos" onclick="mostrarTab('Egresos')" title="Resumen de egresos del proyecto">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">bar_chart</span> Resumen Egresos
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="resumenegresos" onclick="event.stopPropagation();abrirModalVisibilidadItem('resumenegresos')" title="Configurar visibilidad">👁️</span><span class="nav-icon">bar_chart</span> Resumen Egresos
                 </button>
                 <button class="nav-item nav-sub" id="tabBtnCompRecibidos" data-navkey="comprecibidos" onclick="mostrarTab('CompRecibidos')" title="Comprobantes recibidos de proveedores (ARCA)">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">inbox</span> Comprobantes Recibidos
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="comprecibidos" onclick="event.stopPropagation();abrirModalVisibilidadItem('comprecibidos')" title="Configurar visibilidad">👁️</span><span class="nav-icon">inbox</span> Comprobantes Recibidos
                 </button>
             </div>
             </div>
@@ -2716,77 +2707,78 @@
             <!-- TESORERÍA — Saldos y Préstamos Interempresa -->
             <div class="nav-block" data-navkey="tesoreria">
             <button class="nav-item" id="tabBtnTesoreria" onclick="mostrarTab('Tesoreria')" title="Saldos de cajas por proyecto y préstamos entre empresas" style="margin-top:8px;">
-                <span class="nav-drag-handle">⠿</span><span class="nav-icon">swap_horiz</span> Tesorería Interempresa
+                <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="tesoreria" onclick="event.stopPropagation();abrirModalVisibilidadItem('tesoreria')" title="Configurar visibilidad">👁️</span><span class="nav-icon">swap_horiz</span> Tesorería Interempresa
             </button>
             </div>
 
             <!-- REPORTES -->
             <div class="nav-block" data-navkey="reportes">
             <button class="nav-item" id="tabBtnReportes" onclick="mostrarTab('Reportes')" title="Reportes contables e impositivos" style="margin-top:8px;">
-                <span class="nav-drag-handle">⠿</span><span class="nav-icon">assessment</span> Reportes
+                <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="reportes" onclick="event.stopPropagation();abrirModalVisibilidadItem('reportes')" title="Configurar visibilidad">👁️</span><span class="nav-icon">assessment</span> Reportes
             </button>
             </div>
 
             <!-- REMUNERACIONES (solo Super Administrador) -->
             <div class="nav-block" data-navkey="remuneraciones">
             <button class="nav-item" id="tabBtnRemuneraciones" onclick="mostrarTab('Remuneraciones')" title="Legajos de empleados, vacaciones, aguinaldo y liquidación (solo Super Administrador)" style="margin-top:8px; display:none;">
-                <span class="nav-drag-handle">⠿</span><span class="nav-icon">badge</span> Remuneraciones
+                <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="remuneraciones" onclick="event.stopPropagation();abrirModalVisibilidadItem('remuneraciones')" title="Configurar visibilidad">👁️</span><span class="nav-icon">badge</span> Remuneraciones
             </button>
             </div>
 
             <!-- PLAN DE TRABAJO -->
             <div class="nav-block" data-navkey="plantrabajo">
             <button class="nav-item" id="tabBtnPlanTrabajo" onclick="mostrarTab('PlanTrabajo')" title="Plan de trabajo por etapas" style="margin-top:8px;">
-                <span class="nav-drag-handle">⠿</span><span class="nav-icon">construction</span> Plan de Trabajo
+                <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="plantrabajo" onclick="event.stopPropagation();abrirModalVisibilidadItem('plantrabajo')" title="Configurar visibilidad">👁️</span><span class="nav-icon">construction</span> Plan de Trabajo
             </button>
             </div>
 
             <div class="nav-block" data-navkey="config">
             <button class="nav-item" id="tabBtnConfig" onclick="mostrarTab('Config')" title="Configuración del sistema" style="margin-top:8px;">
-                <span class="nav-drag-handle">⠿</span><span class="nav-icon">settings</span> Configuración
+                <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="config" onclick="event.stopPropagation();abrirModalVisibilidadItem('config')" title="Configurar visibilidad">👁️</span><span class="nav-icon">settings</span> Configuración
             </button>
             </div>
 
             <div class="nav-block" data-navkey="herramientas">
             <button class="nav-item nav-group-header" onclick="toggleHerramientasMenu()" title="Herramientas" style="margin-top:8px;">
-                <span class="nav-drag-handle">⠿</span><span class="nav-icon">build</span> Herramientas <span id="herramientasChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▸</span>
+                <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="herramientas" onclick="event.stopPropagation();abrirModalVisibilidadItem('herramientas')" title="Configurar visibilidad">👁️</span><span class="nav-icon">build</span> Herramientas <span id="herramientasChevron" style="margin-left:auto; font-size:11px; transition:transform .2s;">▸</span>
             </button>
             <div id="herramientasSubmenu" class="nav-submenu collapsed" data-subkey="herramientas">
                 <button class="nav-item nav-sub" data-navkey="exportarexcel" onclick="exportarExcel()" title="Exportar presupuestos a Excel">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">download</span> Exportar Excel (presup.)
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="exportarexcel" onclick="event.stopPropagation();abrirModalVisibilidadItem('exportarexcel')" title="Configurar visibilidad">👁️</span><span class="nav-icon">download</span> Exportar Excel (presup.)
                 </button>
                 <button class="nav-item nav-sub" id="btnImportar" data-navkey="cargararchivo" onclick="document.getElementById('uploadFile').click()" title="Cargar datos desde Excel o JSON">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">upload</span> Cargar Archivo
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="cargararchivo" onclick="event.stopPropagation();abrirModalVisibilidadItem('cargararchivo')" title="Configurar visibilidad">👁️</span><span class="nav-icon">upload</span> Cargar Archivo
                 </button>
                 <button class="nav-item nav-sub" id="btnGuardar" data-navkey="guardar" onclick="guardarLocalmente()" title="Guardar en la nube (Firebase)">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">save</span> Guardar
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="guardar" onclick="event.stopPropagation();abrirModalVisibilidadItem('guardar')" title="Configurar visibilidad">👁️</span><span class="nav-icon">save</span> Guardar
                 </button>
                 <div style="height:1px;background:rgba(255,255,255,.08);margin:4px 12px;"></div>
                 <div style="font-size:9px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.1em;padding:4px 16px 2px;">Respaldo / Migración</div>
                 <button class="nav-item nav-sub" data-navkey="exportjson" onclick="exportarBD('json')" title="Exportar toda la BD en JSON">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">data_object</span> Exportar BD → JSON
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="exportjson" onclick="event.stopPropagation();abrirModalVisibilidadItem('exportjson')" title="Configurar visibilidad">👁️</span><span class="nav-icon">data_object</span> Exportar BD → JSON
                 </button>
                 <button class="nav-item nav-sub" data-navkey="exportexcelbd" onclick="exportarBD('excel')" title="Exportar toda la BD en Excel multipestaña">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">table_chart</span> Exportar BD → Excel
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="exportexcelbd" onclick="event.stopPropagation();abrirModalVisibilidadItem('exportexcelbd')" title="Configurar visibilidad">👁️</span><span class="nav-icon">table_chart</span> Exportar BD → Excel
                 </button>
                 <button class="nav-item nav-sub" data-navkey="exportcsv" onclick="exportarBD('csv')" title="Exportar todas las tablas en CSV">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">csv</span> Exportar BD → CSV
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="exportcsv" onclick="event.stopPropagation();abrirModalVisibilidadItem('exportcsv')" title="Configurar visibilidad">👁️</span><span class="nav-icon">csv</span> Exportar BD → CSV
                 </button>
                 <button class="nav-item nav-sub" data-navkey="exportsql" onclick="exportarBD('sql')" title="Exportar BD como SQL">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">storage</span> Exportar BD → SQL
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="exportsql" onclick="event.stopPropagation();abrirModalVisibilidadItem('exportsql')" title="Configurar visibilidad">👁️</span><span class="nav-icon">storage</span> Exportar BD → SQL
                 </button>
                 <div style="height:1px;background:rgba(255,255,255,.08);margin:4px 12px;"></div>
                 <button class="nav-item nav-sub" id="btnUsuarios" data-navkey="usuarios" onclick="abrirUsuarios()" style="display:none;" title="Administrar permisos de usuarios">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">group</span> Usuarios
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="usuarios" onclick="event.stopPropagation();abrirModalVisibilidadItem('usuarios')" title="Configurar visibilidad">👁️</span><span class="nav-icon">group</span> Usuarios
                 </button>
                 <button class="nav-item nav-sub" id="btnSolicitudes" data-navkey="solicitudes" onclick="abrirSolicitudes()" style="display:none;" title="Solicitudes de borrado">
-                    <span class="nav-drag-handle">⠿</span><span class="nav-icon">download</span> Solicitudes
+                    <span class="nav-drag-handle">⠿</span><span class="nav-hide-toggle" data-navkey="solicitudes" onclick="event.stopPropagation();abrirModalVisibilidadItem('solicitudes')" title="Configurar visibilidad">👁️</span><span class="nav-icon">download</span> Solicitudes
                     <span id="badgeSolicitudes" style="display:none;margin-left:auto;background:#E53935;color:#fff;border-radius:10px;font-size:10px;padding:1px 7px;font-weight:700;line-height:1.6;">0</span>
                 </button>
             </div>
             </div>
             <div style="text-align:center;padding:10px 4px 2px;">
                 <span id="navReorderReset" onclick="restaurarOrdenSidebar()" title="Volver el menú al orden original (para todos los usuarios)" style="display:none;font-size:10px;color:rgba(255,255,255,.25);cursor:pointer;">↺ restaurar orden del menú</span>
+                <span id="navHideEditToggle" onclick="toggleModoOcultarMenu()" title="Elegir qué ítems del menú están ocultos" style="display:none;font-size:10px;color:rgba(255,255,255,.25);cursor:pointer;margin-left:10px;">👁️ ocultar ítems del menú</span>
             </div>
         </div>
 
@@ -2995,7 +2987,7 @@
                       <span class="hp-eco-ttl">🇦🇷 Economía Argentina</span>
                       <div class="hp-eco-tabs">
                         <button id="hetab-ind"   class="hp-eco-tab on" onclick="heTab('ind',this)">📊 Indicadores</button>
-                        <button id="hetab-const" class="hp-eco-tab"    onclick="heTab('const',this)">🏗 Construcción</button>
+                        <button id="hetab-const" class="hp-eco-tab"    onclick="heTab('const',this)">🦷 Insumos/Salud</button>
                         <button id="hetab-legal" class="hp-eco-tab"    onclick="heTab('legal',this)">🏛 Legal/AFIP</button>
                       </div>
                     </div>
@@ -3016,61 +3008,6 @@
                   </div>
                 </div>
 
-                <!-- Fila 4: Mercados Bursátiles + Noticias -->
-                <div class="hp-row4" id="hpRow4">
-                  <div class="hpw hpw-bolsas" style="padding:0;">
-                    <div style="padding:11px 18px;background:var(--surface);border-bottom:1px solid var(--border-soft);position:sticky;top:0;z-index:2;">
-                      <span style="font-family:var(--font-sans,'Raleway',sans-serif);font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:var(--text-3);font-weight:500;">🌐 Mercados Bursátiles</span>
-                      <span style="font-family:var(--font-mono,'DM Mono',monospace);font-size:9px;color:var(--text-3);float:right;">⤡ arrastrá esquina inf-der</span>
-                    </div>
-                    <div class="tradingview-widget-container" style="height:400px;width:100%;">
-                      <div class="tradingview-widget-container__widget" style="height:100%;width:100%;"></div>
-                      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
-                      {
-                        "colorTheme": "light",
-                        "dateRange": "1D",
-                        "showChart": false,
-                        "locale": "es",
-                        "width": "100%",
-                        "height": "100%",
-                        "largeChartUrl": "",
-                        "isTransparent": false,
-                        "showSymbolLogo": false,
-                        "showFloatingTooltip": true,
-                        "plotLineColorGrowing": "rgba(30,142,62,1)",
-                        "plotLineColorFalling": "rgba(217,48,37,1)",
-                        "gridLineColor": "rgba(240,243,250,0)",
-                        "scaleFontColor": "rgba(120,123,134,1)",
-                        "belowLineFillColorGrowing": "rgba(30,142,62,0.05)",
-                        "belowLineFillColorFalling": "rgba(217,48,37,0.05)",
-                        "belowLineFillColorGrowingBottom": "rgba(30,142,62,0)",
-                        "belowLineFillColorFallingBottom": "rgba(217,48,37,0)",
-                        "symbolActiveColor": "rgba(26,115,232,0.12)",
-                        "tabs": [
-                          {"title": "🇦🇷 Argentina","symbols": [
-                            {"s":"BYMA:MERVAL","d":"Merval"},{"s":"BYMA:GGAL","d":"Galicia"},{"s":"BYMA:YPFD","d":"YPF"},
-                            {"s":"BYMA:BMA","d":"B. Macro"},{"s":"BYMA:PAMP","d":"Pampa"},{"s":"BYMA:TECO2","d":"Telecom"},
-                            {"s":"BYMA:ALUA","d":"Aluar"},{"s":"BYMA:TXAR","d":"Ternium"},{"s":"BYMA:CEPU","d":"C. Puerto"}]},
-                          {"title": "🇺🇸 EE.UU.","symbols": [
-                            {"s":"FOREXCOM:SPXUSD","d":"S&P 500"},{"s":"FOREXCOM:NSXUSD","d":"Nasdaq 100"},
-                            {"s":"FOREXCOM:DJI","d":"Dow Jones"},{"s":"TVC:VIX","d":"VIX"},{"s":"TVC:RUT","d":"Russell 2000"}]},
-                          {"title": "🇪🇺 Europa","symbols": [
-                            {"s":"FOREXCOM:DEU40","d":"DAX"},{"s":"FOREXCOM:UK100","d":"FTSE 100"},
-                            {"s":"FOREXCOM:FRA40","d":"CAC 40"},{"s":"TVC:SX5E","d":"EuroStoxx 50"},{"s":"TVC:IBEX35","d":"IBEX 35"}]},
-                          {"title": "🌏 Asia","symbols": [
-                            {"s":"TVC:NI225","d":"Nikkei 225"},{"s":"TVC:HSI","d":"Hang Seng"},
-                            {"s":"SSE:000001","d":"SSE Comp."},{"s":"TVC:BSE30","d":"SENSEX"},{"s":"KRX:KOSPI","d":"KOSPI"}]}
-                        ]
-                      }
-                      </script>
-                    </div>
-                  </div>
-                  <div class="hpw hpw-noticias-int" style="padding:0;">
-                    <div class="hp-ni-hdr"><span class="hp-ni-ttl">MERCADOS</span><span class="hp-ni-src">TradingView</span></div>
-                    <div class="tradingview-widget-container" style="height:280px;"><div class="tradingview-widget-container__widget" style="height:100%;width:100%;"></div>
-                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js" async>{"feedMode":"all_symbols","isTransparent":true,"displayMode":"compact","width":"100%","height":280,"colorTheme":"light","locale":"es"}</script></div>
-                  </div>
-                </div><!-- /hpRow4 -->
 
                 <!-- Fila 5: indicador Pesos vs Dólar -->
                 <div class="hp-row5" id="hpRow5" style="margin-top:0;">
@@ -9038,6 +8975,8 @@
         if (nav) nav.classList.toggle('superadmin-drag', !!esSuperAdmin);
         var reset = document.getElementById('navReorderReset');
         if (reset) reset.style.display = esSuperAdmin ? '' : 'none';
+        var hideEdit = document.getElementById('navHideEditToggle');
+        if (hideEdit) hideEdit.style.display = esSuperAdmin ? '' : 'none';
         if (!esSuperAdmin) return;
         if (!window.Sortable) {
             // El script de SortableJS (CDN) puede tardar en llegar; reintentamos un rato.
@@ -9104,6 +9043,184 @@
             db.ref('global/config/sidebarSubOrder').remove(),
             db.ref('global/config/sidebarNest').remove()
         ]).then(function(){ location.reload(); }).catch(function(){ location.reload(); });
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // VISIBILIDAD DE ÍTEMS DEL MENÚ — feature independiente del orden/arrastre
+    // de arriba (no lo toca). Permite al Super Admin ocultar un ítem del
+    // sidebar (concepto principal, sub-bloque anidado o ítem de submenú) para
+    // TODOS los usuarios o solo para usuarios específicos. Se guarda en
+    // global/config/sidebarVisibilidad/<navkey> = {modo:'todos'|'especificos', uids:[...]}.
+    // Si un navkey no tiene entrada ahí, queda visible para todos (default,
+    // sin cambios de comportamiento).
+    // ══════════════════════════════════════════════════════════
+    var sidebarVisibilidad = {};
+
+    // Decide si el navkey debe quedar oculto para el uid dado, según la regla guardada.
+    function _navDebeOcultarse(regla, uid) {
+        if (!regla) return false;
+        if (regla.modo === 'todos') return true;
+        if (regla.modo === 'especificos') return !!(regla.uids && regla.uids.indexOf(uid) !== -1);
+        return false;
+    }
+
+    // Carga la config de visibilidad guardada en Firebase y la aplica al DOM.
+    // Se llama junto a aplicarOrdenSidebarGlobal() en DOMContentLoaded.
+    function cargarVisibilidadSidebar() {
+        if (!db) return;
+        db.ref('global/config/sidebarVisibilidad').once('value').then(function(snap) {
+            sidebarVisibilidad = snap.val() || {};
+            aplicarVisibilidadSidebar();
+        }).catch(function(){});
+    }
+    document.addEventListener('DOMContentLoaded', cargarVisibilidadSidebar);
+
+    // Busca en el sidebar el elemento correspondiente a un navkey, ya sea un
+    // concepto principal (.nav-block), un sub-bloque anidado (.sub-block) o
+    // un ítem simple de submenú (.nav-item.nav-sub).
+    function _navBuscarElemento(navkey) {
+        var nav = document.querySelector('.sidebar-nav');
+        if (!nav) return null;
+        return nav.querySelector('.nav-block[data-navkey="' + navkey + '"]')
+            || nav.querySelector('.sub-block[data-navkey="' + navkey + '"]')
+            || nav.querySelector('.nav-item.nav-sub[data-navkey="' + navkey + '"]');
+    }
+
+    // Aplica (u oculta) los ítems configurados en sidebarVisibilidad para el
+    // usuario actual. Si el sidebar está en "modo edición" (clase
+    // superadmin-hide-edit, ver toggleModoOcultarMenu), en vez de ocultar de
+    // verdad atenúa el ítem (nav-oculto-preview) para que el Super Admin lo
+    // siga viendo y pueda gestionarlo.
+    function aplicarVisibilidadSidebar() {
+        var nav = document.querySelector('.sidebar-nav');
+        if (!nav) return;
+        var miUid = auth.currentUser ? auth.currentUser.uid : null;
+        var modoEdicion = nav.classList.contains('superadmin-hide-edit');
+        Object.keys(sidebarVisibilidad).forEach(function(navkey) {
+            var el = _navBuscarElemento(navkey);
+            if (!el) return;
+            var oculto = _navDebeOcultarse(sidebarVisibilidad[navkey], miUid);
+            if (modoEdicion) {
+                el.style.display = '';
+                el.classList.toggle('nav-oculto-preview', oculto);
+            } else {
+                el.classList.remove('nav-oculto-preview');
+                el.style.display = oculto ? 'none' : '';
+            }
+        });
+    }
+
+    // Togglea el "modo ocultar ítems del menú" (visible/gestionable solo por
+    // Super Admin, ver #navHideEditToggle). Muestra los íconos 👁️ de cada ítem
+    // y, mientras está activo, previsualiza atenuado lo que quedaría oculto.
+    function toggleModoOcultarMenu() {
+        var nav = document.querySelector('.sidebar-nav');
+        if (!nav || !esSuperAdmin) return;
+        nav.classList.toggle('superadmin-hide-edit');
+        var span = document.getElementById('navHideEditToggle');
+        var activo = nav.classList.contains('superadmin-hide-edit');
+        if (span) span.textContent = activo ? '✕ salir del modo ocultar' : '👁️ ocultar ítems del menú';
+        aplicarVisibilidadSidebar();
+    }
+
+    // Abre el modal de configuración de visibilidad para un navkey puntual.
+    function abrirModalVisibilidadItem(navkey) {
+        if (!esSuperAdmin) return;
+        document.getElementById('mviNavkey').value = navkey;
+        var el = _navBuscarElemento(navkey);
+        var label = navkey;
+        if (el) {
+            var cabecera = el.classList.contains('nav-item') ? el : el.querySelector(':scope > .nav-item');
+            var texto = (cabecera || el).textContent || '';
+            label = texto.replace(/⠿|👁️|▾|▸/g, '').trim() || navkey;
+        }
+        document.getElementById('mviLabel').textContent = label;
+        document.getElementById('mviMsg').textContent = '';
+        var regla = sidebarVisibilidad[navkey];
+        var modo = regla ? regla.modo : 'visible';
+        var radios = document.getElementsByName('mviModo');
+        Array.prototype.forEach.call(radios, function(r) { r.checked = (r.value === modo); });
+        _mviCargarUsuarios(regla && regla.modo === 'especificos' ? (regla.uids || []) : []);
+        _mviActualizarModo();
+        document.getElementById('modalVisibilidadItem').classList.add('active');
+    }
+
+    function cerrarModalVisibilidadItem() {
+        var modal = document.getElementById('modalVisibilidadItem');
+        if (modal) modal.classList.remove('active');
+    }
+
+    // Muestra/oculta la lista de checkboxes de usuarios según el radio elegido.
+    function _mviActualizarModo() {
+        var radios = document.getElementsByName('mviModo');
+        var modo = 'visible';
+        Array.prototype.forEach.call(radios, function(r) { if (r.checked) modo = r.value; });
+        var cont = document.getElementById('mviUsuariosCont');
+        if (cont) cont.style.display = (modo === 'especificos') ? '' : 'none';
+    }
+
+    // Pobla la lista de usuarios (email + rol) con checkbox, igual patrón que
+    // cargarUsuariosBackend().
+    function _mviCargarUsuarios(uidsMarcados) {
+        var cont = document.getElementById('mviUsuariosCont');
+        if (!cont) return;
+        cont.innerHTML = '<p style="font-size:12px;color:var(--text-3);">Cargando…</p>';
+        Promise.all([REF_USUARIOS.once('value'), REF_ROLES.once('value')]).then(function(snaps) {
+            var usuarios = snaps[0].val() || {};
+            var roles = snaps[1].val() || {};
+            var uids = Object.keys(usuarios);
+            if (!uids.length) { cont.innerHTML = '<p style="font-size:12px;">No hay usuarios registrados.</p>'; return; }
+            var h = '';
+            uids.forEach(function(uid) {
+                var u = usuarios[uid] || {};
+                var rol = roles[uid] || 'lector';
+                var marcado = uidsMarcados.indexOf(uid) !== -1;
+                h += '<label style="display:flex;align-items:center;gap:6px;font-size:12px;margin:4px 0;">'
+                    + '<input type="checkbox" class="mviUidChk" value="' + uid + '"' + (marcado ? ' checked' : '') + '> '
+                    + escHtml(u.email || uid) + ' <span style="color:var(--text-3);">(' + escHtml(rol) + ')</span></label>';
+            });
+            cont.innerHTML = h;
+        }).catch(function(e) {
+            cont.innerHTML = '<p style="color:var(--danger);font-size:12px;">Error: ' + escHtml(String(e)) + '</p>';
+        });
+    }
+
+    function _mviError(e) {
+        var msg = document.getElementById('mviMsg');
+        if (msg) msg.textContent = 'Error: ' + (e && e.message ? e.message : e);
+    }
+
+    // Guarda la regla elegida en Firebase (global/config/sidebarVisibilidad),
+    // actualiza sidebarVisibilidad localmente y refresca el sidebar sin recargar.
+    function guardarVisibilidadItem() {
+        if (!esSuperAdmin || !db) return;
+        var navkey = document.getElementById('mviNavkey').value;
+        if (!navkey) return;
+        var radios = document.getElementsByName('mviModo');
+        var modo = 'visible';
+        Array.prototype.forEach.call(radios, function(r) { if (r.checked) modo = r.value; });
+
+        var ref = db.ref('global/config/sidebarVisibilidad/' + navkey);
+        var aplicarLocal = function(regla) {
+            if (regla) sidebarVisibilidad[navkey] = regla;
+            else delete sidebarVisibilidad[navkey];
+            // Resetea el estado visual del ítem antes de reaplicar, por si
+            // venía oculto/atenuado de una regla previa que ya no corresponde.
+            var el = _navBuscarElemento(navkey);
+            if (el) { el.style.display = ''; el.classList.remove('nav-oculto-preview'); }
+            aplicarVisibilidadSidebar();
+            cerrarModalVisibilidadItem();
+        };
+
+        if (modo === 'visible') {
+            ref.remove().then(function(){ aplicarLocal(null); }).catch(_mviError);
+        } else if (modo === 'todos') {
+            ref.set({ modo: 'todos' }).then(function(){ aplicarLocal({ modo: 'todos' }); }).catch(_mviError);
+        } else {
+            var uids = Array.prototype.map.call(document.querySelectorAll('.mviUidChk:checked'), function(c){ return c.value; });
+            var regla = { modo: 'especificos', uids: uids };
+            ref.set(regla).then(function(){ aplicarLocal(regla); }).catch(_mviError);
+        }
     }
 
     function toggleHerramientasMenu() {
@@ -20160,11 +20277,12 @@
         });
     }
 
-    // Noticias eco (Construcción + Legal/AFIP)
+    // Noticias eco (Insumos/Salud + Legal/AFIP) — "const" es solo la clave interna heredada,
+    // el contenido ya es de insumos odontológicos y salud, no de construcción.
     var _heFeeds = {
-        const: ['https://news.google.com/rss/search?q=construccion+argentina+costos+indice+CAC&hl=es-419&gl=AR&ceid=AR:es-419',
-                'https://news.google.com/rss/search?q=materiales+construccion+precios+argentina+2025&hl=es-419&gl=AR&ceid=AR:es-419',
-                'https://news.google.com/rss/search?q=UOCRA+gremio+construccion+argentina&hl=es-419&gl=AR&ceid=AR:es-419'],
+        const: ['https://news.google.com/rss/search?q=insumos+odontologicos+precios+argentina&hl=es-419&gl=AR&ceid=AR:es-419',
+                'https://news.google.com/rss/search?q=salud+dental+argentina+costos+consultorio&hl=es-419&gl=AR&ceid=AR:es-419',
+                'https://news.google.com/rss/search?q=obras+sociales+PAMI+argentina+odontologia&hl=es-419&gl=AR&ceid=AR:es-419'],
         legal: ['https://news.google.com/rss/search?q=ARCA+AFIP+impuestos+argentina+2025&hl=es-419&gl=AR&ceid=AR:es-419',
                 'https://news.google.com/rss/search?q=legislacion+laboral+argentina+convenio+colectivo&hl=es-419&gl=AR&ceid=AR:es-419',
                 'https://news.google.com/rss/search?q=monotributo+autónomos+argentina+2025&hl=es-419&gl=AR&ceid=AR:es-419']
@@ -20659,7 +20777,7 @@
         if (!_hRInterval) _hRInterval=setInterval(_hReloj,1000);
         if (_hYaCargo) return;
         _hYaCargo=true;
-        _hDolares(); _hClima(); _hMercado(); _hNoticias(); _hBolsas(); _hNoticiasInt(); _heEconomia(); _hePesoVsDolar();
+        _hDolares(); _hClima(); _hNoticias(); _hBolsas(); _hNoticiasInt(); _heEconomia(); _hePesoVsDolar();
         // Init drag-and-drop on widget rows
         setTimeout(function(){
             var opts = { animation: 180, ghostClass: 'sortable-ghost', chosenClass: 'sortable-chosen', delay: 80, delayOnTouchOnly: true, filter: 'input,select,button,a', preventOnFilter: false };
@@ -20775,119 +20893,6 @@
                 }
             }
         }).catch(function(){s('hcDesc','Sin datos de clima');});
-    }
-    function _hMercado() {
-        var fmtA=function(n){return '$'+Math.round(n||0).toLocaleString('es-AR');};
-        var fmtP=function(p){return (p>=0?'▲ +':'▼ ')+Math.abs(p).toFixed(2)+'%';};
-        var s=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
-
-        // Riesgo País + Merval via argentinadatos
-        fetch('https://api.argentinadatos.com/v1/finanzas/indices/riesgo-pais')
-            .then(function(r){return r.json();}).then(function(d){
-                var a=Array.isArray(d)?d:[]; if(!a.length)return;
-                var v=a[a.length-1].valor||0, pv=(a.length>1?a[a.length-2].valor:v)||v;
-                var diff=Math.round(v-pv);
-                var re=document.getElementById('hmRiesgo');
-                if(re){re.textContent=Math.round(v).toLocaleString('es-AR');re.style.color=v>1500?'#D93025':v>800?'#B45309':'#1E8E3E';}
-                var ve=document.getElementById('hmRiesgoV');
-                if(ve) ve.innerHTML='<span class="'+(diff>=0?'up':'dn')+'">'+(diff>=0?'▲ +':'▼ ')+Math.abs(diff)+' pb</span>';
-            }).catch(function(){});
-
-        fetch('https://api.argentinadatos.com/v1/finanzas/indices/merval')
-            .then(function(r){return r.json();}).then(function(d){
-                var a=Array.isArray(d)?d:[]; if(!a.length)return;
-                var v=a[a.length-1].valor||0, pv=(a.length>1?a[a.length-2].valor:v)||v;
-                var pct=pv?((v-pv)/pv*100):0;
-                s('hmMerval',fmtA(v));
-                var ve=document.getElementById('hmMervalV');
-                if(ve){ve.textContent=fmtP(pct);ve.className='hp-m-pct '+(pct>=0?'up':'dn');}
-            }).catch(function(){});
-
-        fetch('https://api.argentinadatos.com/v1/finanzas/indices/merval-usd')
-            .then(function(r){return r.json();}).then(function(d){
-                var a=Array.isArray(d)?d:[]; if(!a.length)return;
-                var v=a[a.length-1].valor||0, pv=(a.length>1?a[a.length-2].valor:v)||v;
-                var pct=pv?((v-pv)/pv*100):0;
-                s('hmMervalU','USD '+Math.round(v).toLocaleString('es-AR'));
-                var ve=document.getElementById('hmMervalUV');
-                if(ve){ve.textContent=fmtP(pct);ve.className='hp-m-pct '+(pct>=0?'up':'dn');}
-            }).catch(function(){});
-
-        // Acciones via Yahoo Finance Query2 (CORS libre)
-        var tks=['GGAL.BA','BMA.BA','SUPV.BA','PAMP.BA','TECO2.BA','TXAR.BA','ALUA.BA','YPFD.BA','BBAR.BA','CEPU.BA'];
-        var noms={'GGAL.BA':'Grupo Galicia','BMA.BA':'Banco Macro','SUPV.BA':'Supervielle',
-            'PAMP.BA':'Pampa Energía','TECO2.BA':'Telecom','TXAR.BA':'Ternium Arg.',
-            'ALUA.BA':'Aluar','YPFD.BA':'YPF','BBAR.BA':'BBVA Argentina','CEPU.BA':'Central Puerto'};
-        var tbody=document.getElementById('haBody');
-        var syms=tks.join('%2C');
-        // Yahoo Finance v8 summary - CORS libre sin autenticación
-        var yUrl='https://query1.finance.yahoo.com/v7/finance/quote?symbols='+syms+'&fields=symbol,regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketDayHigh,regularMarketDayLow,regularMarketPreviousClose';
-        fetch(yUrl, {headers:{'Accept':'application/json'}})
-            .then(function(r){return r.json();})
-            .then(function(d){
-                var quotes=(d.quoteResponse&&d.quoteResponse.result)||[];
-                if(!quotes.length){
-                    if(tbody) tbody.innerHTML='<tr><td colspan="6" style="padding:20px;text-align:center;color:#BDC1C6;font-family:var(--font-sans);font-size:11px">Sin datos — mercado cerrado o fuera de horario</td></tr>';
-                    return;
-                }
-                quotes.sort(function(a,b){return a.symbol.localeCompare(b.symbol);});
-                tbody.innerHTML='';
-                quotes.forEach(function(q){
-                    var tk=q.symbol;
-                    var tkCorto=tk.replace('.BA','');
-                    var nom=noms[tk]||tkCorto;
-                    var precio=q.regularMarketPrice||0;
-                    var pct=q.regularMarketChangePercent||0;
-                    var mx=q.regularMarketDayHigh||0;
-                    var mn=q.regularMarketDayLow||0;
-                    var badge=pct>=0?'<span class="hp-bup">▲ '+Math.abs(pct).toFixed(2)+'%</span>':'<span class="hp-bdn">▼ '+Math.abs(pct).toFixed(2)+'%</span>';
-                    var tr=document.createElement('tr');
-                    tr.innerHTML='<td class="tk">'+tkCorto+'</td>'+
-                        '<td style="color:#5F6368;font-size:11px">'+nom+'</td>'+
-                        '<td style="text-align:right;font-family:var(--font-mono);font-weight:500">'+fmtA(precio)+'</td>'+
-                        '<td style="text-align:right">'+badge+'</td>'+
-                        '<td style="text-align:right;font-family:var(--font-mono);color:#1E8E3E">'+fmtA(mx)+'</td>'+
-                        '<td style="text-align:right;font-family:var(--font-mono);color:#D93025">'+fmtA(mn)+'</td>';
-                    tbody.appendChild(tr);
-                });
-                var f=document.getElementById('hFooter'),n=new Date();
-                if(f) f.textContent='act. '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
-            })
-            .catch(function(){
-                // Fallback a argentinadatos si Yahoo falla
-                var res=[],pend=tks.length;
-                var tksShort=['GGAL','BMA','SUPV','PAMP','TECO2','TXAR','ALUA','YPFD','BBAR','CEPU'];
-                var nomsS={GGAL:'Grupo Galicia',BMA:'Banco Macro',SUPV:'Supervielle',PAMP:'Pampa Energía',TECO2:'Telecom',TXAR:'Ternium Arg.',ALUA:'Aluar',YPFD:'YPF',BBAR:'BBVA Argentina',CEPU:'Central Puerto'};
-                tksShort.forEach(function(tk){
-                    fetch('https://api.argentinadatos.com/v1/cotizaciones/acciones/'+tk)
-                        .then(function(r){return r.json();})
-                        .then(function(d){
-                            var a=Array.isArray(d)?d:[];
-                            if(a.length){var u=a[a.length-1];res.push({tk:tk,nom:nomsS[tk]||tk,precio:u.cierre||0,mx:u.maximo||0,mn:u.minimo||0,prev:a.length>1?(a[a.length-2].cierre||0):0});}
-                        }).catch(function(){})
-                        .finally(function(){
-                            pend--;
-                            if(pend===0&&tbody){
-                                res.sort(function(a,b){return a.tk.localeCompare(b.tk);});
-                                if(!res.length){tbody.innerHTML='<tr><td colspan="6" style="padding:20px;text-align:center;color:#BDC1C6;font-family:var(--font-sans);font-size:11px">Sin datos disponibles</td></tr>';return;}
-                                tbody.innerHTML='';
-                                res.forEach(function(r){
-                                    var pct=r.prev?((r.precio-r.prev)/r.prev*100):0;
-                                    var badge=pct>=0?'<span class="hp-bup">▲ '+Math.abs(pct).toFixed(2)+'%</span>':'<span class="hp-bdn">▼ '+Math.abs(pct).toFixed(2)+'%</span>';
-                                    var tr=document.createElement('tr');
-                                    tr.innerHTML='<td class="tk">'+r.tk+'</td><td style="color:#5F6368;font-size:11px">'+r.nom+'</td>'+
-                                        '<td style="text-align:right;font-family:var(--font-mono);font-weight:500">'+fmtA(r.precio)+'</td>'+
-                                        '<td style="text-align:right">'+badge+'</td>'+
-                                        '<td style="text-align:right;font-family:var(--font-mono);color:#1E8E3E">'+fmtA(r.mx)+'</td>'+
-                                        '<td style="text-align:right;font-family:var(--font-mono);color:#D93025">'+fmtA(r.mn)+'</td>';
-                                    tbody.appendChild(tr);
-                                });
-                                var f=document.getElementById('hFooter'),n=new Date();
-                                if(f) f.textContent='act. (histórico) '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
-                            }
-                        });
-                });
-            });
     }
 // ▼▼▼ CIERRE DEL SCRIPT PRINCIPAL — NO MOVER NI BORRAR ▼▼▼
 </script>
@@ -21414,6 +21419,35 @@
         <button class="btn btn-outline btn-sm" onclick="reenviarClaveUsuario()">🔑 Reenviar mail para definir contraseña</button>
       </div>
       <div id="eutMsg" style="font-size:12px;margin-top:8px;color:var(--text-3);"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL: VISIBILIDAD DE ÍTEM DEL MENÚ (Super Admin) ═══════════════ -->
+<div class="modal" id="modalVisibilidadItem">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>👁️ Visibilidad del menú</h2>
+      <button class="modal-close" onclick="cerrarModalVisibilidadItem()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="mviNavkey">
+      <div style="font-size:12px;color:var(--text-3);margin-bottom:10px;">Ítem: <strong id="mviLabel">—</strong></div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin:6px 0;">
+        <input type="radio" name="mviModo" value="visible" onchange="_mviActualizarModo()"> Visible para todos
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin:6px 0;">
+        <input type="radio" name="mviModo" value="todos" onchange="_mviActualizarModo()"> Oculto para todos
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin:6px 0;">
+        <input type="radio" name="mviModo" value="especificos" onchange="_mviActualizarModo()"> Oculto para usuarios específicos
+      </label>
+      <div id="mviUsuariosCont" style="display:none;max-height:220px;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:8px;margin-top:8px;"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
+        <button class="btn btn-gold btn-sm" onclick="guardarVisibilidadItem()">💾 Guardar</button>
+        <button class="btn btn-outline btn-sm" onclick="cerrarModalVisibilidadItem()">Cancelar</button>
+      </div>
+      <div id="mviMsg" style="font-size:12px;margin-top:8px;color:var(--text-3);"></div>
     </div>
   </div>
 </div>
