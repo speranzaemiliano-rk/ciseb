@@ -31,11 +31,23 @@ cp config.example.js config.js
 
 Completar `config.js` con:
 - Los valores de Firebase del paso 1.
-- `adminEmail`: el email con el que va a entrar el primer usuario (se
-  autoasigna `superadmin` la primera vez que haga login/registro — después
-  esa regla de bootstrap se cierra sola, ver `database.rules.json`).
+- `adminEmail`: esta cuenta **siempre** tiene rol `superadmin` (se re-chequea
+  en cada login, no solo el primero). Además, `database.rules.json` permite
+  que cualquier usuario se auto-asigne un rol la primera vez, mientras el
+  nodo `roles` esté completamente vacío — eso sí se cierra solo apenas existe
+  un rol asignado (el de `adminEmail`, típicamente).
+- `dominioWorkspace` (opcional): si el centro usa Google Workspace, el
+  dominio (ej. `"miclinica.com.ar"`) para restringir el botón "Continuar con
+  Google" a esas cuentas. Dejar `""` si no aplica.
 
 No hace falta tocar nada más de `index.html`.
+
+### Login con Google — paso manual adicional en Firebase Console
+
+Además de habilitar **Google** como proveedor (paso 1.2), agregar el dominio
+donde se sirve el frontend (ej. `tuusuario.github.io`, o el dominio propio si
+usás uno) en **Authentication → Settings → Authorized domains** — sin esto
+`signInWithPopup` falla con `auth/unauthorized-domain`.
 
 ## 3. Deployar las reglas de seguridad
 

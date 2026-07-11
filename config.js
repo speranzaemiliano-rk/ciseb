@@ -18,6 +18,11 @@ window.CISEB_CONFIG = {
         messagingSenderId: "757720795463",
         appId: "1:757720795463:web:5d5bb3c269aad01a48e462"
     },
-    // Primer usuario que se loguea con este email se autoasigna 'superadmin'.
-    adminEmail: "speranzaemiliano@gmail.com"
+    // Este email siempre tiene rol 'superadmin' (se autoasigna en cada login,
+    // no solo el primero — ver onAuthStateChanged). No revoca roles ya
+    // asignados a otras cuentas si se cambia este valor más adelante.
+    adminEmail: "administracion@odontologiaciseb.com.ar",
+    // Restringe el botón "Continuar con Google" a cuentas de este dominio
+    // (Google Workspace). Dejar vacío ("") para no restringir por dominio.
+    dominioWorkspace: "odontologiaciseb.com.ar"
 };

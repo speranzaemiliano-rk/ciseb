@@ -101,12 +101,31 @@ Ruta base por proyecto activo: `getBasePath()` → `empresas/<empresaId>/proyect
 
 Roles en `roles/<uid>`: `superadmin`, `admin`, `editor`, `lector`. Flags JS:
 `esSuperAdmin`, `esAdmin`, `puedeEditar`. **Hoy se aplican SOLO en el cliente.**
-El primer usuario / `ADMIN_EMAIL` se autoasigna `superadmin` (hay una regla de
-bootstrap en `database.rules.json` que permite ese primer alta y luego se cierra).
+`ADMIN_EMAIL` (en `config.js`) siempre tiene rol `superadmin` — se re-chequea
+en **cada** login, no solo el primero (`onAuthStateChanged`); cambiar ese valor
+no revoca roles ya asignados a otras cuentas en `roles/<uid>`.
 
 ⚠️ **Seguridad:** la seguridad real depende de las reglas de Firebase
 (`database.rules.json`). El objetivo del producto es RBAC efectivo + SSO de
-Workspace (ver marco §5), aún no implementado.
+Workspace (ver marco §5) — RBAC efectivo (reglas que validen el rol en el
+backend/DB, no solo en la UI) aún no implementado.
+
+**Login con Google / SSO Workspace:** además de email+contraseña, la pantalla
+de login tiene "Continuar con Google" (`loginConGoogle()`, Firebase Auth
+`GoogleAuthProvider`). Si `config.js` define `dominioWorkspace`, restringe el
+selector de cuenta de Google a ese dominio (parámetro `hd`) y **además**
+re-chequea el email después del login (el `hd` es un hint del lado de Google,
+no una garantía dura) — si no coincide, desloguea y avisa. Esto es
+restricción de **acceso/UX**, no reemplaza el RBAC efectivo: un email que
+coincide con `ADMIN_EMAIL` sigue siendo superadmin sin importar el dominio.
+Para un gate 100% server-side (imposible de saltear desde el cliente) haría
+falta una *Blocking Function* de Firebase Auth (`beforeSignIn`), que requiere
+plan Blaze — no implementado.
+
+⚠️ Paso manual en Firebase Console (no scripteable): habilitar **Google**
+como proveedor en Authentication → Sign-in method, y agregar el dominio del
+frontend (ej. `usuario.github.io`) en Authentication → Settings → Authorized
+domains — sin esto el popup de `signInWithPopup` falla.
 
 ## Integraciones
 

@@ -18,6 +18,10 @@ window.CISEB_CONFIG = {
         messagingSenderId: "PEGAR-SENDER-ID",
         appId: "PEGAR-APP-ID"
     },
-    // El primer usuario que se registre con este email se autoasigna 'superadmin'.
-    adminEmail: "PEGAR-tu-email@dominio.com"
+    // Este email siempre tiene rol 'superadmin' (se autoasigna en cada login).
+    adminEmail: "PEGAR-tu-email@dominio.com",
+    // Si el centro usa Google Workspace, poné acá el dominio para restringir
+    // "Continuar con Google" a esas cuentas (ej. "miclinica.com.ar").
+    // Dejá "" si no usás Workspace o querés permitir cualquier cuenta de Google.
+    dominioWorkspace: ""
 };
