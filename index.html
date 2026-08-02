@@ -2247,7 +2247,7 @@
 <style>
 #ciseb-splash{
     position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;
-    background:#0D1117;
+    background:#0A0D14;
     display:flex;align-items:center;justify-content:center;
     opacity:1;transition:opacity 1s ease;
     overflow:hidden;
@@ -2262,28 +2262,29 @@
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
 }
 #ciseb-splash .sp-brand span{
-    font-family:-apple-system,BlinkMacSystemFont,SF Pro Display,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-    font-size: clamp(40px, 9vw, 72px);
-    font-weight:200;
-    letter-spacing:.14em;
-    color:#fff;
+    font-family:ui-serif,'Iowan Old Style','Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif;
+    font-weight:600;
+    font-size: clamp(40px, 9vw, 64px);
+    letter-spacing:-.3px;
+    background:linear-gradient(90deg,#22D3EE,#7C5CFF 55%,#C084FC);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
 }
 #ciseb-splash .sp-rule{
     width:0;height:1px;
-    background:linear-gradient(90deg,transparent,rgba(217,169,50,.75),transparent);
+    background:linear-gradient(90deg,transparent,rgba(124,92,255,.6),transparent);
     margin:16px 0 14px;transition:width 1.2s cubic-bezier(.4,0,.2,1);
 }
 #ciseb-splash .sp-sub{
     font-family:SF Mono,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;font-weight:400;
     letter-spacing:.42em;text-transform:uppercase;
-    color:rgba(217,169,50,.55);text-indent:.42em;
+    color:#6f6c8a;text-indent:.42em;
 }
 #sp-enter{
     margin-top:32px;
     padding:8px 28px;
-    border:1px solid rgba(217,169,50,.4);
+    border:1px solid rgba(124,92,255,.45);
     background:transparent;
-    color:rgba(217,169,50,.7);
+    color:#C9C2F5;
     font-family:SF Mono,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;font-weight:400;
     letter-spacing:.32em;text-transform:uppercase;
     cursor:pointer;
@@ -2291,30 +2292,104 @@
     pointer-events:none;
 }
 #sp-enter:hover{
-    border-color:rgba(217,169,50,.9);
-    color:rgba(217,169,50,1);
+    border-color:rgba(124,92,255,.9);
+    color:#EAE4FF;
 }
 </style>
 
+<!-- Splash de marca: Mess · Sistema de Gestión. CISEB es el cliente que corre
+     sobre el sistema Mess — cada instalación mantiene su propia identidad
+     "adentro" (login, sidebar, PWA), Mess es la marca del software en el
+     arranque. Ver mess-branding/MARCA.md (kit de marca) para el criterio. -->
 <div id="ciseb-splash">
     <div class="sp-content" id="sp-ct">
         <div class="sp-brand">
-            <svg viewBox="0 0 512 512" width="88" height="88" xmlns="http://www.w3.org/2000/svg">
-                <defs><path id="petal-sp" d="M -0.15,0 C -0.12,-0.55 0.35,-0.95 0.65,-0.98 C 0.85,-1.0 1,-0.3 1,0 C 1,0.3 0.85,1.0 0.65,0.98 C 0.35,0.95 -0.12,0.55 -0.15,0 Z"/></defs>
-                <g transform="translate(85,71) scale(1.85)">
-                    <use href="#petal-sp" fill="#8E3B8E" transform="translate(94,98) rotate(-100) scale(55,17)"/>
-                    <use href="#petal-sp" fill="#F7C948" transform="translate(94,98) rotate(105) scale(78,19)"/>
-                    <use href="#petal-sp" fill="#E31C4D" fill-opacity="0.92" transform="translate(94,98) rotate(180) scale(95,26)"/>
-                    <use href="#petal-sp" fill="#93BEDB" transform="translate(112,100) rotate(-35) scale(58,15)"/>
-                    <use href="#petal-sp" fill="#7AB648" transform="translate(112,100) rotate(35) scale(76,18)"/>
-                    <circle cx="112" cy="100" r="6" fill="#1E4C8C"/>
+            <svg viewBox="0 0 200 200" width="88" height="88" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mess">
+                <defs>
+                    <radialGradient id="messSphere" cx="34%" cy="28%" r="78%">
+                        <stop offset="0%" stop-color="#FFFFFF"/>
+                        <stop offset="14%" stop-color="#E3DCFF"/>
+                        <stop offset="30%" stop-color="#A896FF"/>
+                        <stop offset="52%" stop-color="#6D4BE0"/>
+                        <stop offset="72%" stop-color="#4A2FA8"/>
+                        <stop offset="88%" stop-color="#7C5CFF"/>
+                        <stop offset="100%" stop-color="#3A2596"/>
+                    </radialGradient>
+                    <linearGradient id="messOrbit" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#0E7490"/>
+                        <stop offset="9%" stop-color="#22D3EE"/>
+                        <stop offset="17%" stop-color="#E0FBFF"/>
+                        <stop offset="26%" stop-color="#22D3EE"/>
+                        <stop offset="38%" stop-color="#3B5BD0"/>
+                        <stop offset="50%" stop-color="#7C5CFF"/>
+                        <stop offset="58%" stop-color="#F0EBFF"/>
+                        <stop offset="67%" stop-color="#7C5CFF"/>
+                        <stop offset="78%" stop-color="#7A3FB8"/>
+                        <stop offset="88%" stop-color="#C084FC"/>
+                        <stop offset="95%" stop-color="#FBF0FF"/>
+                        <stop offset="100%" stop-color="#8B45C4"/>
+                    </linearGradient>
+                    <radialGradient id="messNodoCian" cx="35%" cy="30%" r="75%">
+                        <stop offset="0%" stop-color="#FFFFFF"/>
+                        <stop offset="40%" stop-color="#22D3EE"/>
+                        <stop offset="100%" stop-color="#0E7490"/>
+                    </radialGradient>
+                    <radialGradient id="messNodoLila" cx="35%" cy="30%" r="75%">
+                        <stop offset="0%" stop-color="#FFFFFF"/>
+                        <stop offset="40%" stop-color="#C084FC"/>
+                        <stop offset="100%" stop-color="#7A3FB8"/>
+                    </radialGradient>
+                    <filter id="messGlow" x="-60%" y="-60%" width="220%" height="220%">
+                        <feGaussianBlur stdDeviation="3" result="b"/>
+                        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
+                </defs>
+                <g fill="#C084FC">
+                    <circle cx="30" cy="42" r="1.3" opacity="0.75"/>
+                    <circle cx="168" cy="54" r="1" opacity="0.65"/>
+                    <circle cx="176" cy="150" r="1.3" opacity="0.7"/>
+                    <circle cx="44" cy="160" r="0.9" opacity="0.6"/>
+                    <circle cx="150" cy="176" r="1.1" opacity="0.55"/>
                 </g>
+                <g fill="#22D3EE">
+                    <circle cx="22" cy="118" r="1" opacity="0.65"/>
+                    <circle cx="120" cy="20" r="1.2" opacity="0.7"/>
+                    <circle cx="182" cy="96" r="0.9" opacity="0.55"/>
+                </g>
+                <g fill="none" stroke="url(#messOrbit)" stroke-width="0.8" stroke-linecap="round">
+                    <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="48s" repeatCount="indefinite"/>
+                    <ellipse cx="100" cy="100" rx="86" ry="28" transform="rotate(0 100 100)" opacity="0.95"/>
+                    <ellipse cx="100" cy="100" rx="86" ry="28" transform="rotate(30 100 100)" opacity="0.88"/>
+                    <ellipse cx="100" cy="100" rx="86" ry="28" transform="rotate(60 100 100)" opacity="0.8"/>
+                    <ellipse cx="100" cy="100" rx="86" ry="28" transform="rotate(90 100 100)" opacity="0.72"/>
+                    <ellipse cx="100" cy="100" rx="86" ry="28" transform="rotate(120 100 100)" opacity="0.64"/>
+                    <ellipse cx="100" cy="100" rx="86" ry="28" transform="rotate(150 100 100)" opacity="0.56"/>
+                </g>
+                <g>
+                    <animateTransform attributeName="transform" type="rotate" from="360 100 100" to="0 100 100" dur="72s" repeatCount="indefinite"/>
+                    <g fill="url(#messNodoCian)">
+                        <circle cx="186" cy="100" r="2.8"/>
+                        <circle cx="100" cy="14" r="2.2"/>
+                        <circle cx="143" cy="26" r="1.8"/>
+                    </g>
+                    <g fill="url(#messNodoLila)">
+                        <circle cx="14" cy="100" r="1.9"/>
+                        <circle cx="57" cy="174" r="1.8"/>
+                        <circle cx="26" cy="57" r="1.5"/>
+                    </g>
+                </g>
+                <circle cx="100" cy="100" r="24" fill="url(#messSphere)" fill-opacity="0.62" filter="url(#messGlow)">
+                    <animate attributeName="fill-opacity" values="0.62;0.85;0.62" dur="6s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx="100" cy="100" r="24" fill="none" stroke="#EAE4FF" stroke-width="0.5" stroke-opacity="0.5"/>
+                <ellipse cx="91" cy="89" rx="6" ry="3.4" fill="#FFFFFF" opacity="0.72" transform="rotate(-28 91 89)"/>
+                <path d="M83 116 A24 24 0 0 0 117 114" fill="none" stroke="#CFC4FF" stroke-width="0.9" stroke-opacity="0.45"/>
             </svg>
-            <span>CISEB</span>
+            <span>Mess</span>
         </div>
         <div class="sp-rule" id="sp-rule"></div>
         <div class="sp-sub">Sistema de Gesti&oacute;n</div>
-        <button id="sp-enter">Entrar</button>
+        <button id="sp-enter">Entrar al sistema</button>
     </div>
 </div>
 
