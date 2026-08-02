@@ -115,10 +115,13 @@
             --blue:       #6B3D74;          /* violeta del isotipo (info, distinto del acento) */
             --blue-bg:    #F3EAF5;
             --sidebar-w:  252px;
-            --radius:     14px;             /* esquinas redondeadas — estilo Apple */
-            --radius-sm:  8px;
+            /* Radios unificados — un solo criterio en toda la app:
+               tarjetas 12px · controles 8px · botones píldora. */
+            --radius:     12px;             /* tarjetas */
+            --radius-sm:  8px;              /* controles (inputs, selects, botones chicos) */
             --radius-pill: 980px;           /* botones tipo píldora */
             --shadow:     0 1px 2px rgba(0,0,0,.04), 0 6px 20px rgba(0,0,0,.06);
+            --shadow-soft: 0 1px 2px rgba(20,20,30,.05), 0 4px 16px rgba(20,20,30,.05);
             --shadow-lg:  0 20px 60px rgba(0,0,0,.22);
             /* Tipografía del sistema Apple (con fallback multiplataforma) */
             --font-sans:    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -523,14 +526,26 @@
             z-index: 50;
         }
 
+        /* Título de pantalla con jerarquía real: antes era un rótulo de 10px en
+           mayúsculas con espaciado extremo, que se leía como una etiqueta y no
+           como el título de la sección. */
         .topbar-title {
-            font-size: 10px;
-            font-weight: 500;
-            color: var(--text-3);
-            letter-spacing: 0.22em;
-            text-transform: uppercase;
-            font-family:SF Mono,SFMono-Regular,Menlo,Consolas,monospace;
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text-1);
+            letter-spacing: -0.01em;
+            text-transform: none;
+            font-family: var(--font-display);
+            line-height: 1.2;
         }
+        .topbar-desc {
+            font-size: 12px;
+            color: var(--text-3);
+            font-family: var(--font-sans);
+            margin-top: 2px;
+            line-height: 1.3;
+        }
+        .topbar-desc:empty { display: none; }
 
         .topbar-actions {
             display: flex;
@@ -599,7 +614,11 @@
         .btn-danger-sm:hover { background: var(--danger); color: #fff; }
         .btn-sm { padding: 6px 14px; font-size: 12px; }
 
-        .badge-rol { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: var(--radius-pill); font-size: 10px; font-weight: 500; font-family: var(--font-mono); letter-spacing: 0.06em; }
+        /* Chips de estado: punto de color + texto, para leer el estado de un vistazo.
+           El punto toma el color del propio chip (currentColor), así alcanza con
+           cambiar la clase de color para que quede consistente en toda la app. */
+        .badge-rol { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 600; font-family: var(--font-sans); letter-spacing: 0.02em; }
+        .badge-rol::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .9; flex-shrink: 0; }
         .badge-ok  { background: var(--success-bg); color: var(--success); }
         .badge-warn{ background: var(--warn-bg); color: var(--warn); }
         .badge-err { background: var(--danger-bg); color: var(--danger); }
@@ -618,52 +637,44 @@
             overflow: hidden !important;
         }
 
-        /* ── STATS ── */
+        /* ── STATS ──
+           Interfaz más limpia: las tarjetas se separan por AIRE (gap real), no por
+           líneas de 1px pegadas. Se saca la franja de gradiente superior y el número
+           pasa al frente. Radio unificado a --radius (12px) como el resto de tarjetas. */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1px;
+            gap: 14px;
             margin-top: 0;
-            margin-bottom: 16px;
-            background: var(--border);
-            border: 1px solid var(--border);
+            margin-bottom: 22px;
         }
 
         .stat-card {
             background: #FFFFFF;
-            border-radius: 16px;
-            border: none;
-            padding: 22px 24px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-soft);
+            padding: 18px 20px 16px;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
-        }
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--gold) 0%, transparent 70%);
-            opacity: .5;
-            border-radius: 16px 16px 0 0;
+            box-shadow: var(--shadow-soft);
         }
         .stat-label {
-            font-size: 9px;
-            font-weight: 400;
+            font-size: 11px;
+            font-weight: 500;
             text-transform: uppercase;
-            letter-spacing: 0.28em;
+            letter-spacing: 0.06em;
             color: var(--text-3);
             margin-bottom: 12px;
             font-family:-apple-system,BlinkMacSystemFont,SF Pro Display,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
         }
         .stat-value {
             font-size: 26px;
-            font-weight: 300;
+            font-weight: 600;
             color: var(--text-1);
             font-variant-numeric: tabular-nums;
             line-height: 1;
             font-family:-apple-system,BlinkMacSystemFont,SF Pro Display,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-            letter-spacing: -0.01em;
+            letter-spacing: -0.02em;
         }
         .stat-sub {
             margin-top: 8px;
@@ -718,12 +729,14 @@
             gap: 10px;
             background: var(--surface);
         }
+        /* Título de tarjeta legible: se sale de la micro-mayúscula de 9px con
+           espaciado extremo, que costaba leer de un vistazo. */
         .table-card-head h3 {
-            font-size: 9px;
-            font-weight: 400;
-            text-transform: uppercase;
-            letter-spacing: 0.28em;
-            color: var(--text-2);
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: none;
+            letter-spacing: -0.01em;
+            color: var(--text-1);
             font-family:-apple-system,BlinkMacSystemFont,SF Pro Display,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
         }
         .table-wrap { overflow-x: auto; }
@@ -2899,7 +2912,10 @@
             <button class="hamburger" id="hamburgerBtn" onclick="toggleMobileSidebar()" aria-label="Menú">
                 <span></span><span></span><span></span>
             </button>
-            <div class="topbar-title" id="topbarTitle">Presupuestos y Pagos</div>
+            <div style="min-width:0;">
+                <div class="topbar-title" id="topbarTitle">Presupuestos y Pagos</div>
+                <div class="topbar-desc" id="topbarDesc"></div>
+            </div>
             <span id="topbarEmpresaChip" onclick="mostrarTab('Home')" title="Ir al inicio" style="display:none;cursor:pointer;align-items:center;gap:5px;background:rgba(217,169,50,.13);border:1px solid rgba(217,169,50,.35);color:rgba(217,169,50,.95);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;letter-spacing:.03em;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;"></span>
             <button class="btn-refresh" id="btnRefresh" onclick="refreshTabActivo()" title="Actualizar">↻</button>
             <div class="topbar-actions">
@@ -8522,37 +8538,69 @@
         const principalMenuBtn = document.getElementById('tabBtnPrincipalMenu');
         if (principalMenuBtn) principalMenuBtn.classList.toggle('active', SUB_PRINCIPAL.includes(nombre));
 
+        // Título corto + descripción: lo que antes iba después del "—" pasa a la
+        // línea de descripción, para que el título se lea de un vistazo.
         const titles = {
             'Pacientes':         'Pacientes',
-            'Turnos':            'Turnos — Agenda',
+            'Turnos':            'Turnos',
             'ListaEspera':       'Lista de Espera',
-            'Profesionales':     'Profesionales — Consultorio',
-            'Prestaciones':      'Prestaciones — Catálogo clínico',
-            'Cobros':            'Cobros — Generados desde Evoluciones',
-            'Beneficiarios':     'Beneficiarios — Reparto',
-            'Liquidacion':       'Liquidación — Reparto por período',
-            'Presupuestos':      'Presupuestos y Pagos',
-            'Proveedores':       'Datos de Proveedores',
-            'Facturas':          'Facturas de Proveedores',
-            'Documentos':        'Comprobantes de Pago (sin factura)',
+            'Profesionales':     'Profesionales',
+            'Prestaciones':      'Prestaciones',
+            'Cobros':            'Cobros',
+            'Beneficiarios':     'Beneficiarios',
+            'Liquidacion':       'Liquidación',
+            'Presupuestos':      'Presupuestos',
+            'Proveedores':       'Proveedores',
+            'Facturas':          'Facturas',
+            'Documentos':        'Comprobantes de Pago',
             'Servicios':         'Tratamientos',
             'IngGeneral':        'Ingresos Generales',
-            'Ingresos':          'Ingresos del Proyecto',
+            'Ingresos':          'Ingresos',
             'ResumenIngresos':   'Resumen de Ingresos',
-            'Egresos':           'Egresos del Proyecto',
-            'CompRecibidos':     'Comprobantes Recibidos (ARCA)',
-            'Pagos':             'Pagos a Proveedores',
-            'Caja':              'Resumen de Caja',
-            'CajaGeneral':       'Caja General — Libro de Movimientos',
+            'Egresos':           'Egresos',
+            'CompRecibidos':     'Comprobantes Recibidos',
+            'Pagos':             'Pagos',
+            'Caja':              'Caja',
+            'CajaGeneral':       'Caja General',
             'PlanTrabajo':       'Plan de Trabajo',
             'EfectivoPesos':     'Efectivo en Pesos',
             'EfectivoUSD':       'Efectivo en Dólares',
-            'CuentasBancarias':  'Banco — Cuentas Corrientes',
-            'Tesoreria':         'Tesorería Interempresa',
-            'Reportes':          'Reportes Contables e Impositivos',
-            'Remuneraciones':    'Remuneraciones — Legajos y Liquidación'
+            'CuentasBancarias':  'Cuentas Bancarias',
+            'Tesoreria':         'Tesorería',
+            'Reportes':          'Reportes',
+            'Remuneraciones':    'Remuneraciones'
+        };
+        const descripciones = {
+            'Pacientes':         'Ficha clínica, estudios y planes de tratamiento',
+            'Turnos':            'Agenda del consultorio',
+            'ListaEspera':       'Pacientes esperando un horario',
+            'Profesionales':     'Equipo del consultorio y reglas de reparto',
+            'Prestaciones':      'Catálogo clínico con duración y precio de referencia',
+            'Cobros':            'Generados desde las evoluciones',
+            'Beneficiarios':     'Destinatarios del reparto (socios y fondo común)',
+            'Liquidacion':       'Reparto por período',
+            'Presupuestos':      'Presupuestos y pagos a proveedores',
+            'Proveedores':       'Datos de proveedores',
+            'Facturas':          'Facturas de proveedores',
+            'Documentos':        'Comprobantes de pago sin factura',
+            'Servicios':         'Tratamientos facturables por cliente',
+            'IngGeneral':        'Aportes, préstamos y otros ingresos',
+            'ResumenIngresos':   'Consolidado de todos los ingresos',
+            'Egresos':           'Egresos del proyecto',
+            'CompRecibidos':     'Comprobantes recibidos de ARCA',
+            'Pagos':             'Pagos a proveedores',
+            'CajaGeneral':       'Libro de movimientos completo',
+            'PlanTrabajo':       'Tablero de tareas',
+            'EfectivoPesos':     'Caja en pesos',
+            'EfectivoUSD':       'Caja en dólares',
+            'CuentasBancarias':  'Cuentas corrientes y saldos',
+            'Tesoreria':         'Movimientos entre empresas',
+            'Reportes':          'Reportes contables e impositivos',
+            'Remuneraciones':    'Legajos y liquidación de sueldos'
         };
         document.getElementById('topbarTitle').textContent = titles[nombre] || nombre;
+        var _descEl = document.getElementById('topbarDesc');
+        if (_descEl) _descEl.textContent = descripciones[nombre] || '';
 
         if (nombre === 'Home')             renderHome();
         if (nombre === 'Pacientes')         renderPacientes();
